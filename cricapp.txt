@@ -1,0 +1,76 @@
+# Cricket Scoring App Specification: CricApp (Gully Edition)
+
+## 1. Project Overview
+A highly flexible cricket scoring application designed for "Gully Cricket" and casual play. The core philosophy is "User-Defined Reality"—the app adapts to the rules of the street, box, or ground rather than enforcing ICC standards.
+
+## 2. Core Requirements & Logic
+
+### A. Modular Rule Engine (The "Gully" Core)
+Instead of hardcoded rules, the app provides a rule-builder:
+- **Event -> Outcome Mapping**: Users define what happens during specific events.
+    - *Example*: [Ball hits wall] -> [1 Run] or [Dead Ball].
+    - *Example*: [Ball goes over boundary] -> [6 Runs] or [Out].
+    - *Example*: [One-tip catch] -> [Out].
+    - *Example*: [Hits neighbor's window] -> [Out + Penalty].
+- **Rule Sets**: Users can save different rule sets (e.g., "Strict Box Rules", "Chill Gully Rules") and apply them to a match.
+
+### B. Team & Player Management
+- **Flexible Entities**: Players can be added as individuals or grouped into teams.
+- **Solo-Play / Duo-Play**: Explicit support for "Player as Team" or "Two-man squads" where each person rotates through all roles.
+- **Role Flexibility**: 
+    - Roles are optional tags.
+    - Wicketkeeper is optional; if absent, WK-specific events (stumping) are disabled.
+    - Unlimited players per team.
+
+### C. Venue & Dimension Configuration
+- **Types**: [Box, Turf, Ground, Street/Gully]
+- **Dimension Inputs**:
+    - Custom Width x Length or Radius.
+    - **Rule-Link**: Link a specific Rule Set to a specific Venue (e.g., "The Garage Box" always uses "Wall-Out Rules").
+
+### D. Match Format Mapping (Overs)
+Categorized by total overs set:
+- 1 - 7 Overs: MiniMatches
+- 8 - 15 Overs: T10
+- 16 - 25 Overs: T20
+- 26 - 39 Overs: HalfDay
+- 40 - 60 Overs: OneDay
+- Max Limit: 60 Overs
+- **Format**: Standard 2 innings per side.
+
+## 3. Data Architecture (Kotlin/Room)
+
+### Entities
+- `Player`: { id, name, role_tags, stats_json }
+- `Team`: { id, team_name, player_ids: List<Int> }
+- `Venue`: { id, type, dimensions, name, rule_set_id }
+- `RuleSet`: { id, name, rules_json (Event:Outcome) }
+- `Match`: { id, team1_id, team2_id, venue_id, total_overs, format_type, date }
+- `Innings`: { match_id, innings_number, batting_team_id, total_runs, wickets, overs_bowled }
+- `BallEvent`: { innings_id, over_num, ball_num, bowler_id, batsman_id, runs, extra_type, wicket_type, custom_rule_applied }
+
+### Stats Tracking
+Stats are stored by Match Format:
+`stats = { "MiniMatches": { runs: X, wickets: Y }, "T20": { ... }, ... }`
+
+## 4. UI Workflow (Jetpack Compose)
+
+1. **Rule-Builder Screen**: 
+   - Interface to create "If [X] happens, then [Y] result."
+   - Presets for common Gully rules (One-tip, Over-boundary-out).
+
+2. **Setup Screen**:
+   - Select Teams/Players -> Select Venue (which loads the linked Rule Set) -> Set Overs.
+
+3. **Scoring Screen**:
+   - **Standard Buttons**: (0, 1, 2, 3, 4, 6, W, WD, NB).
+   - **Custom Rule Buttons**: Dynamically generated buttons based on the active Rule Set (e.g., a "Wall-Hit" button).
+   - **Quick-Switch**: Rapidly toggle between striker/bowler for solo-play.
+
+4. **Stats Dashboard**:
+   - Filter by Format.
+   - "Gully Legends" leaderboard based on personal historical data.
+
+## 5. Implementation Strategy
+- **Phase 1 (Personal Use)**: Focus on the Rule Engine and local Room DB storage.
+- **Phase 2 (Publishing)**: Add cloud sync, multiplayer scoring (real-time), and community-shared Rule Sets.

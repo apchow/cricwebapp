@@ -1,0 +1,58 @@
+{
+  "name": "pavilion-xi",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:up": "docker compose up -d postgres redis",
+    "ingest": "node scripts/ingest/cricsheet.mjs data/raw/all_json.zip",
+    "ingest:ipl": "node scripts/ingest/cricsheet.mjs data/raw/ipl_json.zip",
+    "setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^1.6.0",
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@prisma/client": "^5.14.0",
+    "@upstash/redis": "^1.31.0",
+    "@vercel/og": "^0.6.2",
+    "framer-motion": "^11.2.0",
+    "lucide-react": "^0.383.0",
+    "next": "^14.2.35",
+    "next-auth": "^4.24.7",
+    "nodemailer": "^7.0.7",
+    "posthog-js": "^1.130.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "swr": "^2.2.5",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@netlify/database": "^2.0.1",
+    "@netlify/plugin-nextjs": "^5.16.4",
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "adm-zip": "^0.6.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "prisma": "^5.14.0",
+    "tailwindcss": "^3.4.3",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
