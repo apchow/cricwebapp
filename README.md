@@ -1,114 +1,84 @@
-# Pavilion XI 🏏
+# CricHub
 
-Community-driven cricket tactical selector — FUTBIN/Transfermarkt meets the back-of-the-notebook
-Playing XI debate. **Reputation coins only. No betting, no odds, no crypto, no NFTs, no cash
-prizes — ever.** You win bragging rights, tactical IQ and the megaphone.
+Three cricket tools in one small Next.js app: a squad builder, a batting mini-game,
+and a ball-by-ball gully scorer that follows *your* street rules instead of the MCC's.
 
-## Core loop
+No database service, no external accounts, no telemetry. `npm install && npm run dev`
+and it runs.
 
-1. Pick an upcoming match → drag 13 players into an XI builder (11 slots + Impact Player).
-2. Validation (overseas cap, min 1 WK, min 5 bowling options, captain/VC rules) → **Lock XI**.
-3. A 1200×630 share card (OG/PNG) is generated → send the challenge link to a friend.
-4. Friend accepts with their own XI → after the match, higher **matchday impact** wins.
-   No friend handy? **Duel PunditBot 9000** — a deterministic simulated matchday settles it instantly.
-5. Loser gets 24h **Radio Silence** (room-scoped, never global) and can spend 50 reputation
-   coins on a red-tagged **"Paid to Cope"** comment.
+## The tools
 
-## Stack
+| Route | What it does |
+| --- | --- |
+| `/xi-builder` | Pick 11 from 40 international players. Live validation (keeper, bowling and batting balance), share to clipboard, and save named XIs to your account. |
+| `/mini-game` | **Street Strike** — a timing-based batting simulation. Read the delivery, time your shot, and the ball goes where your timing sends it. Personal best is kept in your browser. |
+| `/scorer` | **Gully Scorer** — full match scoring: teams, optional wicket-keeper, 1–60 overs, venues, custom gully rules, ball-by-ball entry, undo, scorecards, result, and history. **Sign-in required.** |
 
-Next.js 14 (App Router, TS strict) · Tailwind · dnd-kit + Framer Motion · Zustand ·
-Prisma + PostgreSQL (Neon) · Upstash Redis (consensus counters + moderation cache) ·
-NextAuth (email + Google, plus a handle-only demo login) · @vercel/og share cards ·
-Cricsheet-style seeded stats; live rosters behind `LIVE_ROSTER_ENABLED` + `CRICAPI_KEY`.
+## Accounts
 
-## Run locally
+Accounts exist so that scorer data and saved XIs belong to someone.
 
-Requires Docker (or any Postgres 15+ / Redis).
+- Email + password, hashed with `scrypt` (per-user salt) — plaintext passwords are never stored.
+- Sessions are a signed (`HMAC-SHA256`) httpOnly cookie, 30 days.
+- Records live in `data/crichub.json`, which is git-ignored. There is no external DB.
+- `/scorer` and its APIs redirect/`401` without a session. XI saving requires a session;
+  browsing and the mini-game do not.
+
+Set `CRICHUB_SECRET` (any string of 16+ chars) to fix the signing key. Without it the app
+generates `data/.session-secret` on first boot, which keeps sessions valid across restarts
+on one machine.
+
+### API
+
+```
+POST   /api/auth/register   { email, password }
+POST   /api/auth/login      { email, password }
+POST   /api/auth/logout
+GET    /api/auth/me
+GET    /api/xis             POST /api/xis { name, players[] }      DELETE /api/xis/{id}
+GET    /api/matches                                                            /api/matches/{id}
+GET|PUT|DELETE /api/match-state        # the in-progress match, so a refresh resumes it
+```
+
+Every payload is validated server-side (`src/lib/validate.ts`): strings length-capped,
+numbers range-checked, enums whitelisted, arrays capped. Anything malformed is rejected
+with `400` rather than written to disk.
+
+## Scoring rules the app enforces
+
+- Format is derived from overs: 1–7 Mini Match, 8–15 T10, 16–25 T20, 26–39 Half Day, 40–60 One Day.
+- Wides and no-balls add a run and do not count as a delivery; the batter faces a no-ball.
+- Odd runs and the end of an over rotate strike; a new bowler is required each over.
+- An innings ends on the over limit, on all out (`players − 1` wickets, so a two-man
+  gully pair ends on one wicket), or on reaching the target.
+- Gully rule presets are event → outcome buttons: `One-Tip Catch` (out),
+  `Over Boundary = Out`, `Wall Hit` (1 run), `Window Hit` (out + 2 penalty runs).
+  Enable any subset per match; each becomes a scoring-pad button.
+- Stumping only appears when the fielding side has a keeper set.
+
+## Running it
 
 ```bash
-cd pavilion-xi
-cp .env.example .env.local          # defaults work for localhost
 npm install
-npm run db:up                       # docker: postgres + redis
-npm run db:generate
-npm run db:migrate                  # applies prisma/migrations (0001 init)
-npm run db:seed                     # 14 players, 3 matches, demo duel, 21 consensus picks
-npm run dev                         # http://localhost:3000
+npm run dev      # http://localhost:3000
+npm run build && npm start
 ```
 
-Demo accounts after seeding:
+Requires Node 18.17+.
 
-| Handle            | What it shows                                    |
-| ----------------- | ------------------------------------------------ |
-| `PunditAdmin`     | `/admin/moderation` CRUD + flagged queue         |
-| `TacticalGautam`  | Winning duel, megaphone comments                 |
-| `Rohan_99`        | 20h Radio Silence + a "Paid to Cope" example     |
+## Layout
 
-Log in at `/login` with any handle (2–24 chars) — this is the no-password demo provider.
-Google OAuth activates automatically once `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set;
-email magic links activate with `EMAIL_SERVER`.
-
-```bash
-npm run test    # vitest: validation rules, scoring formula, moderation engine
+```
+src/app/            routes: home, xi-builder, mini-game, scorer, login, api/
+src/components/     shared client bits (navbar account menu)
+src/data/           the 40-player pool used by the XI builder
+src/lib/            scoring engine, auth, JSON store, payload validation
+data/               created at runtime; git-ignored
 ```
 
-## Pages
+## Deploying
 
-| Route                          | What lives there                                  |
-| ------------------------------ | ------------------------------------------------- |
-| `/`                            | Lobby: matches, consensus teaser, rep leaderboard |
-| `/match/[id]/builder`          | The Chalkboard (drag & drop XI, live validation)  |
-| `/match/[id]/share/[lineupId]` | Share card, WhatsApp/X/IG copy, Create Duel       |
-| `/match/[id]/consensus`        | Consensus meter (SWR, 15s refresh, Crowd XI diff) |
-| `/duel/[id]`                   | Head-to-head, scoring breakdown, Gag Order, Cope  |
-| `/profile/[handle]`            | Coins, ledger, badges, parody-tag collection      |
-| `/admin/moderation`            | Rule CRUD + flagged review queue                  |
-| `/api/og/lineup/[lineupId]`    | 1200×630 PNG share card                           |
-
-## Deploy to Vercel (+ Neon + Upstash)
-
-1. **Neon**: create a Postgres branch → copy the pooled connection string.
-2. **Upstash**: create a Redis database → copy REST URL + token.
-3. Push this repo to GitHub, import into Vercel.
-4. Environment variables (Settings → Environment Variables):
-   `DATABASE_URL`, `NEXTAUTH_URL=https://your-app.vercel.app`, `NEXTAUTH_SECRET`
-   (`npx auth secret`), optionally `GOOGLE_CLIENT_ID/SECRET`, `EMAIL_SERVER`,
-   `UPSTASH_REDIS_REST_URL/TOKEN`, `LIVE_ROSTER_ENABLED=false`, `CRICAPI_KEY`,
-   `NEXT_PUBLIC_POSTHOG_KEY`.
-5. Build command stays `next build`; add to **Project Settings → Root Directory** = `pavilion-xi`
-   if the repo root is above it.
-6. After the first deploy, run migrations + seed from your machine against the Neon URL:
-
-```bash
-DATABASE_URL="postgresql://...pooled...?sslmode=require" npx prisma migrate deploy
-DATABASE_URL="postgresql://...pooled...?sslmode=require" npm run db:seed
-```
-
-(Or set `postinstall: "prisma migrate deploy"` in package.json if you want zero-touch redeploys.)
-
-### Netlify note
-
-The app is spec'd for Vercel because `@vercel/og` image responses and Vercel's edge rendering are
-the smoothest path. On Netlify: `netlify.toml` with `command = "next build"`,
-`publish = ".next"`, the `@netlify/plugin-nextjs` build plugin, plus the same env vars works;
-the OG endpoint runs on the Node builder function. Neon + Upstash are provider-agnostic.
-
-## Reputation economy (no real money, ever)
-
-| Action                         | Coins        |
-| ------------------------------ | ------------ |
-| Lock an XI                     | +10          |
-| Participate in consensus       | +5           |
-| Win a duel                     | +25          |
-| Coping Pass ("Paid to Cope")   | −50          |
-
-Mutes are always room-scoped to a single duel — there are no global mutes. The moderation engine
-whitelists cricket slang first (`tullabaaz`, `tuk-tuk`, `fraud watch`, `intent merchant`,
-`statpadder`), then blocks slurs, family mentions, doxxing and any real player @handles. Share
-cards print display names only.
-
-## Non-goals (by design)
-
-Real-money transactions · betting odds or prize pools · crypto/NFTs · storing or auto-tagging
-real players' social handles · global mutes · fake stats (all numbers are Cricsheet-style seeds;
-live data is explicitly marked STUBBED until the API flag is on).
+The app assumes one filesystem it can write to. On a persistent host (VPS, Fly, Railway)
+it works as-is. On serverless hosts (Vercel/Netlify) the read-only filesystem means
+accounts and saved matches will not persist — swap `src/lib/store.ts` for a real database
+before doing that.
