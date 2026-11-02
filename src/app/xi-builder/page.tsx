@@ -21,7 +21,7 @@ const ROLES: PlayerRole[] = ["BAT", "BOWL", "AR", "WK"];
 /* ─── Component ─────────────────────────────────────────── */
 export default function XIBuilderPage() {
   /* ── state ── */
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<PlayerRole | "ALL">("ALL");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
@@ -57,8 +57,11 @@ export default function XIBuilderPage() {
 
   /* ── derived data ── */
   const selectedPlayers: Player[] = useMemo(
-    () => PLAYERS.filter((p) => selectedIds.has(p.id)),
-    [selectedIds]
+    () =>
+      selected
+        .map((id) => PLAYERS.find((p) => p.id === id))
+        .filter((p): p is Player => Boolean(p)),
+    [selected]
   );
 
   const filteredPlayers = useMemo(() => {
@@ -91,14 +94,20 @@ export default function XIBuilderPage() {
 
   /* ── actions ── */
   function addPlayer(id: number) {
-    if (selectedIds.size >= MAX_XI || selectedIds.has(id)) return;
-    setSelectedIds((prev) => new Set(prev).add(id));
+    if (selected.length >= MAX_XI || selected.includes(id)) return;
+    setSelected((prev) => [...prev, id]);
   }
 
   function removePlayer(id: number) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
+    setSelected((prev) => prev.filter((value) => value !== id));
+  }
+
+  function movePlayer(index: number, direction: -1 | 1) {
+    setSelected((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
   }
@@ -127,7 +136,7 @@ export default function XIBuilderPage() {
       const response = await fetch("/api/xis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, players: [...selectedIds] }),
+        body: JSON.stringify({ name, players: selected }),
       });
       if (!response.ok) {
         flash("Could not save this XI");
@@ -146,7 +155,7 @@ export default function XIBuilderPage() {
 
   function loadXI(xi: PublicXI) {
     const ids = xi.players.filter((id) => PLAYERS.some((p) => p.id === id));
-    setSelectedIds(new Set(ids));
+    setSelected(ids);
     flash(`Loaded “${xi.name}”`);
   }
 
@@ -259,8 +268,8 @@ export default function XIBuilderPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {filteredPlayers.map((player) => {
-                    const isSelected = selectedIds.has(player.id);
-                    const isFull = selectedIds.size >= MAX_XI;
+                    const isSelected = selected.includes(player.id);
+                    const isFull = selected.length >= MAX_XI;
                     const disabled = isSelected || isFull;
 
                     return (
@@ -351,6 +360,24 @@ export default function XIBuilderPage() {
                     >
                       {player.role}
                     </span>
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => movePlayer(idx, -1)}
+                        disabled={idx === 0}
+                        className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-indigo-300 hover:bg-indigo-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-colors"
+                        aria-label={`Move ${player.name} up the order`}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => movePlayer(idx, 1)}
+                        disabled={idx === selectedPlayers.length - 1}
+                        className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-indigo-300 hover:bg-indigo-500/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-colors"
+                        aria-label={`Move ${player.name} down the order`}
+                      >
+                        ▼
+                      </button>
+                    </div>
                     <button
                       onClick={() => removePlayer(player.id)}
                       className="w-6 h-6 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"

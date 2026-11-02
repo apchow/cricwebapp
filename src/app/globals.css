@@ -53,12 +53,6 @@ body {
   animation: scoreFlash 0.4s ease-out;
 }
 
-/* Six animation */
-@keyframes sixBurst {
-  0% { transform: scale(0); opacity: 1; }
-  100% { transform: scale(3); opacity: 0; }
-}
-
 /* Wicket shake */
 @keyframes wicketShake {
   0%, 100% { transform: translateX(0); }

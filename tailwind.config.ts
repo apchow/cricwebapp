@@ -12,7 +12,6 @@ const config: Config = {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-in": "bounceIn 0.5s ease-out",
         "slide-up": "slideUp 0.3s ease-out",
-        "swing": "swing 1.2s ease-in-out infinite alternate",
       },
       keyframes: {
         bounceIn: {
@@ -23,10 +22,6 @@ const config: Config = {
         slideUp: {
           "0%": { transform: "translateY(20px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-        swing: {
-          "0%": { transform: "translateX(0%)" },
-          "100%": { transform: "translateX(calc(100% - 16px))" },
         },
       },
     },

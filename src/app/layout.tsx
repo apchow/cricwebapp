@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Link from "next/link";
 import AccountMenu from "@/components/account-menu";
@@ -8,6 +8,19 @@ import { TOOLS } from "@/data/tools";
 export const metadata: Metadata = {
   title: "CricHub — The Cricket Toolkit",
   description: "XI Builder, Street Strike Mini-Game, and Gully Scorer in one app.",
+  applicationName: "CricHub",
+  openGraph: {
+    title: "CricHub — The Cricket Toolkit",
+    description: "Build squads. Smash sixes. Score matches.",
+    siteName: "CricHub",
+    type: "website",
+  },
+  twitter: { card: "summary" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0f1a",
+  colorScheme: "dark",
 };
 
 export const dynamic = "force-dynamic";

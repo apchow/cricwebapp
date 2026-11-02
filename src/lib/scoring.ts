@@ -1,4 +1,4 @@
-export type ExtraType = "wd" | "nb";
+export type ExtraType = "wd" | "nb" | "b" | "lb";
 
 export type WicketType =
   | "Bowled"
@@ -99,13 +99,15 @@ export interface Innings {
   runs: number;
   wickets: number;
   legalBalls: number;
-  extras: { wd: number; nb: number; penalty: number };
+  extras: { wd: number; nb: number; b: number; lb: number; penalty: number };
   batters: Batter[];
   order: string[];
   nextIndex: number;
   striker: number;
   nonStriker: number;
   bowler: string | null;
+  /** The bowler who delivered the previous over — cannot bowl back-to-back. */
+  lastBowler: string | null;
   bowlers: Bowler[];
   events: BallEvent[];
   fow: string[];
@@ -113,6 +115,10 @@ export interface Innings {
 }
 
 export interface BallInput {
+  /**
+   * Runs recorded off this delivery. Off the bat for a normal ball, additional
+   * runs for a wide/no-ball, or byes/leg byes when `extra` is `b`/`lb`.
+   */
   runs: number;
   extra?: ExtraType;
   wicket?: WicketType;
@@ -136,7 +142,7 @@ export function makeInnings(
     runs: 0,
     wickets: 0,
     legalBalls: 0,
-    extras: { wd: 0, nb: 0, penalty: 0 },
+    extras: { wd: 0, nb: 0, b: 0, lb: 0, penalty: 0 },
     batters: order.map((name) => ({
       name,
       runs: 0,
@@ -150,6 +156,7 @@ export function makeInnings(
     striker: 0,
     nonStriker: order.length > 1 ? 1 : -1,
     bowler: null,
+    lastBowler: null,
     bowlers: bowlers.map((name) => ({
       name,
       balls: 0,
@@ -171,37 +178,51 @@ export function applyBall(
   const next = clone(innings);
   if (next.done) return next;
 
-  const legal = !input.extra;
+  const extra = input.extra;
+  // Byes and leg byes are legal deliveries; a wide or no-ball is not.
+  const legal = !extra || extra === "b" || extra === "lb";
   const batRuns = input.runs;
   const batter = next.batters[next.striker];
   const bowlerName = next.bowler;
   const bowler = next.bowlers.find((b) => b.name === bowlerName);
   const penalty = input.penalty ?? 0;
 
-  const teamRuns = batRuns + (legal ? 0 : 1) + penalty;
-  next.runs += teamRuns;
-  if (penalty) next.extras.penalty += penalty;
+  let teamRuns = penalty;
 
-  if (legal) {
-    next.legalBalls += 1;
+  if (!extra) {
+    teamRuns += batRuns;
     batter.balls += 1;
     batter.runs += batRuns;
     if (batRuns === 4) batter.fours += 1;
     if (batRuns === 6) batter.sixes += 1;
-    if (bowler) {
-      bowler.balls += 1;
-      bowler.runs += batRuns;
-    }
-  } else if (input.extra === "wd") {
-    next.extras.wd += 1;
-    if (bowler) bowler.runs += 1;
-  } else {
+    if (bowler) bowler.runs += batRuns;
+  } else if (extra === "wd") {
+    // The +1 penalty plus any runs the batters ran; all count as wides.
+    teamRuns += 1 + batRuns;
+    next.extras.wd += 1 + batRuns;
+    if (bowler) bowler.runs += 1 + batRuns;
+  } else if (extra === "nb") {
+    // The +1 penalty plus runs off the bat; the batter faces a no-ball.
+    teamRuns += 1 + batRuns;
     next.extras.nb += 1;
     batter.balls += 1;
     batter.runs += batRuns;
     if (batRuns === 4) batter.fours += 1;
     if (batRuns === 6) batter.sixes += 1;
     if (bowler) bowler.runs += 1 + batRuns;
+  } else {
+    // Bye / leg bye: runs go to extras and are not charged to the bowler.
+    teamRuns += batRuns;
+    next.extras[extra] += batRuns;
+    batter.balls += 1;
+  }
+
+  next.runs += teamRuns;
+  if (penalty) next.extras.penalty += penalty;
+
+  if (legal) {
+    next.legalBalls += 1;
+    if (bowler) bowler.balls += 1;
   }
 
   if (input.wicket) {
@@ -235,6 +256,7 @@ export function applyBall(
       next.striker = next.nonStriker;
       next.nonStriker = swap;
     }
+    next.lastBowler = bowlerName;
     next.bowler = null;
   }
 
@@ -247,20 +269,32 @@ export function applyBall(
 
   const label = input.wicket
     ? input.ruleLabel ?? "W"
-    : input.extra === "wd"
-    ? "wd"
-    : input.extra === "nb"
-    ? `nb${batRuns ? `+${batRuns}` : ""}`
+    : extra === "wd"
+    ? batRuns
+      ? `wd+${batRuns}`
+      : "wd"
+    : extra === "nb"
+    ? batRuns
+      ? `nb+${batRuns}`
+      : "nb"
+    : extra === "b"
+    ? `${batRuns}b`
+    : extra === "lb"
+    ? `${batRuns}lb`
     : String(batRuns);
 
   const detail = input.wicket
     ? input.ruleLabel
       ? `${input.ruleLabel} — ${batter.name} out${penalty ? `, +${penalty} penalty` : ""}`
       : `${input.wicket} — ${batter.name} out`
-    : input.extra === "wd"
-    ? `Wide, 1 run`
-    : input.extra === "nb"
-    ? `No ball, ${1 + batRuns} run${1 + batRuns === 1 ? "" : "s"}`
+    : extra === "wd"
+    ? `Wide, ${1 + batRuns} run${1 + batRuns === 1 ? "" : "s"}`
+    : extra === "nb"
+    ? `No ball, ${1 + batRuns} run${1 + batRuns === 1 ? "" : "s"}${batRuns ? ` (${batRuns} off the bat)` : ""}`
+    : extra === "b"
+    ? `${batRuns} bye${batRuns === 1 ? "" : "s"}`
+    : extra === "lb"
+    ? `${batRuns} leg bye${batRuns === 1 ? "" : "s"}`
     : `${batRuns} run${batRuns === 1 ? "" : "s"} — ${batter.name}`;
 
   next.events.push({

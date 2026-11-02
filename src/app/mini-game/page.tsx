@@ -663,7 +663,7 @@ export default function MiniGamePage() {
 
   const closeInnings = useCallback((final: Innings) => {
     const rating = ratingFor(final.score);
-    const summary = `${final.score}/${final.wickets} from ${oversString(final.balls)} balls — ${rating.title}`;
+    const summary = `${final.score}/${final.wickets} from ${final.balls} balls — ${rating.title}`;
     writeLocal(LAST_KEY, summary);
     setLastInnings(summary);
     const nextBest = Math.max(bestRef.current, final.score);

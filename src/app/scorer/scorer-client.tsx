@@ -8,6 +8,7 @@ import type { PublicMatch } from "@/lib/dto";
 import {
   applyBall,
   cloneMatch,
+  ExtraType,
   formatForOvers,
   Innings,
   makeInnings,
@@ -63,6 +64,7 @@ export default function ScorerClient() {
   const [view, setView] = useState<"setup" | "live" | "done">("setup");
   const [undoStack, setUndoStack] = useState<MatchState[]>([]);
   const [wicketOpen, setWicketOpen] = useState(false);
+  const [extrasOpen, setExtrasOpen] = useState(false);
   const [showCard, setShowCard] = useState(false);
   const [history, setHistory] = useState<PublicMatch[]>([]);
   const [formatFilter, setFormatFilter] = useState("ALL");
@@ -239,6 +241,10 @@ export default function ScorerClient() {
   const pickBowler = useCallback(
     (name: string) => {
       if (!match || !innings || !name) return;
+      if (name === innings.lastBowler && innings.bowlers.length > 1) {
+        notify("A bowler cannot bowl consecutive overs");
+        return;
+      }
       setMatch({
         ...match,
         innings: match.innings.map((item, index) =>
@@ -246,7 +252,7 @@ export default function ScorerClient() {
         ),
       });
     },
-    [match, innings]
+    [match, innings, notify]
   );
 
   const startMatch = useCallback(() => {
@@ -568,15 +574,31 @@ export default function ScorerClient() {
                             : "Over complete — choose the next bowler"}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {innings.bowlers.map((b) => (
-                            <button
-                              key={b.name}
-                              onClick={() => pickBowler(b.name)}
-                              className="px-4 py-2 rounded-lg bg-slate-900/70 border border-slate-700/60 text-sm font-medium hover:border-amber-400/60 hover:text-amber-200 transition-colors"
-                            >
-                              {b.name}
-                            </button>
-                          ))}
+                          {innings.bowlers.map((b) => {
+                            const blocked =
+                              b.name === innings.lastBowler &&
+                              innings.bowlers.length > 1;
+                            return (
+                              <button
+                                key={b.name}
+                                onClick={() => pickBowler(b.name)}
+                                disabled={blocked}
+                                title={
+                                  blocked
+                                    ? "Bowled the previous over — cannot go back-to-back"
+                                    : undefined
+                                }
+                                className="px-4 py-2 rounded-lg bg-slate-900/70 border border-slate-700/60 text-sm font-medium hover:border-amber-400/60 hover:text-amber-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-slate-700/60 disabled:hover:text-slate-200"
+                              >
+                                {b.name}
+                                {blocked && (
+                                  <span className="text-[10px] text-slate-500 ml-1">
+                                    · just bowled
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : null}
@@ -600,7 +622,7 @@ export default function ScorerClient() {
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
                       <button
                         onClick={() => handleApply({ runs: 0, extra: "wd" })}
                         disabled={!innings.bowler || innings.done}
@@ -614,6 +636,13 @@ export default function ScorerClient() {
                         className="rounded-xl py-3 text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
                         No ball +1
+                      </button>
+                      <button
+                        onClick={() => setExtrasOpen(true)}
+                        disabled={!innings.bowler || innings.done}
+                        className="rounded-xl py-3 text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        Extras…
                       </button>
                       <button
                         onClick={() => setWicketOpen(true)}
@@ -878,6 +907,13 @@ export default function ScorerClient() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {extrasOpen && (
+              <ExtrasModal
+                onApply={(input) => handleApply(input)}
+                onClose={() => setExtrasOpen(false)}
+              />
             )}
           </>
         )}
@@ -1264,8 +1300,105 @@ function TeamEditor({
   );
 }
 
+const EXTRA_OPTIONS: {
+  id: ExtraType;
+  label: string;
+  hint: string;
+  allowZero: boolean;
+}[] = [
+  { id: "wd", label: "Wide", hint: "1 penalty run plus any runs the batters ran.", allowZero: true },
+  { id: "nb", label: "No ball", hint: "1 penalty run plus runs off the bat.", allowZero: true },
+  { id: "b", label: "Bye", hint: "Keeper misses — runs count as byes.", allowZero: false },
+  { id: "lb", label: "Leg bye", hint: "Off the pad — runs count as leg byes.", allowZero: false },
+];
+
+function ExtrasModal({
+  onApply,
+  onClose,
+}: {
+  onApply: (input: { runs: number; extra: ExtraType }) => void;
+  onClose: () => void;
+}) {
+  const [type, setType] = useState<ExtraType>("wd");
+  const [runs, setRuns] = useState(0);
+
+  const option = EXTRA_OPTIONS.find((item) => item.id === type) ?? EXTRA_OPTIONS[0];
+  const runChoices = option.allowZero ? [0, 1, 2, 3, 4] : [1, 2, 3, 4];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="glass rounded-2xl p-6 w-full max-w-md animate-bounce-in">
+        <h3 className="text-lg font-black mb-1">Extras</h3>
+        <p className="text-xs text-slate-500 mb-4">
+          Wides and no-balls with runs, or byes and leg byes.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {EXTRA_OPTIONS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setType(item.id);
+                setRuns(item.allowZero ? 0 : 1);
+              }}
+              className={`rounded-lg py-2.5 text-sm font-semibold border transition-all ${
+                type === item.id
+                  ? "bg-amber-500/20 border-amber-500/40 text-amber-200"
+                  : "bg-slate-800/70 border-slate-700/60 text-slate-300 hover:border-slate-600"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="text-xs text-slate-500 mb-2">{option.hint}</div>
+        <div
+          className={`grid ${
+            option.allowZero ? "grid-cols-5" : "grid-cols-4"
+          } gap-2 mb-4`}
+        >
+          {runChoices.map((value) => (
+            <button
+              key={value}
+              onClick={() => setRuns(value)}
+              className={`rounded-lg py-3 text-lg font-black font-mono border transition-all ${
+                runs === value
+                  ? "bg-slate-100/90 text-slate-900 border-transparent"
+                  : "bg-slate-900/60 border-slate-700/60 text-slate-200 hover:bg-slate-800/80"
+              }`}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onApply({ runs, extra: type })}
+            className="flex-1 rounded-lg py-3 text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:scale-[1.01] active:scale-[0.99] transition-all"
+          >
+            Apply
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-3 text-sm text-slate-400 hover:text-white bg-slate-900/60 border border-slate-800 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
-  const totalExtras = innings.extras.wd + innings.extras.nb + innings.extras.penalty;
+  const totalExtras =
+    innings.extras.wd +
+    innings.extras.nb +
+    innings.extras.b +
+    innings.extras.lb +
+    innings.extras.penalty;
   return (
     <div className="glass rounded-2xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-4">
@@ -1353,6 +1486,8 @@ function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
           <span className="font-mono text-slate-200">{totalExtras}</span>{" "}
           <span className="text-slate-500">
             (wd {innings.extras.wd}, nb {innings.extras.nb}
+            {innings.extras.b ? `, b ${innings.extras.b}` : ""}
+            {innings.extras.lb ? `, lb ${innings.extras.lb}` : ""}
             {innings.extras.penalty ? `, pen ${innings.extras.penalty}` : ""})
           </span>
         </span>

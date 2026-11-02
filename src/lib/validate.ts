@@ -2,7 +2,6 @@ import type {
   BallEvent,
   Batter,
   Bowler,
-  ExtraType,
   Innings,
   MatchState,
   WicketType,
@@ -17,8 +16,6 @@ const WICKETS: WicketType[] = [
   "Hit Wicket",
   "Gully Rule",
 ];
-
-const EXTRAS: ExtraType[] = ["wd", "nb"];
 
 export function text(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
@@ -199,6 +196,8 @@ function cleanInnings(value: unknown): Innings | null {
     extras: {
       wd: whole(extras?.wd, 0, 300) ?? 0,
       nb: whole(extras?.nb, 0, 300) ?? 0,
+      b: whole(extras?.b, 0, 300) ?? 0,
+      lb: whole(extras?.lb, 0, 300) ?? 0,
       penalty: whole(extras?.penalty, 0, 300) ?? 0,
     },
     batters,
@@ -207,6 +206,7 @@ function cleanInnings(value: unknown): Innings | null {
     striker,
     nonStriker,
     bowler: input.bowler === null ? null : text(input.bowler, 30),
+    lastBowler: input.lastBowler === null ? null : text(input.lastBowler, 30),
     bowlers,
     events,
     fow,
