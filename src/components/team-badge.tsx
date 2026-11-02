@@ -8,11 +8,14 @@ export default function TeamBadge({
   size = 36,
   active = false,
   showName = false,
+  glyph,
 }: {
   team: IplTeam | string;
   size?: number;
   active?: boolean;
   showName?: boolean;
+  /** Crest shown instead of the team code, e.g. the franchise emblem. */
+  glyph?: string;
 }) {
   const meta = teamMeta(team);
   if (!meta) return null;
@@ -30,7 +33,9 @@ export default function TeamBadge({
           boxShadow: active ? `0 0 18px ${meta.primary}66` : "none",
         }}
       >
-        <span style={{ fontSize: size * 0.42 }}>{meta.short}</span>
+        <span style={{ fontSize: size * (glyph ? 0.52 : 0.42) }}>
+          {glyph ?? meta.short}
+        </span>
       </span>
       {showName && (
         <span className="flex flex-col leading-tight text-left">

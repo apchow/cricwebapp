@@ -386,7 +386,9 @@ export default function BanterWall() {
                       )}
                       {entry.silenced && <PaidToCopeBadge />}
                       <span className="text-xs text-slate-600 ml-auto">
-                        {timeAgo(entry.createdAt)}
+                        {/* Wall-clock text is only rendered after mount so the
+                            server and client trees always agree. */}
+                        {ready ? timeAgo(entry.createdAt) : null}
                       </span>
                     </div>
                     <p
