@@ -16,22 +16,22 @@ export default function HomePage() {
         <header className="text-center mb-24">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-xs font-medium text-slate-400 uppercase tracking-widest mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            v1.0 — All tools live
+            Pundit Arena — Season 2027
           </div>
           <h1 className="text-6xl sm:text-7xl font-black tracking-tighter mb-6">
             <span className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent">
-              CRIC HUB
+              PAVILION XI
             </span>
           </h1>
           <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            The complete toolkit for the cricket obsessed.
+            Your seat in the pundit arena.
             <br className="hidden sm:block" />
-            Build squads. Smash sixes. Score matches.
+            Retain your six. Build the XI. Score the game. Smash the sixes.
           </p>
         </header>
 
         {/* Tool Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {TOOLS.map((tool) => (
             <Link
               key={tool.id}
@@ -89,7 +89,7 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="mt-32 text-center">
           <div className="inline-block px-4 py-1.5 rounded-full border border-slate-800/50 text-slate-600 text-xs font-medium uppercase tracking-widest">
-            CricHub • Built for the love of cricket
+            Pavilion XI • Pundit Arena
           </div>
         </footer>
       </div>

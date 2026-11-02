@@ -76,6 +76,8 @@ export interface CleanConfig {
   teamA: CleanTeam;
   teamB: CleanTeam;
   overs: number;
+  /** Overs for the chase, when the sides agree on a revised limit. */
+  oversB?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -94,7 +96,11 @@ export function cleanConfig(value: unknown): CleanConfig | null {
   const ruleIds = Array.isArray(input.ruleIds)
     ? input.ruleIds.filter((id): id is string => RULE_IDS.includes(String(id)))
     : [];
-  return { teamA, teamB, overs, venue, ruleIds };
+  const oversB =
+    input.oversB === undefined || input.oversB === null
+      ? undefined
+      : whole(input.oversB, 1, 60) ?? undefined;
+  return { teamA, teamB, overs, ...(oversB ? { oversB } : {}), venue, ruleIds };
 }
 
 function cleanBatter(value: unknown): Batter | null {

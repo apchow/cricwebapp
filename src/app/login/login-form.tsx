@@ -10,6 +10,23 @@ export default function LoginForm({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  async function demo() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/auth/demo", { method: "POST" });
+      if (!response.ok) {
+        setError("Could not start the demo session");
+        return;
+      }
+      window.location.assign(next);
+    } catch {
+      setError("Could not reach the server");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -119,6 +136,23 @@ export default function LoginForm({ next }: { next: string }) {
             : "Create account and continue"}
         </button>
       </form>
+
+      <div className="flex items-center gap-3 my-5">
+        <span className="flex-1 h-px bg-slate-800" />
+        <span className="text-[10px] uppercase tracking-widest text-slate-600 font-bold">
+          or
+        </span>
+        <span className="flex-1 h-px bg-slate-800" />
+      </div>
+
+      <button
+        type="button"
+        onClick={demo}
+        disabled={busy}
+        className="w-full rounded-xl py-3 font-bold bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        ⚡ Try the demo — no sign-up
+      </button>
 
       <p className="text-xs text-slate-500 mt-5">
         The scorer needs an account.{" "}

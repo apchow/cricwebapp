@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Toast from "@/components/toast";
 import ToolHeader from "@/components/tool-header";
-import { useToast } from "@/lib/client";
+import { readLocal, useToast, writeLocal } from "@/lib/client";
 import type { PublicMatch } from "@/lib/dto";
 import {
   applyBall,
@@ -38,6 +38,8 @@ interface Config {
   teamA: TeamSetup;
   teamB: TeamSetup;
   overs: number;
+  /** Overs for the chase — defaults to `overs` when the sides don't revise it. */
+  oversB?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -58,13 +60,32 @@ const DEFAULT_CONFIG: Config = {
   ruleIds: ["one-tip", "wall-hit"],
 };
 
+/** Offline mirror of the live match so a refresh can pick up where you left off. */
+const SCORER_STORE_KEY = "pavilion.scorer.v16";
+
+interface StoredScorerState {
+  match: MatchState;
+  config: Config;
+  savedAt: number;
+}
+
+function clearStoredMatch() {
+  try {
+    localStorage.removeItem(SCORER_STORE_KEY);
+  } catch {
+    /* ignore private-mode failures */
+  }
+}
+
 export default function ScorerClient() {
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [match, setMatch] = useState<MatchState | null>(null);
   const [view, setView] = useState<"setup" | "live" | "done">("setup");
   const [undoStack, setUndoStack] = useState<MatchState[]>([]);
+  const [redoStack, setRedoStack] = useState<MatchState[]>([]);
   const [wicketOpen, setWicketOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
+  const [runsOpen, setRunsOpen] = useState(false);
   const [showCard, setShowCard] = useState(false);
   const [history, setHistory] = useState<PublicMatch[]>([]);
   const [formatFilter, setFormatFilter] = useState("ALL");
@@ -73,11 +94,14 @@ export default function ScorerClient() {
 
   const { message: toast, notify } = useToast();
   const savedRef = useRef(false);
+  const [resumePrompt, setResumePrompt] = useState(false);
+  const storedRef = useRef<StoredScorerState | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      let restoredFromServer = false;
       try {
         const [stateResponse, matchesResponse] = await Promise.all([
           fetch("/api/match-state"),
@@ -97,6 +121,7 @@ export default function ScorerClient() {
         if (Array.isArray(matches.matches)) setHistory(matches.matches);
         const stored = state.state;
         if (stored?.match?.innings?.length) {
+          restoredFromServer = true;
           setConfig(stored.config);
           setMatch(stored.match);
           const finished = Boolean(stored.match.innings[1]?.done);
@@ -109,7 +134,28 @@ export default function ScorerClient() {
           notify("Could not reach the server");
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          // No server session (or the server is unreachable) — offer the mirror.
+          if (!restoredFromServer) {
+            const local = readLocal(SCORER_STORE_KEY);
+            if (local) {
+              try {
+                const parsed = JSON.parse(local) as Partial<StoredScorerState>;
+                if (parsed.match?.innings?.length) {
+                  storedRef.current = {
+                    match: parsed.match,
+                    config: parsed.config ?? DEFAULT_CONFIG,
+                    savedAt: parsed.savedAt ?? Date.now(),
+                  };
+                  setResumePrompt(true);
+                }
+              } catch {
+                /* ignore a corrupt autosave */
+              }
+            }
+          }
+        }
       }
     }
 
@@ -118,6 +164,17 @@ export default function ScorerClient() {
       cancelled = true;
     };
   }, [notify]);
+
+  // Offline mirror: keep localStorage in step with the live match + config.
+  useEffect(() => {
+    if (!match) return;
+    // Finished matches are saved to the account instead.
+    if (match.innings[1]?.done) return;
+    writeLocal(
+      SCORER_STORE_KEY,
+      JSON.stringify({ match, config, savedAt: Date.now() })
+    );
+  }, [match, config]);
 
   useEffect(() => {
     if (!match || loading || view === "done") return;
@@ -178,10 +235,13 @@ export default function ScorerClient() {
         setHistory((prev) => [saved, ...prev].slice(0, 50));
       }
       await fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
+      clearStoredMatch();
     })();
   }, [match, view, config.overs, config.venue]);
 
   const innings = match ? match.innings[match.current] : null;
+  const currentOvers =
+    match && match.current === 1 ? config.oversB ?? config.overs : config.overs;
 
   const fieldingSetup = useMemo(() => {
     if (!match || !innings) return null;
@@ -196,6 +256,7 @@ export default function ScorerClient() {
 
   const pushUndo = useCallback((current: MatchState) => {
     setUndoStack((prev) => [...prev.slice(-49), cloneMatch(current)]);
+    setRedoStack([]);
   }, []);
 
   const handleApply = useCallback(
@@ -207,12 +268,7 @@ export default function ScorerClient() {
         return;
       }
       pushUndo(match);
-      const updated = applyBall(
-        innings,
-        input,
-        config.overs,
-        match.target
-      );
+      const updated = applyBall(innings, input, currentOvers, match.target);
       const nextMatch: MatchState = {
         ...match,
         innings: match.innings.map((item, index) =>
@@ -221,22 +277,37 @@ export default function ScorerClient() {
       };
       setMatch(nextMatch);
       setWicketOpen(false);
+      setRunsOpen(false);
       if (updated.done && match.current === 0) {
         notify("Innings over");
       }
     },
-    [match, innings, config.overs, pushUndo, notify]
+    [match, innings, currentOvers, pushUndo, notify]
   );
 
   const undo = useCallback(() => {
-    if (!undoStack.length) return;
+    if (!undoStack.length || !match) return;
     const previous = undoStack[undoStack.length - 1];
     setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev.slice(-49), cloneMatch(match)]);
     setMatch(previous);
     setView("live");
     setWicketOpen(false);
+    setRunsOpen(false);
     notify("Last ball undone");
-  }, [undoStack, notify]);
+  }, [undoStack, match, notify]);
+
+  const redo = useCallback(() => {
+    if (!redoStack.length || !match) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev.slice(-49), cloneMatch(match)]);
+    setMatch(next);
+    setView("live");
+    setWicketOpen(false);
+    setRunsOpen(false);
+    notify("Ball restored");
+  }, [redoStack, match, notify]);
 
   const pickBowler = useCallback(
     (name: string) => {
@@ -270,7 +341,7 @@ export default function ScorerClient() {
       notify("Each team needs at least one player");
       return;
     }
-    const nextConfig: Config = { ...config, teamA, teamB };
+    const nextConfig: Config = { ...config, teamA, teamB, oversB: undefined };
     const first = makeInnings(
       teamA.name,
       teamB.name,
@@ -280,6 +351,7 @@ export default function ScorerClient() {
     setConfig(nextConfig);
     setMatch({ innings: [first], current: 0, target: null });
     setUndoStack([]);
+    setRedoStack([]);
     setView("live");
     setShowCard(false);
     savedRef.current = false;
@@ -318,13 +390,42 @@ export default function ScorerClient() {
     });
   }, [match, innings, pushUndo]);
 
-  const resetToSetup = useCallback(() => {    setMatch(null);
+  const resetToSetup = useCallback(() => {
+    setMatch(null);
     setView("setup");
     setUndoStack([]);
+    setRedoStack([]);
     setShowCard(false);
     savedRef.current = false;
+    storedRef.current = null;
+    setResumePrompt(false);
+    clearStoredMatch();
     fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
   }, []);
+
+  const resumeStoredMatch = useCallback(() => {
+    const stored = storedRef.current;
+    if (stored) {
+      setConfig(stored.config);
+      setMatch(stored.match);
+      setUndoStack([]);
+      setRedoStack([]);
+      const finished = Boolean(stored.match.innings[1]?.done);
+      savedRef.current = finished;
+      setView(finished ? "done" : "live");
+      if (finished) clearStoredMatch();
+      notify("Match restored");
+    }
+    storedRef.current = null;
+    setResumePrompt(false);
+  }, [notify]);
+
+  const discardStoredMatch = useCallback(() => {
+    storedRef.current = null;
+    setResumePrompt(false);
+    clearStoredMatch();
+    notify("Saved match discarded");
+  }, [notify]);
 
   const deleteMatch = useCallback((id: string) => {
     setHistory((prev) => prev.filter((entry) => entry.id !== id));
@@ -339,11 +440,13 @@ export default function ScorerClient() {
 
   const shareResult = useCallback(() => {
     if (!match) return;
+    const limitFor = (index: number) =>
+      index === 1 ? config.oversB ?? config.overs : config.overs;
     const lines = match.innings.map(
-      (inn) =>
+      (inn, index) =>
         `${inn.battingTeam}: ${inn.runs}/${inn.wickets} (${oversString(
           inn.legalBalls
-        )}/${config.overs})`
+        )}/${limitFor(index)})`
     );
     const text = `🏏 CricHub — Gully Scorer\n${lines.join(
       "\n"
@@ -424,7 +527,7 @@ export default function ScorerClient() {
   const crr = innings && innings.legalBalls > 0
     ? innings.runs / (innings.legalBalls / 6)
     : 0;
-  const ballsLeft = config.overs * 6 - (innings?.legalBalls ?? 0);
+  const ballsLeft = currentOvers * 6 - (innings?.legalBalls ?? 0);
   const runsNeeded = match?.target != null && innings ? match.target - innings.runs : null;
   const rrr =
     match?.target != null && innings && ballsLeft > 0
@@ -460,6 +563,26 @@ export default function ScorerClient() {
           </div>
         )}
 
+        {!loading && resumePrompt && (
+          <div className="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 flex flex-wrap items-center gap-3">
+            <span className="flex-1 text-sm font-semibold text-emerald-100">
+              Resume your last match?
+            </span>
+            <button
+              onClick={resumeStoredMatch}
+              className="rounded-lg px-4 py-1.5 text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              Resume
+            </button>
+            <button
+              onClick={discardStoredMatch}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all"
+            >
+              Discard
+            </button>
+          </div>
+        )}
+
         {!loading && view === "setup" && (
           <SetupScreen
             config={config}
@@ -484,7 +607,7 @@ export default function ScorerClient() {
                       Innings {match.current + 1}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-bold uppercase tracking-wider">
-                      {formatForOvers(config.overs)}
+                      {formatForOvers(currentOvers)}
                     </span>
                     <span className="text-[10px] text-slate-500">
                       {config.venue}
@@ -500,7 +623,7 @@ export default function ScorerClient() {
                       {innings.wickets}
                     </div>
                     <div className="text-xs text-slate-400 font-mono">
-                      {oversString(innings.legalBalls)} / {config.overs} overs
+                      {oversString(innings.legalBalls)} / {currentOvers} overs
                     </div>
                   </div>
                   <div className="text-right text-xs text-slate-400 space-y-1 pb-1">
@@ -546,9 +669,32 @@ export default function ScorerClient() {
                       </span>{" "}
                       in {oversString(innings.legalBalls)} overs.
                     </p>
-                    <p className="text-amber-300 text-sm mb-6">
+                    <p className="text-amber-300 text-sm mb-4">
                       {innings.bowlingTeam} need {(match.innings[0].runs + 1)} to win.
                     </p>
+                    <div className="flex items-center justify-center gap-2 mb-5">
+                      <span className="text-xs text-slate-400">Chase overs</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={config.oversB ?? config.overs}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          setConfig({
+                            ...config,
+                            oversB: Math.min(
+                              60,
+                              Math.max(1, Number.isFinite(value) ? value : 1)
+                            ),
+                          });
+                        }}
+                        className="w-20 bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                      />
+                      <span className="text-[10px] text-emerald-300 font-semibold">
+                        {formatForOvers(config.oversB ?? config.overs)}
+                      </span>
+                    </div>
                     <div className="flex flex-wrap justify-center gap-3">
                       <button
                         onClick={startSecondInnings}
@@ -603,53 +749,69 @@ export default function ScorerClient() {
                       </div>
                     ) : null}
 
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 mb-3">
+                    <div className="grid grid-cols-3 gap-3 mb-3">
                       {[0, 1, 2, 3, 4, 6].map((run) => (
                         <button
                           key={run}
                           onClick={() => handleApply({ runs: run })}
                           disabled={!innings.bowler || innings.done}
-                          className={`rounded-xl py-4 text-2xl font-black font-mono transition-all border ${
+                          aria-label={`${run} run${run === 1 ? "" : "s"} off the bat`}
+                          className={`min-h-[64px] rounded-2xl text-3xl font-black font-mono border transition-all active:scale-95 ${
                             run === 6
-                              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-200 hover:bg-emerald-500/30"
                               : run === 4
-                              ? "bg-sky-500/15 border-sky-500/40 text-sky-300 hover:bg-sky-500/25"
-                              : "bg-slate-900/60 border-slate-700/60 text-slate-200 hover:bg-slate-800/80"
-                          } disabled:opacity-40 disabled:cursor-not-allowed`}
+                              ? "bg-sky-500/20 border-sky-500/50 text-sky-200 hover:bg-sky-500/30"
+                              : "bg-slate-800/80 border-slate-700/70 text-slate-100 hover:bg-slate-700/80"
+                          } disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100`}
                         >
                           {run}
                         </button>
                       ))}
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <button
+                        onClick={() => setWicketOpen(true)}
+                        disabled={!innings.bowler || innings.done}
+                        aria-label="Wicket"
+                        className="min-h-[56px] rounded-2xl text-base font-black uppercase tracking-wider bg-red-500/20 border border-red-500/50 text-red-200 hover:bg-red-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all"
+                      >
+                        W
+                      </button>
                       <button
                         onClick={() => handleApply({ runs: 0, extra: "wd" })}
                         disabled={!innings.bowler || innings.done}
-                        className="rounded-xl py-3 text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        aria-label="Wide, 1 run"
+                        className="min-h-[56px] rounded-2xl text-base font-black uppercase tracking-wider bg-amber-500/20 border border-amber-500/50 text-amber-200 hover:bg-amber-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all"
                       >
-                        Wide +1
+                        WD
                       </button>
                       <button
                         onClick={() => handleApply({ runs: 0, extra: "nb" })}
                         disabled={!innings.bowler || innings.done}
-                        className="rounded-xl py-3 text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        aria-label="No ball, 1 run"
+                        className="min-h-[56px] rounded-2xl text-base font-black uppercase tracking-wider bg-amber-500/20 border border-amber-500/50 text-amber-200 hover:bg-amber-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 transition-all"
                       >
-                        No ball +1
+                        NB
                       </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <button
                         onClick={() => setExtrasOpen(true)}
                         disabled={!innings.bowler || innings.done}
-                        className="rounded-xl py-3 text-sm font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        aria-label="Open the extras pad"
+                        className="px-3 py-2 rounded-lg text-xs font-bold bg-amber-500/10 border border-amber-500/25 text-amber-300/90 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
                         Extras…
                       </button>
                       <button
-                        onClick={() => setWicketOpen(true)}
+                        onClick={() => setRunsOpen(true)}
                         disabled={!innings.bowler || innings.done}
-                        className="rounded-xl py-3 text-sm font-black uppercase tracking-wider bg-red-500/15 border border-red-500/40 text-red-300 hover:bg-red-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        aria-label="Add a custom number of runs"
+                        className="px-3 py-2 rounded-lg text-xs font-bold bg-sky-500/10 border border-sky-500/25 text-sky-300/90 hover:bg-sky-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                       >
-                        Wicket
+                        N runs…
                       </button>
                     </div>
 
@@ -697,6 +859,13 @@ export default function ScorerClient() {
                         ↩ Undo
                       </button>
                       <button
+                        onClick={redo}
+                        disabled={!redoStack.length}
+                        className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/60 border border-slate-700/50 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                      >
+                        ↪ Redo
+                      </button>
+                      <button
                         onClick={() => setShowCard((v) => !v)}
                         className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/60 border border-slate-700/50 hover:bg-slate-800 transition-all"
                       >
@@ -720,7 +889,7 @@ export default function ScorerClient() {
                 )}
 
                 {showCard && (
-                  <Scorecard innings={innings} overs={config.overs} />
+                  <Scorecard innings={innings} overs={currentOvers} />
                 )}
               </div>
 
@@ -848,7 +1017,7 @@ export default function ScorerClient() {
                   <div className="flex justify-between">
                     <span>Format</span>
                     <span className="text-slate-200">
-                      {formatForOvers(config.overs)} · {config.overs} overs
+                      {formatForOvers(currentOvers)} · {currentOvers} overs
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -915,6 +1084,13 @@ export default function ScorerClient() {
                 onClose={() => setExtrasOpen(false)}
               />
             )}
+
+            {runsOpen && (
+              <RunsPad
+                onApply={(runs) => handleApply({ runs })}
+                onClose={() => setRunsOpen(false)}
+              />
+            )}
           </>
         )}
 
@@ -922,6 +1098,7 @@ export default function ScorerClient() {
           <ResultScreen
             match={match}
             overs={config.overs}
+            chaseOvers={config.oversB ?? config.overs}
             venue={config.venue}
             onShare={shareResult}
             onNew={resetToSetup}
@@ -1392,6 +1569,58 @@ function ExtrasModal({
   );
 }
 
+function RunsPad({
+  onApply,
+  onClose,
+}: {
+  onApply: (runs: number) => void;
+  onClose: () => void;
+}) {
+  const [runs, setRuns] = useState(5);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="glass rounded-2xl p-6 w-full max-w-md animate-bounce-in">
+        <h3 className="text-lg font-black mb-1">Runs off the bat</h3>
+        <p className="text-xs text-slate-500 mb-4">
+          For the awkward totals — overthrows, all-run fours, five off the pad.
+        </p>
+
+        <div className="grid grid-cols-5 gap-2 mb-4">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => (
+            <button
+              key={value}
+              onClick={() => setRuns(value)}
+              className={`rounded-lg py-3 text-lg font-black font-mono border transition-all ${
+                runs === value
+                  ? "bg-slate-100/90 text-slate-900 border-transparent"
+                  : "bg-slate-900/60 border-slate-700/60 text-slate-200 hover:bg-slate-800/80"
+              }`}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onApply(runs)}
+            className="flex-1 rounded-lg py-3 text-sm font-bold bg-gradient-to-r from-sky-500 to-indigo-500 hover:scale-[1.01] active:scale-[0.99] transition-all"
+          >
+            Add {runs} run{runs === 1 ? "" : "s"}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-3 text-sm text-slate-400 hover:text-white bg-slate-900/60 border border-slate-800 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
   const totalExtras =
     innings.extras.wd +
@@ -1558,12 +1787,14 @@ function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
 function ResultScreen({
   match,
   overs,
+  chaseOvers,
   venue,
   onShare,
   onNew,
 }: {
   match: MatchState;
   overs: number;
+  chaseOvers: number;
   venue: string;
   onShare: () => void;
   onNew: () => void;
@@ -1579,7 +1810,8 @@ function ResultScreen({
         <div className="relative">
           <div className="text-5xl mb-3">{chaseWon ? "🏆" : "🏏"}</div>
           <div className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">
-            Result · {overs} overs · {venue}
+            Result · {overs}
+            {chaseOvers !== overs ? `/${chaseOvers}` : ""} overs · {venue}
           </div>
           <h2 className="text-3xl sm:text-4xl font-black mb-4">{result}</h2>
           <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto text-left">
@@ -1618,7 +1850,7 @@ function ResultScreen({
       </div>
 
       <Scorecard innings={first} overs={overs} />
-      <Scorecard innings={second} overs={overs} />
+      <Scorecard innings={second} overs={chaseOvers} />
     </div>
   );
 }

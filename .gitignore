@@ -6,8 +6,10 @@ node_modules/
 out/
 build/
 
-# local account + match data (never commit user data)
-data/
+# local account + match data (never commit user data).
+# Anchored to the repo root so the shipped datasets in src/data and
+# public/data are still tracked.
+/data/
 
 # secrets
 .env
