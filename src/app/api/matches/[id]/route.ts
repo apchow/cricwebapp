@@ -7,14 +7,15 @@ export const dynamic = "force-dynamic";
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const gate = await sessionGate();
   if (!gate.ok) return gate.response;
 
+  const { id } = await params;
   const removed = await mutate((db) => {
     const index = db.matches.findIndex(
-      (match) => match.id === params.id && match.userId === gate.session.id
+      (match) => match.id === id && match.userId === gate.session.id
     );
     if (index === -1) return false;
     db.matches.splice(index, 1);

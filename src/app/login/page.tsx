@@ -13,10 +13,11 @@ function safeNext(value?: string): string {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string };
+  searchParams: Promise<{ next?: string }>;
 }) {
   const session = await currentSession();
-  const next = safeNext(searchParams?.next);
+  const { next: nextParam } = await searchParams;
+  const next = safeNext(nextParam);
   if (session) redirect(next);
 
   return (

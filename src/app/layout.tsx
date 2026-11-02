@@ -1,9 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import AccountMenu from "@/components/account-menu";
 import { currentSession } from "@/lib/auth";
 import { TOOLS } from "@/data/tools";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "CricHub — The Cricket Toolkit",
@@ -71,7 +86,10 @@ export default async function RootLayout({
   const session = await currentSession();
 
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className={`dark ${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="font-sans antialiased min-h-screen">
         <Navbar email={session?.email ?? null} />
         <main className="pt-14">{children}</main>

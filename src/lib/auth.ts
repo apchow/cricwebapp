@@ -84,11 +84,13 @@ export async function verifySession(
 }
 
 export async function currentSession(): Promise<SessionUser | null> {
-  return verifySession(cookies().get(SESSION_COOKIE)?.value);
+  const store = await cookies();
+  return verifySession(store.get(SESSION_COOKIE)?.value);
 }
 
 export async function startSession(user: SessionUser): Promise<void> {
-  cookies().set({
+  const store = await cookies();
+  store.set({
     name: SESSION_COOKIE,
     value: await createSession(user),
     httpOnly: true,
@@ -99,8 +101,9 @@ export async function startSession(user: SessionUser): Promise<void> {
   });
 }
 
-export function endSession(): void {
-  cookies().set({ name: SESSION_COOKIE, value: "", path: "/", maxAge: 0 });
+export async function endSession(): Promise<void> {
+  const store = await cookies();
+  store.set({ name: SESSION_COOKIE, value: "", path: "/", maxAge: 0 });
 }
 
 export function normalizeEmail(input: string): string {
