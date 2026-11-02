@@ -3,6 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import AccountMenu from "@/components/account-menu";
 import { currentSession } from "@/lib/auth";
+import { TOOLS } from "@/data/tools";
 
 export const metadata: Metadata = {
   title: "CricHub — The Cricket Toolkit",
@@ -22,9 +23,14 @@ function Navbar({ email }: { email: string | null }) {
           </span>
         </Link>
         <div className="flex items-center gap-1">
-          <NavLink href="/xi-builder" emoji="👥" label="XI Builder" />
-          <NavLink href="/mini-game" emoji="⚡" label="Street Strike" />
-          <NavLink href="/scorer" emoji="📊" label="Scorer" />
+          {TOOLS.map((tool) => (
+            <NavLink
+              key={tool.id}
+              href={tool.href}
+              emoji={tool.emoji}
+              label={tool.navLabel}
+            />
+          ))}
           <AccountMenu email={email} />
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import type { Innings } from "@/lib/scoring";
 
 export interface StoredUser {
   id: string;
@@ -12,7 +13,7 @@ export interface StoredXI {
   id: string;
   userId: string;
   name: string;
-  players: unknown[];
+  players: number[];
   createdAt: string;
 }
 
@@ -24,7 +25,7 @@ export interface StoredMatch {
   venue: string;
   scoreline: string;
   result: string;
-  innings: unknown[];
+  innings: Innings[];
 }
 
 export interface StoredState {

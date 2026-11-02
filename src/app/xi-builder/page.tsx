@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Toast from "@/components/toast";
+import type { PublicXI } from "@/lib/dto";
+import { useToast } from "@/lib/client";
 import {
   PLAYERS,
   Player,
@@ -15,13 +18,6 @@ import {
 const MAX_XI = 11;
 const ROLES: PlayerRole[] = ["BAT", "BOWL", "AR", "WK"];
 
-interface StoredXI {
-  id: string;
-  name: string;
-  players: number[];
-  createdAt: string;
-}
-
 /* ─── Component ─────────────────────────────────────────── */
 export default function XIBuilderPage() {
   /* ── state ── */
@@ -29,25 +25,12 @@ export default function XIBuilderPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<PlayerRole | "ALL">("ALL");
   const [countryFilter, setCountryFilter] = useState<string>("ALL");
-  const [toast, setToast] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [savedXis, setSavedXis] = useState<StoredXI[]>([]);
+  const [savedXis, setSavedXis] = useState<PublicXI[]>([]);
   const [xiName, setXiName] = useState("");
   const [saving, setSaving] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const flash = useCallback((message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    []
-  );
+  const { message: toast, notify: flash } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +43,7 @@ export default function XIBuilderPage() {
         if (cancelled || !me.user) return;
         setEmail(me.user.email);
         const xisResponse = await fetch("/api/xis");
-        const xis = (await xisResponse.json()) as { xis?: StoredXI[] };
+        const xis = (await xisResponse.json()) as { xis?: PublicXI[] };
         if (!cancelled && Array.isArray(xis.xis)) setSavedXis(xis.xis);
       } catch {
         if (!cancelled) flash("Could not reach the server");
@@ -150,8 +133,8 @@ export default function XIBuilderPage() {
         flash("Could not save this XI");
         return;
       }
-      const data = (await response.json()) as { xi?: StoredXI };
-      if (data.xi) setSavedXis((prev) => [data.xi as StoredXI, ...prev]);
+      const data = (await response.json()) as { xi?: PublicXI };
+      if (data.xi) setSavedXis((prev) => [data.xi as PublicXI, ...prev]);
       setXiName("");
       flash("XI saved to your account");
     } catch {
@@ -161,7 +144,7 @@ export default function XIBuilderPage() {
     }
   }
 
-  function loadXI(xi: StoredXI) {
+  function loadXI(xi: PublicXI) {
     const ids = xi.players.filter((id) => PLAYERS.some((p) => p.id === id));
     setSelectedIds(new Set(ids));
     flash(`Loaded “${xi.name}”`);
@@ -177,19 +160,7 @@ export default function XIBuilderPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* ── Toast ── */}
-      <div
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${
-          toast
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
-        <div className="glass rounded-xl px-6 py-3 flex items-center gap-2 border border-green-500/30 shadow-lg shadow-green-500/10">
-          <span className="text-green-400 text-lg">✓</span>
-          <span className="text-green-300 font-medium">{toast}</span>
-        </div>
-      </div>
+      <Toast message={toast} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* ── Hero ── */}
@@ -532,22 +503,6 @@ export default function XIBuilderPage() {
         </div>
       </div>
 
-      {/* ── Custom scrollbar styles ── */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.3);
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.5);
-        }
-      `}</style>
     </div>
   );
 }

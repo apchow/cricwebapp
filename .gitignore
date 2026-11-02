@@ -22,3 +22,6 @@ next-env.d.ts
 .DS_Store
 .idea/
 .vscode/
+
+# local build logs
+build.log

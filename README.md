@@ -70,11 +70,17 @@ Requires Node 18.17+.
 
 ```
 src/app/            routes: home, xi-builder, mini-game, scorer, login, api/
-src/components/     shared client bits (navbar account menu)
-src/data/           the 40-player pool used by the XI builder
-src/lib/            scoring engine, auth, JSON store, payload validation
+src/components/     shared UI: navbar account menu, tool header, toast
+src/data/           the 40-player pool and the tool catalogue
+src/lib/            scoring engine, auth, JSON store, payload validation,
+                    API helpers (session guard, JSON body) and DTOs
 data/               created at runtime; git-ignored
 ```
+
+The navbar and the hub cards both render from `src/data/tools.ts`, so a rename
+happens in one place. The builder and scorer share the same toast, header and
+`PublicXI` / `PublicMatch` payload types, and every protected route goes through
+`sessionGate()` in `src/lib/api.ts` instead of repeating a 401 block.
 
 ## Deploying
 

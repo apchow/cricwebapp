@@ -284,6 +284,11 @@ export interface MatchState {
   target: number | null;
 }
 
+/** Deep copy for undo stacks and optimistic updates on the client. */
+export function cloneMatch(match: MatchState): MatchState {
+  return clone(match);
+}
+
 export function resultText(match: MatchState): string {
   const [first, second] = match.innings;
   if (!second || !first) return "";

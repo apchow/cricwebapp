@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentSession } from "@/lib/auth";
+import { jsonBody, sessionGate } from "@/lib/api";
 import { mutate, query } from "@/lib/store";
 import { cleanConfig, cleanMatch } from "@/lib/validate";
 
@@ -7,19 +7,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
   const state = await query(
-    (db) => db.states.find((item) => item.userId === session.id) ?? null
+    (db) => db.states.find((item) => item.userId === gate.session.id) ?? null
   );
   return NextResponse.json({ state });
 }
 
 export async function PUT(request: Request) {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
 
-  const body = await request.json().catch(() => null);
+  const body = await jsonBody(request);
   const match = cleanMatch(body?.match);
   const config = cleanConfig(body?.config);
   if (!match || !config) {
@@ -27,7 +27,7 @@ export async function PUT(request: Request) {
   }
 
   await mutate((db) => {
-    const existing = db.states.find((item) => item.userId === session.id);
+    const existing = db.states.find((item) => item.userId === gate.session.id);
     if (existing) {
       existing.match = match;
       existing.config = config;
@@ -35,7 +35,7 @@ export async function PUT(request: Request) {
       return existing;
     }
     const created = {
-      userId: session.id,
+      userId: gate.session.id,
       match,
       config,
       updatedAt: new Date().toISOString(),
@@ -48,10 +48,10 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE() {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
   await mutate((db) => {
-    const index = db.states.findIndex((item) => item.userId === session.id);
+    const index = db.states.findIndex((item) => item.userId === gate.session.id);
     if (index !== -1) db.states.splice(index, 1);
     return index !== -1;
   });

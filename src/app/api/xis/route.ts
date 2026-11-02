@@ -1,34 +1,31 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { currentSession } from "@/lib/auth";
+import { jsonBody, sessionGate } from "@/lib/api";
+import { toPublicXI } from "@/lib/dto";
 import { mutate, query } from "@/lib/store";
 import { cleanXIPlayers, text } from "@/lib/validate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function publicXI(xi: { id: string; name: string; players: unknown[]; createdAt: string }) {
-  return { id: xi.id, name: xi.name, players: xi.players, createdAt: xi.createdAt };
-}
-
 export async function GET() {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
   const xis = await query((db) =>
     db.xis
-      .filter((xi) => xi.userId === session.id)
+      .filter((xi) => xi.userId === gate.session.id)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 50)
-      .map(publicXI)
+      .map(toPublicXI)
   );
   return NextResponse.json({ xis });
 }
 
 export async function POST(request: Request) {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
 
-  const body = await request.json().catch(() => null);
+  const body = await jsonBody(request);
   const name = text(body?.name, 40);
   const players = cleanXIPlayers(body?.players);
   if (!name || !players) {
@@ -41,13 +38,13 @@ export async function POST(request: Request) {
   const xi = await mutate((db) => {
     const created = {
       id: randomUUID(),
-      userId: session.id,
+      userId: gate.session.id,
       name,
       players,
       createdAt: new Date().toISOString(),
     };
     db.xis.push(created);
-    return publicXI(created);
+    return toPublicXI(created);
   });
 
   return NextResponse.json({ xi }, { status: 201 });

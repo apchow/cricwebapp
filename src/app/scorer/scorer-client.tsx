@@ -1,9 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Toast from "@/components/toast";
+import ToolHeader from "@/components/tool-header";
+import { useToast } from "@/lib/client";
+import type { PublicMatch } from "@/lib/dto";
 import {
   applyBall,
+  cloneMatch,
   formatForOvers,
   Innings,
   makeInnings,
@@ -37,16 +41,6 @@ interface Config {
   ruleIds: string[];
 }
 
-interface HistoryEntry {
-  id: string;
-  createdAt: string;
-  format: string;
-  venue: string;
-  scoreline: string;
-  result: string;
-  innings: Innings[];
-}
-
 const DEFAULT_CONFIG: Config = {
   teamA: {
     name: "Gully Kings",
@@ -63,10 +57,6 @@ const DEFAULT_CONFIG: Config = {
   ruleIds: ["one-tip", "wall-hit"],
 };
 
-function cloneMatch(match: MatchState): MatchState {
-  return JSON.parse(JSON.stringify(match)) as MatchState;
-}
-
 export default function ScorerClient() {
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [match, setMatch] = useState<MatchState | null>(null);
@@ -74,26 +64,13 @@ export default function ScorerClient() {
   const [undoStack, setUndoStack] = useState<MatchState[]>([]);
   const [wicketOpen, setWicketOpen] = useState(false);
   const [showCard, setShowCard] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [history, setHistory] = useState<PublicMatch[]>([]);
   const [formatFilter, setFormatFilter] = useState("ALL");
-  const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { message: toast, notify } = useToast();
   const savedRef = useRef(false);
-
-  const notify = useCallback((message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,7 +89,7 @@ export default function ScorerClient() {
           state?: { config: Config; match: MatchState } | null;
         };
         const matches = (await matchesResponse.json()) as {
-          matches?: HistoryEntry[];
+          matches?: PublicMatch[];
         };
         if (cancelled) return;
         if (Array.isArray(matches.matches)) setHistory(matches.matches);
@@ -193,7 +170,7 @@ export default function ScorerClient() {
       }
 
       setOffline(false);
-      const data = (await response.json()) as { match?: HistoryEntry };
+      const data = (await response.json()) as { match?: PublicMatch };
       if (data.match) {
         const saved = data.match;
         setHistory((prev) => [saved, ...prev].slice(0, 50));
@@ -455,35 +432,15 @@ export default function ScorerClient() {
         <div className="absolute bottom-0 left-0 w-[420px] h-[420px] bg-indigo-600/10 rounded-full blur-[120px]" />
       </div>
 
-      {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] glass rounded-xl px-5 py-3 text-sm text-emerald-200 border border-emerald-500/30 shadow-lg shadow-emerald-500/10 animate-slide-up">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <header className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400/80 mb-2">
-              Match Scorer
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-indigo-300 bg-clip-text text-transparent">
-              Gully Scorer
-            </h1>
-            <p className="text-slate-400 mt-2 max-w-lg">
-              Your street, your rules. Ball-by-ball scoring for any format from
-              1 to 60 overs.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              ← Back to hub
-            </Link>
-          </div>
-        </header>
+        <ToolHeader
+          eyebrow="Match Scorer"
+          title="Gully Scorer"
+          blurb="Your street, your rules. Ball-by-ball scoring for any format from 1 to 60 overs."
+          gradient="from-emerald-300 via-teal-200 to-indigo-300"
+        />
 
         {loading && (
           <div className="glass rounded-2xl p-10 text-center text-slate-400">
@@ -953,7 +910,7 @@ function SetupScreen({
   config: Config;
   setConfig: (config: Config) => void;
   onStart: () => void;
-  history: HistoryEntry[];
+  history: PublicMatch[];
   onDeleteMatch: (id: string) => void;
   formats: string[];
   formatFilter: string;

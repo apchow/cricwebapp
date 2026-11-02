@@ -1,43 +1,5 @@
 import Link from "next/link";
-
-const tools = [
-  {
-    id: "xi-builder",
-    title: "Pavilion XI",
-    subtitle: "Squad Architect",
-    description:
-      "Pick your dream XI from a pool of international stars. Validate roles, balance your squad, then share or save it to your account.",
-    icon: "👥",
-    gradient: "from-blue-600 to-indigo-900",
-    glowColor: "bg-blue-500/20",
-    href: "/xi-builder",
-    features: ["40+ players", "Role validation", "Saved XIs"],
-  },
-  {
-    id: "mini-game",
-    title: "Street Strike",
-    subtitle: "Mini Game",
-    description:
-      "Time your shots in this quick-fire batting challenge. Stop the power meter in the sweet spot to smash sixes.",
-    icon: "⚡",
-    gradient: "from-orange-500 to-red-900",
-    glowColor: "bg-orange-500/20",
-    href: "/mini-game",
-    features: ["Power meter", "Ball types", "High scores"],
-  },
-  {
-    id: "scorer",
-    title: "Gully Scorer",
-    subtitle: "Match Scorer",
-    description:
-      "Ball-by-ball scoring for any format. Custom gully rules, live scorecard, and history saved to your account.",
-    icon: "📊",
-    gradient: "from-green-600 to-emerald-900",
-    glowColor: "bg-emerald-500/20",
-    href: "/scorer",
-    features: ["1–60 overs", "Custom rules", "Account history"],
-  },
-];
+import { TOOLS } from "@/data/tools";
 
 export default function HomePage() {
   return (
@@ -70,7 +32,7 @@ export default function HomePage() {
 
         {/* Tool Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {tools.map((tool) => (
+          {TOOLS.map((tool) => (
             <Link
               key={tool.id}
               href={tool.href}
@@ -78,18 +40,18 @@ export default function HomePage() {
             >
               {/* Gradient border on hover */}
               <div
-                className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${tool.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${tool.cardGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
               />
 
               {/* Card */}
               <div className="relative h-full bg-slate-900/90 rounded-[15px] p-8 border border-slate-800/50 group-hover:border-transparent transition-all">
                 {/* Glow */}
                 <div
-                  className={`absolute -top-20 -right-20 w-40 h-40 ${tool.glowColor} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity`}
+                  className={`absolute -top-20 -right-20 w-40 h-40 ${tool.glow} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity`}
                 />
 
                 <div className="relative">
-                  <div className="text-4xl mb-2">{tool.icon}</div>
+                  <div className="text-4xl mb-2">{tool.emoji}</div>
                   <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
                     {tool.subtitle}
                   </div>

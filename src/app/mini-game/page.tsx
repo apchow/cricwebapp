@@ -1,7 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ToolHeader from "@/components/tool-header";
+import { readLocal, writeLocal } from "@/lib/client";
+import { oversString } from "@/lib/scoring";
 
 const BEST_KEY = "crichub.streetstrike.best";
 const LAST_KEY = "crichub.streetstrike.lastinnings";
@@ -548,26 +550,6 @@ const BANDS: { range: string; text: string; tone: Tone }[] = [
   { range: "late or no swing", text: "beaten — bowled, LBW or behind", tone: "wicket" },
 ];
 
-function oversText(balls: number): string {
-  return `${Math.floor(balls / 6)}.${balls % 6}`;
-}
-
-function readItem(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function saveItem(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    return;
-  }
-}
-
 export default function MiniGamePage() {
   const [game, setGame] = useState<Innings>(initialInnings);
   const gameRef = useRef<Innings>(game);
@@ -619,13 +601,13 @@ export default function MiniGamePage() {
   }, []);
 
   useEffect(() => {
-    const raw = readItem(BEST_KEY);
+    const raw = readLocal(BEST_KEY);
     const saved = raw === null ? 0 : Number(raw);
     if (Number.isFinite(saved) && saved > 0) {
       bestRef.current = saved;
       setBest(saved);
     }
-    const last = readItem(LAST_KEY);
+    const last = readLocal(LAST_KEY);
     if (last) setLastInnings(last);
   }, []);
 
@@ -681,13 +663,13 @@ export default function MiniGamePage() {
 
   const closeInnings = useCallback((final: Innings) => {
     const rating = ratingFor(final.score);
-    const summary = `${final.score}/${final.wickets} from ${oversText(final.balls)} balls — ${rating.title}`;
-    saveItem(LAST_KEY, summary);
+    const summary = `${final.score}/${final.wickets} from ${oversString(final.balls)} balls — ${rating.title}`;
+    writeLocal(LAST_KEY, summary);
     setLastInnings(summary);
     const nextBest = Math.max(bestRef.current, final.score);
     bestRef.current = nextBest;
     setBest(nextBest);
-    saveItem(BEST_KEY, String(nextBest));
+    writeLocal(BEST_KEY, String(nextBest));
   }, []);
 
   const finishShot = useCallback(() => {
@@ -1013,26 +995,12 @@ export default function MiniGamePage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        <header className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400/80 mb-2">
-              Mini Game
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 bg-clip-text text-transparent">
-              Pitch Perfect
-            </h1>
-            <p className="text-slate-400 mt-2 max-w-md">
-              Two overs, two wickets, one field. Read the delivery off the pitch
-              and time the swing — the timing window is cruelly small.
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            ← Back to hub
-          </Link>
-        </header>
+        <ToolHeader
+          eyebrow="Mini Game"
+          title="Street Strike"
+          blurb="Two overs, two wickets, one field. Read the delivery off the pitch and time the swing — the timing window is cruelly small."
+          gradient="from-emerald-300 via-teal-200 to-sky-300"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-6 items-start">
           <div className="glass rounded-3xl p-4 sm:p-6">
@@ -1042,7 +1010,7 @@ export default function MiniGamePage() {
                   {game.phase === "delivery" ? "Delivery incoming" : "Bowling"}
                 </div>
                 <div className="font-bold text-base sm:text-lg leading-tight">
-                  {delivery ? `${delivery.emoji} ${delivery.name}` : `${bowlerName} • ${oversText(game.balls)} overs`}
+                  {delivery ? `${delivery.emoji} ${delivery.name}` : `${bowlerName} • ${oversString(game.balls)} overs`}
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">
                   {delivery ? delivery.hint : "Press Space or the button to bowl."}
@@ -1303,7 +1271,7 @@ export default function MiniGamePage() {
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Score" value={`${game.score}/${game.wickets}`} accent="text-emerald-400" />
               <Stat label="Balls left" value={String(ballsLeft)} accent="text-sky-300" />
-              <Stat label="Overs" value={`${oversText(game.balls)} / 2.0`} />
+              <Stat label="Overs" value={`${oversString(game.balls)} / 2.0`} />
               <Stat label="Run rate" value={runRate.toFixed(2)} accent="text-orange-300" />
             </div>
 
@@ -1322,7 +1290,7 @@ export default function MiniGamePage() {
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-bold">{bowlerName}</span>
                 <span className="font-mono text-sm text-slate-300">
-                  {oversText(figures.balls)}-{figures.runs}-{figures.wkts}
+                  {oversString(figures.balls)}-{figures.runs}-{figures.wkts}
                 </span>
               </div>
               <div className="text-xs text-slate-400 mt-1">

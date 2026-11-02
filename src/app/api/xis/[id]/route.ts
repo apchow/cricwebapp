@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentSession } from "@/lib/auth";
+import { sessionGate } from "@/lib/api";
 import { mutate } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -9,12 +9,12 @@ export async function DELETE(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await currentSession();
-  if (!session) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const gate = await sessionGate();
+  if (!gate.ok) return gate.response;
 
   const removed = await mutate((db) => {
     const index = db.xis.findIndex(
-      (xi) => xi.id === params.id && xi.userId === session.id
+      (xi) => xi.id === params.id && xi.userId === gate.session.id
     );
     if (index === -1) return false;
     db.xis.splice(index, 1);
