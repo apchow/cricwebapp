@@ -1,5 +1,5 @@
 import type { Innings } from "@/lib/scoring";
-import type { StoredMatch, StoredXI } from "@/lib/store";
+import type { StoredMatch, StoredSeries, StoredXI } from "@/lib/store";
 
 /** XI as returned by `/api/xis` — no owner id, no internals. */
 export interface PublicXI {
@@ -20,12 +20,29 @@ export interface PublicMatch {
   innings: Innings[];
 }
 
+/** Series as returned by `/api/series` — owner id stripped out. */
+export interface PublicSeries {
+  id: string;
+  name: string;
+  createdAt: string;
+  matchIds: string[];
+}
+
 export function toPublicXI(xi: StoredXI): PublicXI {
   return {
     id: xi.id,
     name: xi.name,
     players: xi.players,
     createdAt: xi.createdAt,
+  };
+}
+
+export function toPublicSeries(series: StoredSeries): PublicSeries {
+  return {
+    id: series.id,
+    name: series.name,
+    createdAt: series.createdAt,
+    matchIds: series.matchIds,
   };
 }
 

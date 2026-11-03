@@ -25,5 +25,10 @@ next-env.d.ts
 .idea/
 .vscode/
 
-# local build logs
+# local build + dev server logs
 build.log
+server.log
+server.err
+
+# vendored copy of the other app — reference only, never committed
+pavilion-xi/

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentSession } from "@/lib/auth";
 import { query } from "@/lib/store";
-import { COUNTRY_FLAGS, playersById } from "@/data/players";
+import { playerById } from "@/data/player-db";
+import { flagOf } from "@/lib/flags";
 import { activityStreak, battingStats, bowlingStats } from "@/lib/stats";
 
-export const metadata = { title: "Dashboard — CricHub" };
+export const metadata = { title: "Dashboard — Pavilion XI" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
     (a, b) => b[1] - a[1]
   )[0]?.[0];
   const favourite =
-    favouriteId !== undefined ? playersById([favouriteId])[0] ?? null : null;
+    favouriteId !== undefined ? playerById(favouriteId) ?? null : null;
 
   const empty = !xis.length && !matches.length;
 
@@ -98,7 +99,7 @@ export default async function DashboardPage() {
             label="Favourite pick"
             value={favourite ? favourite.name.split(" ").slice(-1)[0] : "—"}
             accent="text-violet-300"
-            hint={favourite ? `${COUNTRY_FLAGS[favourite.country]} ${favourite.country}` : "Build an XI"}
+            hint={favourite ? `${flagOf(favourite.country)} ${favourite.country}` : "Build an XI"}
           />
         </div>
 
@@ -177,7 +178,9 @@ export default async function DashboardPage() {
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
                     {xis.slice(0, 10).map((xi) => {
-                      const names = playersById(xi.players).map((p) => p.name);
+                      const names = xi.players
+                        .map((id) => playerById(id)?.name)
+                        .filter((name): name is string => Boolean(name));
                       return (
                         <div
                           key={xi.id}
@@ -210,10 +213,10 @@ export default async function DashboardPage() {
                   Recent matches
                 </h2>
                 <Link
-                  href="/scorer"
+                  href="/history"
                   className="text-xs text-slate-400 hover:text-white transition-colors"
                 >
-                  Score →
+                  Full history →
                 </Link>
               </div>
               {matches.length === 0 ? (

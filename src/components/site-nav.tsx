@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ClipboardList,
+  History,
+  ListOrdered,
   Lock,
   MessageCircle,
   Trophy,
@@ -20,6 +22,8 @@ const ICONS: Record<string, LucideIcon> = {
   retention: Lock,
   "xi-builder": Users,
   scorer: ClipboardList,
+  history: History,
+  series: ListOrdered,
   "mini-game": Zap,
   players: Trophy,
   banter: MessageCircle,
@@ -69,7 +73,8 @@ export default function SiteNav({ email }: { email: string | null }) {
         aria-label="Primary"
         className="md:hidden fixed bottom-0 inset-x-0 z-50 glass border-t border-slate-700/50 pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="grid grid-cols-6">
+        {/* Rolodex of tools: fits evenly on wide phones, scrolls on narrow ones. */}
+        <div className="flex overflow-x-auto custom-scrollbar">
           {TOOLS.map((tool) => {
             const Icon = ICONS[tool.id] ?? Trophy;
             const active = isActive(tool.href);
@@ -78,7 +83,7 @@ export default function SiteNav({ email }: { email: string | null }) {
                 key={tool.id}
                 href={tool.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex flex-col items-center justify-center gap-1 py-2.5 transition-colors ${
+                className={`relative flex-1 min-w-[64px] shrink-0 flex flex-col items-center justify-center gap-1 py-2.5 px-1 transition-colors ${
                   active ? "text-emerald-300" : "text-slate-500 active:text-slate-300"
                 }`}
               >
@@ -86,7 +91,7 @@ export default function SiteNav({ email }: { email: string | null }) {
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-emerald-400" />
                 )}
                 <Icon className="w-5 h-5" strokeWidth={active ? 2.4 : 2} />
-                <span className="text-[9px] font-bold uppercase tracking-wide">
+                <span className="text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">
                   {tool.navLabel.split(" ")[0]}
                 </span>
               </Link>

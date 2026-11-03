@@ -26,6 +26,17 @@ export interface StoredMatch {
   scoreline: string;
   result: string;
   innings: Innings[];
+  /** Set once the owner mints a public share link for this match. */
+  shareToken?: string;
+}
+
+export interface StoredSeries {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: string;
+  /** Ids of the owner's matches that make up the series. */
+  matchIds: string[];
 }
 
 export interface StoredState {
@@ -39,6 +50,7 @@ export interface Database {
   users: StoredUser[];
   xis: StoredXI[];
   matches: StoredMatch[];
+  series: StoredSeries[];
   states: StoredState[];
 }
 
@@ -58,10 +70,11 @@ async function load(): Promise<Database> {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       xis: Array.isArray(parsed.xis) ? parsed.xis : [],
       matches: Array.isArray(parsed.matches) ? parsed.matches : [],
+      series: Array.isArray(parsed.series) ? parsed.series : [],
       states: Array.isArray(parsed.states) ? parsed.states : [],
     };
   } catch {
-    return { users: [], xis: [], matches: [], states: [] };
+    return { users: [], xis: [], matches: [], series: [], states: [] };
   }
 }
 

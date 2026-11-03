@@ -2,39 +2,171 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+
+import TeamBadge from "@/components/team-badge";
 import Toast from "@/components/toast";
 import ToolHeader from "@/components/tool-header";
+import { BattingTable, BowlingTable } from "@/components/stat-tables";
+import { crores, PLAYERS, PLAYER_UPDATED, PLAYER_VERSION } from "@/data/player-db";
+import { TEAMS } from "@/data/teams";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
-import {
-  COUNTRIES,
-  COUNTRY_FLAGS,
-  PLAYERS,
-  ROLE_COLORS,
-  ROLE_LABELS,
-  type PlayerRole,
-} from "@/data/players";
+import { flagOf } from "@/lib/flags";
+import { battingStats, bowlingStats } from "@/lib/stats";
 import type { PublicMatch } from "@/lib/dto";
-import {
-  battingAverage,
-  battingStats,
-  bowlingAverage,
-  bowlingStats,
-  economy,
-  strikeRate,
-  type BattingStats,
-  type BowlingStats,
-} from "@/lib/stats";
+import type { Player, PlayerRole, PunditTag } from "@/types/player";
 
-const FAVOURITES_KEY = "crichub.favourites";
+const FAVOURITES_KEY = "pavilion.favourites.v1";
+
 type Tab = "squad" | "batting" | "bowling";
-type Sort = "rating" | "name" | "country";
+type Sort = "form" | "vfm" | "price" | "name";
+
+const ROLES: PlayerRole[] = ["Batter", "Bowler", "All-Rounder", "Wicket-Keeper"];
+
+const ROLE_STYLE: Record<PlayerRole, string> = {
+  Batter: "border-sky-500/40 bg-sky-500/10 text-sky-200",
+  Bowler: "border-rose-500/40 bg-rose-500/10 text-rose-200",
+  "All-Rounder": "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+  "Wicket-Keeper": "border-amber-500/40 bg-amber-500/10 text-amber-200",
+};
+
+const TAG_STYLE: Record<PunditTag, string> = {
+  Marquee: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+  Steal: "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+  Watchlist: "border-sky-500/40 bg-sky-500/10 text-sky-200",
+  Solid: "border-slate-500/40 bg-slate-500/10 text-slate-200",
+  Punt: "border-violet-500/40 bg-violet-500/10 text-violet-200",
+  Overpriced: "border-rose-500/40 bg-rose-500/10 text-rose-200",
+};
+
+const SORTS: { id: Sort; label: string }[] = [
+  { id: "form", label: "Form" },
+  { id: "vfm", label: "Value" },
+  { id: "price", label: "Price" },
+  { id: "name", label: "Name" },
+];
+
+function Meter({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+          {label}
+        </span>
+        <span className="text-xs font-mono font-bold text-slate-200">{value}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500"
+          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PlayerCard({
+  player,
+  favourite,
+  onToggle,
+}: {
+  player: Player;
+  favourite: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <article className="rounded-2xl bg-slate-900/90 border border-slate-800/60 p-4 hover:border-slate-700 transition-colors">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{flagOf(player.country)}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {player.country}
+            </span>
+          </div>
+          <Link
+            href={`/players/${player.id}`}
+            className="block font-bold truncate mt-0.5 hover:text-sky-200 transition-colors"
+          >
+            {player.name}
+          </Link>
+        </div>
+        <button
+          onClick={onToggle}
+          aria-label={
+            favourite
+              ? `Remove ${player.name} from favourites`
+              : `Add ${player.name} to favourites`
+          }
+          className={`w-7 h-7 shrink-0 rounded-lg text-sm transition-all ${
+            favourite
+              ? "text-amber-300 bg-amber-500/15"
+              : "text-slate-600 hover:text-amber-300 hover:bg-amber-500/10"
+          }`}
+        >
+          ★
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
+            ROLE_STYLE[player.role]
+          }`}
+        >
+          {player.role}
+        </span>
+        {player.team === "FREE AGENT" ? (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-300 font-bold uppercase tracking-wider">
+            {player.era === "legend" ? "Legend" : "Free agent"}
+          </span>
+        ) : (
+          <TeamBadge team={player.team} size={20} />
+        )}
+        {player.isUncapped && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-teal-500/40 bg-teal-500/10 text-teal-200 font-bold uppercase tracking-wider">
+            Uncapped
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2.5">
+        <Meter label="Form" value={player.form} />
+        <Meter label="Value" value={player.vfm} />
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-800/70 mt-3 pt-3">
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
+            TAG_STYLE[player.punditTag]
+          }`}
+        >
+          {player.punditTag}
+        </span>
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono font-black text-slate-100">
+            {crores(player.basePrice)}
+          </span>
+          <Link
+            href={`/players/${player.id}`}
+            aria-label={`View ${player.name}'s profile`}
+            className="text-xs font-bold text-slate-500 hover:text-sky-200 transition-colors"
+          >
+            Profile →
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function PlayersClient() {
   const [tab, setTab] = useState<Tab>("squad");
   const [query, setQuery] = useState("");
-  const [country, setCountry] = useState("ALL");
+  const [team, setTeam] = useState("ALL");
   const [role, setRole] = useState<PlayerRole | "ALL">("ALL");
-  const [sort, setSort] = useState<Sort>("rating");
+  const [sort, setSort] = useState<Sort>("form");
+  const [activeOnly, setActiveOnly] = useState(true);
+  const [uncappedOnly, setUncappedOnly] = useState(false);
   const [favourites, setFavourites] = useState<number[]>([]);
   const [onlyFavourites, setOnlyFavourites] = useState(false);
   const [matches, setMatches] = useState<PublicMatch[] | null>(null);
@@ -44,15 +176,14 @@ export default function PlayersClient() {
 
   useEffect(() => {
     const stored = readLocal(FAVOURITES_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as unknown;
-        if (Array.isArray(parsed)) {
-          setFavourites(parsed.filter((id): id is number => typeof id === "number"));
-        }
-      } catch {
-        /* ignore malformed favourites */
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as unknown;
+      if (Array.isArray(parsed)) {
+        setFavourites(parsed.filter((id): id is number => typeof id === "number"));
       }
+    } catch {
+      /* ignore malformed favourites */
     }
   }, []);
 
@@ -85,31 +216,33 @@ export default function PlayersClient() {
       writeLocal(FAVOURITES_KEY, JSON.stringify(next));
       return next;
     });
+    notify("Favourites updated");
   }
 
   const squad = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const filtered = PLAYERS.filter((player) => {
-      if (country !== "ALL" && player.country !== country) return false;
+    return PLAYERS.filter((player) => {
+      if (activeOnly && !player.isActive) return false;
+      if (team !== "ALL" && player.team !== team) return false;
       if (role !== "ALL" && player.role !== role) return false;
+      if (uncappedOnly && !player.isUncapped) return false;
       if (onlyFavourites && !favourites.includes(player.id)) return false;
       if (
         needle &&
         !player.name.toLowerCase().includes(needle) &&
-        !player.country.toLowerCase().includes(needle)
+        !player.country.toLowerCase().includes(needle) &&
+        !player.team.toLowerCase().includes(needle)
       ) {
         return false;
       }
       return true;
-    });
-    return filtered.sort((a, b) => {
+    }).sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "country") {
-        return a.country.localeCompare(b.country) || a.name.localeCompare(b.name);
-      }
-      return b.rating - a.rating || a.name.localeCompare(b.name);
+      if (sort === "price") return b.basePrice - a.basePrice;
+      if (sort === "vfm") return b.vfm - a.vfm || b.form - a.form;
+      return b.form - a.form || b.vfm - a.vfm;
     });
-  }, [query, country, role, sort, onlyFavourites, favourites]);
+  }, [query, team, role, sort, activeOnly, uncappedOnly, onlyFavourites, favourites]);
 
   const batting = useMemo(() => {
     if (!matches) return [];
@@ -127,7 +260,12 @@ export default function PlayersClient() {
     );
   }, [matches, query]);
 
-  const activeFilters = country !== "ALL" || role !== "ALL" || onlyFavourites;
+  const activeFilters =
+    team !== "ALL" ||
+    role !== "ALL" ||
+    uncappedOnly ||
+    onlyFavourites ||
+    !activeOnly;
 
   return (
     <div className="min-h-screen text-white relative overflow-hidden">
@@ -141,18 +279,20 @@ export default function PlayersClient() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <ToolHeader
           eyebrow="Player Stats"
-          title="Player Stats Hub"
-          blurb="Every player, every figure — filter the squad database or dig into the numbers from your own scored matches."
+          title="Stats Hub"
+          blurb={`Every player, every figure — filter the ${PLAYERS.length}-player database by franchise, role and price, or dig into the numbers from your own scored matches.`}
           gradient="from-sky-300 via-cyan-200 to-violet-300"
         />
 
         <div className="glass rounded-2xl p-4 sm:p-5 mb-5">
           <div className="flex flex-wrap gap-2 mb-4">
-            {([
-              ["squad", "Squad database"],
-              ["batting", "My batting"],
-              ["bowling", "My bowling"],
-            ] as const).map(([id, label]) => (
+            {(
+              [
+                ["squad", "Squad database"],
+                ["batting", "My batting"],
+                ["bowling", "My bowling"],
+              ] as const
+            ).map(([id, label]) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -171,15 +311,46 @@ export default function PlayersClient() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={
-              tab === "squad" ? "Search players or country…" : "Search a name…"
+              tab === "squad"
+                ? "Search a player, country or franchise…"
+                : "Search a name…"
             }
             className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
           />
 
           {tab === "squad" && (
             <>
+              <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2 mb-3">
+                <button
+                  onClick={() => setTeam("ALL")}
+                  className={`shrink-0 px-3 h-[38px] rounded-xl text-xs font-bold border transition-all ${
+                    team === "ALL"
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-200"
+                      : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  All 10 teams
+                </button>
+                {TEAMS.map((meta) => (
+                  <button
+                    key={meta.id}
+                    onClick={() => setTeam(meta.id)}
+                    aria-pressed={team === meta.id}
+                    aria-label={meta.name}
+                    className="shrink-0 rounded-xl transition-transform hover:scale-105"
+                  >
+                    <TeamBadge
+                      team={meta.id}
+                      size={38}
+                      active={team === meta.id}
+                      glyph={meta.logo}
+                    />
+                  </button>
+                ))}
+              </div>
+
               <div className="flex flex-wrap gap-1.5 mb-3">
-                {(["ALL", "BAT", "BOWL", "AR", "WK"] as const).map((item) => (
+                {(["ALL", ...ROLES] as const).map((item) => (
                   <button
                     key={item}
                     onClick={() => setRole(item)}
@@ -189,45 +360,47 @@ export default function PlayersClient() {
                         : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
-                    {item === "ALL" ? "All roles" : ROLE_LABELS[item]}
+                    {item === "ALL" ? "All roles" : item}
                   </button>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-1.5 mb-3 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex gap-1.5">
+                  {SORTS.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setSort(option.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        sort === option.id
+                          ? "bg-sky-500/20 border-sky-500/40 text-sky-200"
+                          : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  onClick={() => setCountry("ALL")}
+                  onClick={() => setActiveOnly((value) => !value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    country === "ALL"
+                    activeOnly
                       ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-200"
                       : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
                   }`}
                 >
-                  All
+                  Active only
                 </button>
-                {COUNTRIES.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setCountry(item)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                      country === item
-                        ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-200"
-                        : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {COUNTRY_FLAGS[item]} {item}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as Sort)}
-                  className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none cursor-pointer"
+                <button
+                  onClick={() => setUncappedOnly((value) => !value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    uncappedOnly
+                      ? "bg-teal-500/20 border-teal-500/40 text-teal-200"
+                      : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                  }`}
                 >
-                  <option value="rating">Sort: rating</option>
-                  <option value="name">Sort: name</option>
-                  <option value="country">Sort: country</option>
-                </select>
+                  Uncapped
+                </button>
                 <button
                   onClick={() => setOnlyFavourites((value) => !value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -241,9 +414,11 @@ export default function PlayersClient() {
                 {activeFilters && (
                   <button
                     onClick={() => {
-                      setCountry("ALL");
+                      setTeam("ALL");
                       setRole("ALL");
+                      setUncappedOnly(false);
                       setOnlyFavourites(false);
+                      setActiveOnly(true);
                     }}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all"
                   >
@@ -258,77 +433,20 @@ export default function PlayersClient() {
         {tab === "squad" && (
           <>
             <p className="text-xs text-slate-500 mb-3">
-              {squad.length} of {PLAYERS.length} players
+              {squad.length} of {PLAYERS.length} players · data v{PLAYER_VERSION}{" "}
+              updated {PLAYER_UPDATED}
             </p>
             {squad.length === 0 ? (
               <EmptyCard text="No players match those filters." />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {squad.map((player) => (
-                  <article
+                  <PlayerCard
                     key={player.id}
-                    className="rounded-2xl p-px transition-transform duration-200 hover:scale-[1.02]"
-                  >
-                    <div className="h-full bg-slate-900/90 rounded-[15px] p-4 border border-slate-800/60">
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{player.flag}</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                              {player.country}
-                            </span>
-                          </div>
-                          <h3 className="font-bold truncate mt-0.5">
-                            {player.name}
-                          </h3>
-                        </div>
-                        <button
-                          onClick={() => toggleFavourite(player.id)}
-                          aria-label={
-                            favourites.includes(player.id)
-                              ? `Remove ${player.name} from favourites`
-                              : `Add ${player.name} to favourites`
-                          }
-                          className={`w-7 h-7 shrink-0 rounded-lg text-sm transition-all ${
-                            favourites.includes(player.id)
-                              ? "text-amber-300 bg-amber-500/15"
-                              : "text-slate-600 hover:text-amber-300 hover:bg-amber-500/10"
-                          }`}
-                        >
-                          ★
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-3">
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${
-                            ROLE_COLORS[player.role]
-                          }`}
-                        >
-                          {ROLE_LABELS[player.role]}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono">
-                          {player.battingStyle}
-                          {player.bowlingStyle !== "-" && ` · ${player.bowlingStyle}`}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-slate-800/70 pt-3">
-                        <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                          Rating
-                        </span>
-                        <span className="font-mono font-black text-lg text-slate-100">
-                          {player.rating}
-                        </span>
-                      </div>
-                      <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500"
-                          style={{ width: `${player.rating}%` }}
-                        />
-                      </div>
-                    </div>
-                  </article>
+                    player={player}
+                    favourite={favourites.includes(player.id)}
+                    onToggle={() => toggleFavourite(player.id)}
+                  />
                 ))}
               </div>
             )}
@@ -337,9 +455,7 @@ export default function PlayersClient() {
 
         {tab !== "squad" && (
           <>
-            {matches === null && (
-              <EmptyCard text="Loading your match history…" />
-            )}
+            {matches === null && <EmptyCard text="Loading your match history…" />}
             {matches !== null && needsAccount && (
               <div className="glass rounded-2xl p-8 text-center">
                 <p className="text-slate-300 mb-3">
@@ -377,121 +493,6 @@ function EmptyCard({ text }: { text: string }) {
   return (
     <div className="glass rounded-2xl p-10 text-center text-slate-400 text-sm">
       {text}
-    </div>
-  );
-}
-
-function BattingTable({ rows }: { rows: BattingStats[] }) {
-  return (
-    <div className="glass rounded-2xl p-5 overflow-x-auto">
-      <table className="w-full text-sm min-w-[560px]">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
-            <th className="text-left font-semibold py-2 pr-2">Batter</th>
-            <th className="text-right font-semibold py-2 px-2">Inn</th>
-            <th className="text-right font-semibold py-2 px-2">Runs</th>
-            <th className="text-right font-semibold py-2 px-2">HS</th>
-            <th className="text-right font-semibold py-2 px-2">Avg</th>
-            <th className="text-right font-semibold py-2 px-2">SR</th>
-            <th className="text-right font-semibold py-2 px-2">4s</th>
-            <th className="text-right font-semibold py-2 pl-2">6s</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const average = battingAverage(row);
-            return (
-              <tr key={row.name} className="border-b border-slate-800/50">
-                <td className="py-2 pr-2 font-medium whitespace-nowrap">
-                  {row.name}
-                  {row.fifties > 0 && (
-                    <span className="ml-2 text-[10px] text-emerald-400">
-                      {row.hundreds > 0 && `${row.hundreds}×100 `}
-                      {row.fifties}×50
-                    </span>
-                  )}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-400">
-                  {row.innings}
-                </td>
-                <td className="py-2 px-2 text-right font-mono font-bold">
-                  {row.runs}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {row.highScore}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {average === null ? "—" : average.toFixed(1)}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {strikeRate(row).toFixed(0)}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-400">
-                  {row.fours}
-                </td>
-                <td className="py-2 pl-2 text-right font-mono text-slate-400">
-                  {row.sixes}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function BowlingTable({ rows }: { rows: BowlingStats[] }) {
-  return (
-    <div className="glass rounded-2xl p-5 overflow-x-auto">
-      <table className="w-full text-sm min-w-[560px]">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
-            <th className="text-left font-semibold py-2 pr-2">Bowler</th>
-            <th className="text-right font-semibold py-2 px-2">Inn</th>
-            <th className="text-right font-semibold py-2 px-2">Ov</th>
-            <th className="text-right font-semibold py-2 px-2">Runs</th>
-            <th className="text-right font-semibold py-2 px-2">Wkts</th>
-            <th className="text-right font-semibold py-2 px-2">Best</th>
-            <th className="text-right font-semibold py-2 px-2">Econ</th>
-            <th className="text-right font-semibold py-2 pl-2">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const average = bowlingAverage(row);
-            const overs = `${Math.floor(row.balls / 6)}.${row.balls % 6}`;
-            return (
-              <tr key={row.name} className="border-b border-slate-800/50">
-                <td className="py-2 pr-2 font-medium whitespace-nowrap">
-                  {row.name}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-400">
-                  {row.innings}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {overs}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-400">
-                  {row.runs}
-                </td>
-                <td className="py-2 px-2 text-right font-mono font-bold">
-                  {row.wickets}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {row.bestWickets}/{row.bestRuns}
-                </td>
-                <td className="py-2 px-2 text-right font-mono text-slate-300">
-                  {economy(row).toFixed(2)}
-                </td>
-                <td className="py-2 pl-2 text-right font-mono text-slate-300">
-                  {average === null ? "—" : average.toFixed(1)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }

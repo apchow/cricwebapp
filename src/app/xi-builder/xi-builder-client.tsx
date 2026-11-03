@@ -8,6 +8,7 @@ import {
   Check,
   Search,
   Share2,
+  Sparkles,
   Target,
   Trash2,
   Users,
@@ -17,6 +18,7 @@ import {
 import TeamBadge from "@/components/team-badge";
 import { crores, PLAYERS, playerById } from "@/data/player-db";
 import { TEAMS, isOverseas } from "@/data/teams";
+import { autoPickXI } from "@/lib/autopick";
 import { flagOf } from "@/lib/flags";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import type { IplTeam, Player, PlayerRole } from "@/types/player";
@@ -241,6 +243,31 @@ export default function XiBuilderClient() {
     setViceCaptainId(null);
     setSelectedPoolId(null);
     notify("Team cleared");
+  }
+
+  function autoPick() {
+    const result = autoPickXI(POOL);
+    if (result.players.length === 0) {
+      notify("No active players available");
+      return;
+    }
+
+    const next = emptySlots();
+    result.players.forEach((player, index) => {
+      next[index] = player.id;
+    });
+    setSlots(next);
+
+    const byForm = [...result.players].sort((a, b) => b.form - a.form);
+    setCaptainId(byForm[0]?.id ?? null);
+    setViceCaptainId(byForm[1]?.id ?? null);
+    setSelectedPoolId(null);
+
+    if (result.unmet.length) {
+      notify(result.unmet[0]);
+    } else {
+      notify(`Auto-picked ${result.players.length} players`);
+    }
   }
 
   /* ── drag & drop ── */
@@ -752,6 +779,15 @@ export default function XiBuilderClient() {
         </div>
 
         {/* Actions */}
+        <button
+          onClick={autoPick}
+          title="Pick a balanced XI — max 4 overseas, keeper and five bowling options"
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-black bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:scale-[1.01] active:scale-[0.99] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          Auto-pick best XI
+        </button>
+
         <div className="flex gap-2">
           <button
             onClick={shareXI}

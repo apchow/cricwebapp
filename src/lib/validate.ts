@@ -244,6 +244,17 @@ export function cleanXIPlayers(value: unknown): number[] | null {
   return ids.length ? ids : null;
 }
 
+/**
+ * A list of opaque string ids (series → matches). Returns `null` when the
+ * payload is not an array at all, and an empty array for a valid empty list.
+ */
+export function cleanStringIds(value: unknown, max = 200): string[] | null {
+  if (!Array.isArray(value) || value.length > max) return null;
+  return value
+    .map((item) => text(item, 64))
+    .filter((id): id is string => Boolean(id));
+}
+
 export interface CleanMatchEntry {
   format: string;
   venue: string;

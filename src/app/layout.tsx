@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SiteNav from "@/components/site-nav";
+import ServiceWorker from "@/components/service-worker";
 import { currentSession } from "@/lib/auth";
 
 const inter = Inter({
@@ -54,6 +55,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased min-h-screen">
         <SiteNav email={session?.email ?? null} />
         <main className="pt-14 pb-20 md:pb-0">{children}</main>
+        <ServiceWorker />
       </body>
     </html>
   );

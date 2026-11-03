@@ -60,6 +60,32 @@ export const TOOLS: Tool[] = [
     glow: "bg-emerald-500/20",
   },
   {
+    id: "history",
+    href: "/history",
+    emoji: "📒",
+    navLabel: "History",
+    title: "Match Centre",
+    subtitle: "History & Analytics",
+    description:
+      "Every match you have scored, with the full scorecard, the run worm and your career batting and bowling leaderboards.",
+    features: ["Full scorecards", "Run worm", "Career figures"],
+    cardGradient: "from-amber-500 to-orange-900",
+    glow: "bg-amber-500/20",
+  },
+  {
+    id: "series",
+    href: "/series",
+    emoji: "🏆",
+    navLabel: "Series",
+    title: "Series & Tournaments",
+    subtitle: "Points Table",
+    description:
+      "Pull your matches into a tournament and let the points table and net run rate sort the bragging rights out.",
+    features: ["Points table", "Net run rate", "Multi-match"],
+    cardGradient: "from-cyan-500 to-blue-900",
+    glow: "bg-cyan-500/20",
+  },
+  {
     id: "mini-game",
     href: "/mini-game",
     emoji: "⚡",
