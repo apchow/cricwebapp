@@ -46,12 +46,23 @@ export interface StoredState {
   updatedAt: string;
 }
 
+export interface StoredBanter {
+  id: string;
+  userId: string;
+  author: string;
+  text: string;
+  createdAt: string;
+  /** User ids who liked it, so counts are shared rather than per-browser. */
+  likes: string[];
+}
+
 export interface Database {
   users: StoredUser[];
   xis: StoredXI[];
   matches: StoredMatch[];
   series: StoredSeries[];
   states: StoredState[];
+  banter: StoredBanter[];
 }
 
 function dataDir() {
@@ -72,9 +83,10 @@ async function load(): Promise<Database> {
       matches: Array.isArray(parsed.matches) ? parsed.matches : [],
       series: Array.isArray(parsed.series) ? parsed.series : [],
       states: Array.isArray(parsed.states) ? parsed.states : [],
+      banter: Array.isArray(parsed.banter) ? parsed.banter : [],
     };
   } catch {
-    return { users: [], xis: [], matches: [], series: [], states: [] };
+    return { users: [], xis: [], matches: [], series: [], states: [], banter: [] };
   }
 }
 

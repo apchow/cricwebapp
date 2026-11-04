@@ -5,15 +5,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Flame, Heart, Lock, Send, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
 
 import ToolHeader from "@/components/tool-header";
-import { readLocal, writeLocal, useToast } from "@/lib/client";
+import { flaggedHit } from "@/lib/banter";
+import { useToast } from "@/lib/client";
 import { useArena, useArenaHydration } from "@/store/arena";
 
-const STORE_KEY = "pavilion.banter.v16";
+/** The wall is a rolling window, so the page refreshes itself periodically. */
+const REFRESH_MS = 30_000;
 const MAX_LEN = 220;
 const SILENCED_BADGE = "Paid to Cope";
-
-/** Words the umpire will not allow on the wall. */
-const FLAGGED = ["fixing", "scam", "abuse", "slur"];
 
 export interface Post {
   id: string;
@@ -24,93 +23,7 @@ export interface Post {
   createdAt: string;
   likes: number;
   liked: boolean;
-  silenced: boolean;
   own: boolean;
-}
-
-const now = Date.now();
-const minutes = (value: number) => new Date(now - value * 60_000).toISOString();
-
-const SEED: Post[] = [
-  {
-    id: "seed-1",
-    author: "Cover Drive Carl",
-    handle: "@covercarl",
-    gradient: "from-emerald-400 to-teal-600",
-    text: "Two uncapped, four capped. If you cannot name them without checking a spreadsheet you are not ready for retention night.",
-    createdAt: minutes(14),
-    likes: 42,
-    liked: false,
-    silenced: false,
-    own: false,
-  },
-  {
-    id: "seed-2",
-    author: "Long On Larry",
-    handle: "@longonlarry",
-    gradient: "from-orange-400 to-red-600",
-    text: "Called it in March. Called it in April. Called it again tonight. I am never wrong, I am just early.",
-    createdAt: minutes(52),
-    likes: 18,
-    liked: false,
-    silenced: false,
-    own: false,
-  },
-  {
-    id: "seed-3",
-    author: "Deep Midwicket",
-    handle: "@deepmid",
-    gradient: "from-sky-400 to-indigo-600",
-    text: "That was never a six. The rope is two feet in. Do the maths.",
-    createdAt: minutes(96),
-    likes: 7,
-    liked: false,
-    silenced: false,
-    own: false,
-  },
-  {
-    id: "seed-4",
-    author: "Silly Point Sam",
-    handle: "@sillysam",
-    gradient: "from-amber-400 to-orange-600",
-    text: "I HAVE BEEN SAYING THIS FOR NINE YEARS AND NOBODY LISTENS TO ME EVER",
-    createdAt: minutes(140),
-    likes: 3,
-    liked: false,
-    silenced: true,
-    own: false,
-  },
-  {
-    id: "seed-5",
-    author: "Googly Gang",
-    handle: "@googlygang",
-    gradient: "from-fuchsia-400 to-purple-600",
-    text: "Spinner on a turning deck, keeper up, one slip. Some of you have never captained a gully match and it shows.",
-    createdAt: minutes(210),
-    likes: 61,
-    liked: false,
-    silenced: false,
-    own: false,
-  },
-  {
-    id: "seed-6",
-    author: "Third Man Ted",
-    handle: "@thirdmanted",
-    gradient: "from-cyan-400 to-blue-600",
-    text: "Retention is just a polite way of saying you are scared of the auction.",
-    createdAt: minutes(320),
-    likes: 27,
-    liked: false,
-    silenced: false,
-    own: false,
-  },
-];
-
-function makeId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `p_${Math.random().toString(36).slice(2, 11)}`;
 }
 
 function initials(name: string): string {
@@ -133,24 +46,6 @@ function timeAgo(iso: string): string {
   return `${days}d`;
 }
 
-function load(): Post[] {
-  const raw = readLocal(STORE_KEY);
-  if (!raw) return SEED;
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return SEED;
-    const clean = parsed.filter(
-      (item): item is Post =>
-        !!item &&
-        typeof item === "object" &&
-        typeof (item as Post).id === "string" &&
-        typeof (item as Post).text === "string"
-    );
-    return [...clean, ...SEED.filter((seed) => !clean.some((post) => post.id === seed.id))];
-  } catch {
-    return SEED;
-  }
-}
 
 export function PaidToCopeBadge({ className = "" }: { className?: string }) {
   return (
@@ -172,20 +67,37 @@ export default function BanterWall() {
   const setSilenced = useArena((state) => state.setSilenced);
   const { message, notify } = useToast();
 
-  const [posts, setPosts] = useState<Post[]>(SEED);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [draft, setDraft] = useState("");
   const [sort, setSort] = useState<"new" | "top">("new");
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    setPosts(load());
-    setReady(true);
+    let cancelled = false;
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/banter", { cache: "no-store" });
+        if (!response.ok) throw new Error(String(response.status));
+        const data = (await response.json()) as { posts: Post[] };
+        if (cancelled) return;
+        setPosts(data.posts);
+        setFailed(false);
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    }
+
+    refresh();
+    const timer = setInterval(refresh, REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    writeLocal(STORE_KEY, JSON.stringify(posts));
-  }, [posts, ready]);
 
   const ordered = useMemo(() => {
     const list = [...posts];
@@ -198,22 +110,48 @@ export default function BanterWall() {
   const silenced = user?.silenced ?? false;
   const remaining = MAX_LEN - draft.length;
 
-  function toggleLike(id: string) {
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === id
-          ? { ...post, liked: !post.liked, likes: post.likes + (post.liked ? -1 : 1) }
-          : post
-      )
-    );
+  async function toggleLike(id: string) {
+    if (!user) {
+      openAuth();
+      return;
+    }
+    try {
+      const response = await fetch("/api/banter/react", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string; posts?: Post[] }
+        | null;
+      if (!response.ok || !data?.posts) {
+        notify(data?.error ?? "Could not reach the wall");
+        return;
+      }
+      setPosts(data.posts);
+    } catch {
+      notify("Could not reach the wall");
+    }
   }
 
-  function remove(id: string) {
-    setPosts((prev) => prev.filter((post) => post.id !== id));
-    notify("Post removed");
+  async function remove(id: string) {
+    try {
+      const response = await fetch(`/api/banter/${id}`, { method: "DELETE" });
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string; posts?: Post[] }
+        | null;
+      if (!response.ok || !data?.posts) {
+        notify(data?.error ?? "Could not remove that take");
+        return;
+      }
+      setPosts(data.posts);
+      notify("Post removed");
+    } catch {
+      notify("Could not reach the wall");
+    }
   }
 
-  function post() {
+  async function post() {
     if (!user) {
       openAuth();
       return;
@@ -223,27 +161,33 @@ export default function BanterWall() {
       notify("Say something first");
       return;
     }
-    const hit = FLAGGED.find((word) => text.toLowerCase().includes(word));
+    const hit = flaggedHit(text);
     if (hit) {
       setSilenced(true);
       notify("Silenced — that one crossed the line");
       return;
     }
-    const entry: Post = {
-      id: makeId(),
-      author: user.name,
-      handle: user.handle,
-      gradient: user.gradient,
-      text,
-      createdAt: new Date().toISOString(),
-      likes: 0,
-      liked: false,
-      silenced: false,
-      own: true,
-    };
-    setPosts((prev) => [entry, ...prev]);
     setDraft("");
-    notify("Posted to the wall");
+    try {
+      const response = await fetch("/api/banter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string; posts?: Post[] }
+        | null;
+      if (!response.ok || !data?.posts) {
+        setDraft(text);
+        notify(data?.error ?? "Could not reach the wall");
+        return;
+      }
+      setPosts(data.posts);
+      notify("Posted to the wall");
+    } catch {
+      setDraft(text);
+      notify("Could not reach the wall");
+    }
   }
 
   return (
@@ -352,9 +296,27 @@ export default function BanterWall() {
               </button>
             ))}
             <span className="ml-auto text-xs text-slate-500">
-              {posts.length} {posts.length === 1 ? "post" : "posts"}
+              latest {posts.length} {posts.length === 1 ? "take" : "takes"}
             </span>
           </div>
+
+          {failed && (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
+              The wall is unreachable right now — showing the last posts it sent.
+            </p>
+          )}
+
+          {ready && !failed && ordered.length === 0 && (
+            <div className="glass rounded-2xl p-8 text-center">
+              <div className="text-3xl mb-2">🏟️</div>
+              <p className="text-sm text-slate-300 font-semibold">
+                Empty arena
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Nobody has said anything yet. Be the first take on the wall.
+              </p>
+            </div>
+          )}
 
           <AnimatePresence initial={false}>
             {ordered.map((entry) => (
@@ -365,9 +327,7 @@ export default function BanterWall() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ type: "spring", stiffness: 340, damping: 30 }}
-                className={`glass rounded-2xl p-5 ${
-                  entry.silenced ? "opacity-70" : ""
-                }`}
+                className="glass rounded-2xl p-5"
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -384,18 +344,13 @@ export default function BanterWall() {
                           you
                         </span>
                       )}
-                      {entry.silenced && <PaidToCopeBadge />}
                       <span className="text-xs text-slate-600 ml-auto">
                         {/* Wall-clock text is only rendered after mount so the
                             server and client trees always agree. */}
                         {ready ? timeAgo(entry.createdAt) : null}
                       </span>
                     </div>
-                    <p
-                      className={`mt-2 text-sm leading-relaxed ${
-                        entry.silenced ? "text-slate-500 line-through" : "text-slate-200"
-                      }`}
-                    >
+                    <p className="mt-2 text-sm leading-relaxed text-slate-200">
                       {entry.text}
                     </p>
                     <div className="mt-3 flex items-center gap-3">

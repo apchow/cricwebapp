@@ -18,7 +18,7 @@ wall. No database service, no third-party auth, no telemetry —
 | `/series` | Points table and net run rate across your completed matches. |
 | `/history` | Match centre: every scored match with analytics. |
 | `/dashboard` | Streaks, aggregates and your saved XIs. |
-| `/banter` | A comment wall. **Per-browser today:** posts live in `localStorage`, and signing in unlocks posting and reactions. There is no shared server wall yet — see *Known gaps*. |
+| `/banter` | A shared comment wall, hosted on the server. Reading is public; posting needs an account. Only the **latest 10 takes** are kept — older ones roll off. |
 
 ## The live series
 
@@ -66,10 +66,17 @@ One `currentMatches` call per refresh carries in-play and finished international
 
 Email + password, `scrypt`-hashed with a per-user salt — plaintext passwords are
 never stored. Sessions are an HMAC-SHA256-signed httpOnly cookie
-(`crichub_session`, 30 days, SameSite=Lax). `/scorer` and the data APIs require a
-session and answer 401 without one; the XI builder's saved-XIs panel is the same.
-Login and registration are rate-limited per IP. Records live in
+(`crichub_session`, 30 days, SameSite=Lax). `/scorer`, the data APIs and posting
+to the wall require a session and answer 401 without one; the XI builder's
+saved-XIs panel is the same. Login and registration are rate-limited per IP.
+Records live in
 `data/crichub.json`, which is git-ignored.
+
+The browser asks the server who you are on every page (`/api/auth/me`) — the
+sign-in state is not a localStorage guess, so a valid cookie survives a reload,
+a new tab and another device. The sign-in dialog offers real account sign-in
+plus a clearly-labelled demo option; there are no Google/GitHub buttons, because
+this app has no OAuth and pretending otherwise was a lie in the interface.
 
 Set `CRICHUB_SECRET` (16+ characters) to fix the signing key. Without it the app
 writes `data/.session-secret` on first boot, which keeps sessions valid across
@@ -86,7 +93,26 @@ GET    /api/xis             POST /api/xis { name, players[] }      DELETE /api/x
 GET    /api/matches         POST /api/matches                      DELETE /api/matches/{id}
 GET|PUT|DELETE /api/match-state        # the in-progress match, so a refresh resumes it
 GET    /api/live                      # normalised live + recent internationals
+GET    /api/banter                    POST /api/banter { text }
+POST   /api/banter/react { id }       DELETE /api/banter/{id}
 ```
+
+### Limits that exist for public traffic
+
+Security headers (`nosniff`, `DENY`, `strict-origin-when-cross-origin`,
+Permissions-Policy and a CSP) are set in `next.config.mjs`; `robots.txt` and
+`sitemap.xml` are generated. Fixed-window rate limits, per client IP, in-process:
+
+| Endpoint | Limit |
+| --- | --- |
+| `/api/auth/login` | 10 per 5 min |
+| `/api/auth/register` | 5 per 30 min |
+| `/api/auth/demo` | 10 per hour |
+| `/api/banter` POST | 8 per 5 min |
+
+A restart clears these counters — they slow abuse down, they do not stop a
+determined attacker. Note that `/api/auth/demo` hands out **one shared account**:
+whatever a demo visitor saves is visible to the next visitor who taps demo.
 
 Every payload is validated server-side (`src/lib/validate.ts`): strings
 length-capped, numbers range-checked, enums whitelisted, arrays capped. Anything
@@ -134,11 +160,10 @@ it grants no access to user data.
 
 ## Known gaps before you call it finished
 
-- **Banter is not shared.** Each visitor sees only their own posts because the
-  wall reads `localStorage`. Making it a real arena conversation needs a
-  `/api/banter` collection in the store plus moderation (rate limits, reporting,
-  a delete path) — shipping an unmoderated public comment wall is a liability,
-  not a feature.
+- **Moderation is thin.** The wall blocks a short list of flagged words server-
+  side, caps posting per IP, and lets an author delete their own take — but
+  there is no report button, no admin takedown and no per-user history. For a
+  public comment wall that is the weakest part of this app.
 - **Retention and stats-hub data are IPL-shaped.** Squad lists and franchise
   fields come from `ipl-squads.json`; international series selection reads the
   same player rows by name, so a squad member missing from the database shows
@@ -148,7 +173,7 @@ it grants no access to user data.
 
 ```bash
 npx tsc --noEmit
-npm test          # 74 tests: scoring engine, stats, series, insights, auto-pick, live feed
+npm test          # 82 tests: scoring engine, stats, series, insights, auto-pick, live feed, wall
 npm run build
 ```
 
