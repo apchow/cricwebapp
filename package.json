@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/scoring.test.ts test/stats.test.ts test/insights.test.ts test/series.test.ts test/autopick.test.ts"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/scoring.test.ts test/stats.test.ts test/insights.test.ts test/series.test.ts test/autopick.test.ts test/live.test.ts"
   },
   "dependencies": {
     "framer-motion": "^14.9.0",

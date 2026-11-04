@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LiveBoard from "@/components/live-board";
 import { TOOLS } from "@/data/tools";
 
 export default function HomePage() {
@@ -29,6 +30,8 @@ export default function HomePage() {
             Retain your six. Build the XI. Score the game. Smash the sixes.
           </p>
         </header>
+
+        <LiveBoard />
 
         {/* Tool Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

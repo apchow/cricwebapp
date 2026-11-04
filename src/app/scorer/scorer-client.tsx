@@ -178,16 +178,22 @@ export default function ScorerClient() {
 
   useEffect(() => {
     if (!match || loading || view === "done") return;
-    const timer = setTimeout(() => {
-      fetch("/api/match-state", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ match, config }),
+    let cancelled = false;
+    // Save on every delivery: a lost ball is worse than an extra request.
+    fetch("/api/match-state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ match, config }),
+    })
+      .then((response) => {
+        if (!cancelled) setOffline(!response.ok);
       })
-        .then((response) => setOffline(!response.ok))
-        .catch(() => setOffline(true));
-    }, 600);
-    return () => clearTimeout(timer);
+      .catch(() => {
+        if (!cancelled) setOffline(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [match, config, loading, view]);
 
   useEffect(() => {
