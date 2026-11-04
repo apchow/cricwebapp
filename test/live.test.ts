@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { normaliseCricApi, splitFeed } from "../src/lib/live.ts";
+import { normaliseCricApi, splitFeed, shouldFetchUpstream, UPSTREAM_MIN_INTERVAL_MS, DEFAULT_DAILY_BUDGET } from "../src/lib/live.ts";
 
 function inMinutes(minutes: number): string {
   return new Date(Date.now() + minutes * 60_000).toISOString();
@@ -126,4 +126,51 @@ test("splitFeed drops finished matches from the upcoming list", () => {
   const { live, upcoming } = splitFeed(matches);
   assert.equal(live.length, 0);
   assert.equal(upcoming.length, 0);
+});
+
+test("shouldFetchUpstream serves cached polls instead of spending quota", () => {
+  const now = Date.parse("2026-11-04T10:00:00Z");
+  assert.deepEqual(
+    shouldFetchUpstream({
+      now,
+      lastFetchedAt: now - 60_000,
+      usedToday: 3,
+      budget: DEFAULT_DAILY_BUDGET,
+    }),
+    { fetch: false, reason: "fresh" }
+  );
+  assert.deepEqual(
+    shouldFetchUpstream({
+      now,
+      lastFetchedAt: now - UPSTREAM_MIN_INTERVAL_MS,
+      usedToday: 3,
+      budget: DEFAULT_DAILY_BUDGET,
+    }),
+    { fetch: true }
+  );
+  assert.deepEqual(
+    shouldFetchUpstream({ now, lastFetchedAt: null, usedToday: 3, budget: DEFAULT_DAILY_BUDGET }),
+    { fetch: true }
+  );
+});
+
+test("shouldFetchUpstream stops when the daily budget is spent", () => {
+  const now = Date.parse("2026-11-04T10:00:00Z");
+  assert.deepEqual(
+    shouldFetchUpstream({
+      now,
+      lastFetchedAt: now - UPSTREAM_MIN_INTERVAL_MS * 2,
+      usedToday: 450,
+      budget: 450,
+    }),
+    { fetch: false, reason: "budget" }
+  );
+});
+
+test("the refresh interval keeps a 24/7 server inside a free tier", () => {
+  const callsPerDay = Math.floor((24 * 60 * 60 * 1000) / UPSTREAM_MIN_INTERVAL_MS);
+  assert.ok(
+    callsPerDay <= DEFAULT_DAILY_BUDGET,
+    `${callsPerDay} upstream calls/day exceeds the ${DEFAULT_DAILY_BUDGET} budget`
+  );
 });

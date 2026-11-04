@@ -5,6 +5,12 @@ import type { LiveFeed, LiveMatch } from "@/lib/live";
 
 const REFRESH_MS = 60_000;
 
+function countdown(iso: string): string {
+  const seconds = Math.max(0, Math.round((Date.parse(iso) - Date.now()) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.round(seconds / 60)}m`;
+}
+
 function startsIn(startsAt: string | null): string {
   if (!startsAt) return "TBC";
   const minutes = Math.round((Date.parse(startsAt) - Date.now()) / 60000);
@@ -100,11 +106,14 @@ export default function LiveBoard() {
           {failed
             ? "feed unreachable"
             : feed && feed.enabled
-            ? `updated ${new Date(feed.fetchedAt).toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}`
-            : "auto-refresh 60s"}
+            ? `${feed.cached ? "cached" : "live fetch"} · ${feed.usedToday}/${
+                feed.budget
+              } today${
+                feed.nextRefreshAt
+                  ? ` · next ${countdown(feed.nextRefreshAt)}`
+                  : ""
+              }`
+            : "add a key to switch on"}
         </span>
       </div>
 
