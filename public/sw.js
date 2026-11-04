@@ -1,8 +1,9 @@
-/* Pavilion XI offline shell — cache the app routes so scoring survives a
+/* Pundit Arena offline shell — cache the app routes so scoring survives a
  * dropped connection. API calls are never cached: they always hit the network
- * (and fail fast when offline). Bump CACHE when the shell changes. */
+ * (and fail fast when offline). Bump CACHE when the shell changes; activate
+ * drops every older cache, so a rename is also a clean rotation on deploy. */
 
-const CACHE = "pavilion-xi-v1";
+const CACHE = "pundit-arena-v1";
 const SHELL = ["/", "/scorer", "/xi-builder", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {

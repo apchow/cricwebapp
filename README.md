@@ -80,7 +80,10 @@ this app has no OAuth and pretending otherwise was a lie in the interface.
 
 Set `CRICHUB_SECRET` (16+ characters) to fix the signing key. Without it the app
 writes `data/.session-secret` on first boot, which keeps sessions valid across
-restarts on one machine.
+restarts on one machine. On a read-only filesystem — any serverless host — that
+write fails, so the app falls back to a per-instance key: sign-in still works,
+but a cold start signs everyone out. `/api/health` reports which case you are in
+as `secret: "env" | "file" | "written" | "ephemeral"`, and warns on the last one.
 
 ### API
 
@@ -137,7 +140,8 @@ npm run build
 npm start                 # or: PORT=4000 npm start
 ```
 
-Requires Node 18.17+.
+Requires Node 20.9+ — that is Next 16's floor, and `engines` in `package.json`
+is also what Vercel reads to choose the runtime.
 
 | Variable | Purpose |
 | --- | --- |
@@ -172,12 +176,23 @@ as one JSON value.
    ```
 4. Project Settings → Environment Variables: `CRICHUB_SECRET` (a real random
    value), `NEXT_PUBLIC_APP_URL`, and `CRICAPI_KEY` if you want live scores.
-5. Deploy, then check `GET /api/health` — it answers `{"ok":true,"driver":"postgres"}`
-   only when the database is reachable.
+5. Deploy, then check `GET /api/health`. A healthy deploy answers
+   `{"ok":true,"driver":"postgres","secret":"env"}`. Anything else is a
+   deployment defect, and the body says which:
+   - `ok:false` with *"File storage cannot persist on a serverless host"* —
+     `DATABASE_URL` is missing, so accounts and matches would be lost.
+   - a `warnings` entry about the session secret — `CRICHUB_SECRET` is unset or
+     under 16 characters, so every cold start signs users out.
+
+   The probe **writes**, it does not just read: on a read-only filesystem reads
+   succeed while saves fail, so a read-only check would call a broken deploy
+   healthy.
 
 Without a database, a Vercel deploy will *appear* to work and then lose every
 account, saved XI and scored match, because the filesystem is read-only and
-ephemeral. `/api/health` reports that as `driver: "file"`.
+ephemeral. `/api/health` catches that: it answers `503` with
+`driver: "file"` and the `DATABASE_URL` message, rather than reporting a
+healthy-looking read.
 
 Before traffic: set `CRICHUB_SECRET` to something other than the locally
 generated value, keep `data/` out of version control (already ignored), and

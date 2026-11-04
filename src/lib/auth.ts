@@ -27,25 +27,57 @@ function decode(value: string): string {
 
 let secretPromise: Promise<string> | null = null;
 
+/** Where the signing key came from — surfaced by /api/health. */
+export type SecretSource = "env" | "file" | "written" | "ephemeral" | "unset";
+let secretSource: SecretSource = "unset";
+
+export function sessionSecretSource(): SecretSource {
+  return secretSource;
+}
+
 async function loadSecret(): Promise<string> {
   const fromEnv = process.env.CRICHUB_SECRET;
-  if (fromEnv && fromEnv.length >= 16) return fromEnv;
+  if (fromEnv && fromEnv.length >= 16) {
+    secretSource = "env";
+    return fromEnv;
+  }
 
   const file = path.join(process.cwd(), "data", ".session-secret");
   try {
     const existing = (await fs.readFile(file, "utf8")).trim();
-    if (existing.length >= 32) return existing;
+    if (existing.length >= 32) {
+      secretSource = "file";
+      return existing;
+    }
   } catch {
-    await fs.mkdir(path.dirname(file), { recursive: true });
+    /* first boot, or a host whose filesystem cannot be written */
   }
+
   const generated = randomBytes(32).toString("hex");
-  await fs.writeFile(file, generated, { mode: 0o600 });
+  try {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, generated, { mode: 0o600 });
+    secretSource = "written";
+  } catch {
+    /*
+     * Read-only filesystem, which is every serverless host. Signing still
+     * works from memory, but a cold start invalidates every session — so this
+     * is a deploy defect, reported by /api/health rather than hidden.
+     */
+    secretSource = "ephemeral";
+  }
   return generated;
 }
 
 async function secret(): Promise<string> {
   if (!secretPromise) secretPromise = loadSecret();
   return secretPromise;
+}
+
+/** Resolves the key if needed, then reports where it came from. */
+export async function sessionSecretState(): Promise<SecretSource> {
+  await secret();
+  return secretSource;
 }
 
 async function sign(data: string): Promise<string> {

@@ -34,6 +34,9 @@ const nextConfig = {
     // shipped to the browser bundle.
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
+  // The Postgres driver opens sockets and reads its own package files; let it
+  // stay external instead of being bundled into the serverless function.
+  serverExternalPackages: ["postgres"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
