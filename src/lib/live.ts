@@ -25,7 +25,6 @@ export interface LiveFeed {
   enabled: boolean;
   error: string | null;
   live: LiveMatch[];
-  upcoming: LiveMatch[];
   recent: LiveMatch[];
   fetchedAt: string;
   /** True when served from the shared cache instead of the provider. */
@@ -38,9 +37,9 @@ export interface LiveFeed {
 }
 
 /**
- * One `currentMatches` call carries in-play, scheduled and recently finished
- * matches. Every browser poll is answered from this process's cache, so the
- * provider is called at most once per interval however many tabs are open.
+ * One `currentMatches` call carries in-play and finished matches. Every browser
+ * poll is answered from this process's cache, so the provider is called at most
+ * once per interval however many tabs are open.
  */
 export const UPSTREAM_MIN_INTERVAL_MS = 4 * 60_000;
 export const DEFAULT_DAILY_BUDGET = 450;
@@ -165,25 +164,18 @@ export function normaliseCricApi(payload: unknown): LiveMatch[] {
     .filter((match): match is LiveMatch => match !== null);
 }
 
-/** In play now, scheduled next, and the most recent results. */
+/** What is in play now, and the most recent international results. */
 export function splitFeed(matches: LiveMatch[]) {
   const time = (match: LiveMatch, fallback: number) =>
     match.startsAt ? Date.parse(match.startsAt) : fallback;
 
   const live = matches.filter((match) => match.live);
-  const upcoming = matches
-    .filter((match) => !match.started && !match.finished)
-    .sort(
-      (a, b) =>
-        time(a, Number.MAX_SAFE_INTEGER) - time(b, Number.MAX_SAFE_INTEGER)
-    )
-    .slice(0, 8);
   const recent = matches
-    .filter((match) => match.finished)
+    .filter((match) => match.finished && match.international)
     .sort((a, b) => time(b, 0) - time(a, 0))
     .slice(0, 6);
 
-  return { live, upcoming, recent };
+  return { live, recent };
 }
 
 export function dailyBudget(): number {
@@ -250,7 +242,6 @@ let inflight: Promise<LiveFeed> | null = null;
 
 function assemble(
   live: LiveMatch[],
-  upcoming: LiveMatch[],
   recent: LiveMatch[],
   now: number,
   usedToday: number,
@@ -262,7 +253,6 @@ function assemble(
     enabled: true,
     error,
     live,
-    upcoming,
     recent,
     fetchedAt: new Date(now).toISOString(),
     cached: extra.cached ?? false,
@@ -280,7 +270,6 @@ function disabledFeed(now: number): LiveFeed {
     enabled: false,
     error: null,
     live: [],
-    upcoming: [],
     recent: [],
     fetchedAt: new Date(now).toISOString(),
     cached: false,
@@ -323,7 +312,7 @@ async function build(key: string, now: number): Promise<LiveFeed> {
         usedToday,
       };
     }
-    return assemble([], [], [], now, usedToday, {
+    return assemble([], [], now, usedToday, {
       error:
         decision.reason === "budget"
           ? `Daily live-feed budget of ${budget} requests is used up — it resets tomorrow.`
@@ -340,7 +329,7 @@ async function build(key: string, now: number): Promise<LiveFeed> {
 
     // Failures are cached like successes, so a dead key cannot burn the quota.
     if (!response.ok) {
-      const feed = assemble([], [], [], now, usedToday + 1, {
+      const feed = assemble([], [], now, usedToday + 1, {
         error: `Live provider returned ${response.status}`,
       });
       cache = { feed, fetchedAt: now };
@@ -352,7 +341,7 @@ async function build(key: string, now: number): Promise<LiveFeed> {
     // only way to tell "bad key" apart from "nothing is playing".
     const status = str(payload.status);
     if (status && status !== "success" && status !== "true") {
-      const feed = assemble([], [], [], now, usedToday + 1, {
+      const feed = assemble([], [], now, usedToday + 1, {
         error: `Live provider rejected the key (${str(payload.reason) || status})`,
       });
       cache = { feed, fetchedAt: now };
@@ -360,17 +349,11 @@ async function build(key: string, now: number): Promise<LiveFeed> {
     }
 
     const split = splitFeed(normaliseCricApi(payload));
-    const feed = assemble(
-      split.live,
-      split.upcoming,
-      split.recent,
-      now,
-      usedToday + 1
-    );
+    const feed = assemble(split.live, split.recent, now, usedToday + 1);
     cache = { feed, fetchedAt: now };
     return feed;
   } catch {
-    const feed = assemble([], [], [], now, usedToday + 1, {
+    const feed = assemble([], [], now, usedToday + 1, {
       error: "Live provider unreachable",
     });
     cache = { feed, fetchedAt: now };

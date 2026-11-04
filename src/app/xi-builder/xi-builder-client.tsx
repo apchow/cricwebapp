@@ -18,12 +18,20 @@ import {
 import TeamBadge from "@/components/team-badge";
 import { crores, PLAYERS, playerById } from "@/data/player-db";
 import { TEAMS, isOverseas } from "@/data/teams";
+import {
+  ODI_RULES,
+  SERIES,
+  otherSide,
+  seriesById,
+  sideName,
+  type CountryCode,
+} from "@/data/fixtures";
 import { autoPickXI } from "@/lib/autopick";
 import { flagOf } from "@/lib/flags";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import type { IplTeam, Player, PlayerRole } from "@/types/player";
 
-/* ─── Constants ─────────────────────────────────────────── */
+/* ─── Constants ────────────────────────────────────────── */
 
 const STORE_KEY = "pavilion.xi.v16";
 const MAX_XI = 11;
@@ -80,11 +88,32 @@ export default function XiBuilderClient() {
   const [slots, setSlots] = useState<SlotId[]>(emptySlots);
   const [captainId, setCaptainId] = useState<number | null>(null);
   const [viceCaptainId, setViceCaptainId] = useState<number | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [readyKey, setReadyKey] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState<IplTeam | "ALL">("ALL");
   const [role, setRole] = useState<PlayerRole | "ALL">("ALL");
+
+  /* Series context: the board is laid out for an India vs New Zealand ODI. */
+  const [mode, setMode] = useState<"series" | "franchise">("series");
+  const [seriesId, setSeriesId] = useState<string>(SERIES[0].id);
+  const [fixtureNo, setFixtureNo] = useState<number>(1);
+  const [side, setSide] = useState<CountryCode>(SERIES[0].teamA);
+  const series = seriesById(seriesId);
+  const opponent = otherSide(series, side);
+  const fixture = series.fixtures.find((item) => item.no === fixtureNo) ?? series.fixtures[0];
+  const storageKey = `${STORE_KEY}:${mode}:${seriesId}:${fixtureNo}:${side}`;
+  const squadSize = useMemo(
+    () => POOL.filter((player) => player.country === side).length,
+    [side]
+  );
+  const opponentSquad = useMemo(
+    () =>
+      POOL.filter((player) => player.country === opponent).sort(
+        (a, b) => b.form - a.form
+      ),
+    [opponent]
+  );
 
   const [selectedPoolId, setSelectedPoolId] = useState<number | null>(null);
   const [dragPlayerId, setDragPlayerId] = useState<number | null>(null);
@@ -94,10 +123,14 @@ export default function XiBuilderClient() {
 
   const { message, notify } = useToast();
 
-  /* ── persistence ── */
+  /* ── persistence, one saved XI per fixture and side ── */
 
   useEffect(() => {
-    const stored = readLocal(STORE_KEY);
+    let next: SlotId[] = emptySlots();
+    let nextCaptain: number | null = null;
+    let nextVice: number | null = null;
+
+    const stored = readLocal(storageKey);
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as {
@@ -106,27 +139,29 @@ export default function XiBuilderClient() {
           viceCaptainId?: number | null;
         };
         if (Array.isArray(parsed.slots) && parsed.slots.length === MAX_XI) {
-          setSlots(
-            parsed.slots.map((id) =>
-              typeof id === "number" && playerById(id) ? id : null
-            )
+          next = parsed.slots.map((id) =>
+            typeof id === "number" && playerById(id) ? id : null
           );
         }
-        if (typeof parsed.captainId === "number") setCaptainId(parsed.captainId);
-        if (typeof parsed.viceCaptainId === "number") {
-          setViceCaptainId(parsed.viceCaptainId);
-        }
+        if (typeof parsed.captainId === "number") nextCaptain = parsed.captainId;
+        if (typeof parsed.viceCaptainId === "number") nextVice = parsed.viceCaptainId;
       } catch {
         /* ignore a corrupt saved XI */
       }
     }
-    setHydrated(true);
-  }, []);
+
+    setSlots(next);
+    setCaptainId(nextCaptain);
+    setViceCaptainId(nextVice);
+    // Writing is blocked until this render's board belongs to this key, so a
+    // fixture switch cannot save the previous XI into the new fixture.
+    setReadyKey(storageKey);
+  }, [storageKey]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    writeLocal(STORE_KEY, JSON.stringify({ slots, captainId, viceCaptainId }));
-  }, [hydrated, slots, captainId, viceCaptainId]);
+    if (readyKey !== storageKey) return;
+    writeLocal(storageKey, JSON.stringify({ slots, captainId, viceCaptainId }));
+  }, [readyKey, storageKey, slots, captainId, viceCaptainId]);
 
   /* ── derived squad ── */
 
@@ -154,12 +189,15 @@ export default function XiBuilderClient() {
   ).length;
   const bowlingOptions = bowlCount + arCount;
 
-  const overseasBlocked = overseasCount >= 4;
+  const overseasBlocked = mode === "franchise" && overseasCount >= 4;
+  const bowlingTooDeep =
+    mode === "series" && bowlingOptions > ODI_RULES.maxBowlingOptions;
   const ready =
     selectedCount === MAX_XI &&
-    overseasCount <= 4 &&
-    wkCount >= 1 &&
-    bowlingOptions >= 5;
+    (mode === "series" || overseasCount <= 4) &&
+    wkCount >= ODI_RULES.minKeeper &&
+    bowlingOptions >= ODI_RULES.minBowlingOptions &&
+    !bowlingTooDeep;
 
   const captain = captainId !== null ? playerById(captainId) ?? null : null;
   const viceCaptain =
@@ -167,19 +205,37 @@ export default function XiBuilderClient() {
 
   const unmet: string[] = [];
   if (selectedCount < MAX_XI) unmet.push("Pick 11 players");
-  if (overseasCount > 4) unmet.push("Overseas limit exceeded — max 4");
-  if (wkCount < 1) unmet.push("Need at least 1 Wicket-Keeper");
-  if (bowlingOptions < 5) unmet.push("Need at least 5 bowling options");
+  if (mode === "franchise" && overseasCount > 4) {
+    unmet.push("Overseas limit exceeded — max 4");
+  }
+  if (wkCount < ODI_RULES.minKeeper) {
+    unmet.push("Need at least 1 Wicket-Keeper");
+  }
+  if (bowlingOptions < ODI_RULES.minBowlingOptions) {
+    unmet.push("Need at least 5 bowling options");
+  }
+  if (bowlingTooDeep) {
+    unmet.push(`More than ${ODI_RULES.maxBowlingOptions} bowling options for an ODI`);
+  }
+  if (mode === "series" && selectedCount > squadSize) {
+    unmet.push(
+      `${sideName(series, side)} have only ${squadSize} players in the database`
+    );
+  }
 
   const pool = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return POOL.filter((player) => {
-      if (team !== "ALL" && player.team !== team) return false;
+      if (mode === "series") {
+        if (player.country !== side) return false;
+      } else if (team !== "ALL" && player.team !== team) {
+        return false;
+      }
       if (role !== "ALL" && player.role !== role) return false;
       if (needle && !player.name.toLowerCase().includes(needle)) return false;
       return true;
     }).sort((a, b) => b.form - a.form || b.basePrice - a.basePrice);
-  }, [team, role, query]);
+  }, [mode, side, team, role, query]);
 
   /* ── helpers ── */
 
@@ -246,7 +302,9 @@ export default function XiBuilderClient() {
   }
 
   function autoPick() {
-    const result = autoPickXI(POOL);
+    const source =
+      mode === "series" ? POOL.filter((player) => player.country === side) : POOL;
+    const result = autoPickXI(source);
     if (result.players.length === 0) {
       notify("No active players available");
       return;
@@ -389,6 +447,89 @@ export default function XiBuilderClient() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      {/* ─── Fixture bar ─── */}
+      <div className="lg:col-span-2 glass rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
+              {mode === "series" ? "International selection" : "Franchise selection"}
+            </div>
+            <div className="text-lg font-black leading-tight">
+              {sideName(series, side)}{" "}
+              <span className="text-slate-500 text-sm font-bold">vs</span>{" "}
+              {sideName(series, opponent)}
+              <span className="ml-2 text-xs font-bold text-emerald-300/80">
+                {series.format}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {series.fixtures.map((item) => (
+              <button
+                key={item.no}
+                onClick={() => setFixtureNo(item.no)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  mode === "series" && item.no === fixtureNo
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-200"
+                    : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                {item.date}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            {([series.teamA, series.teamB] as CountryCode[]).map((code) => (
+              <button
+                key={code}
+                onClick={() => setSide(code)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  code === side
+                    ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-200"
+                    : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                {flagOf(code)} {sideName(series, code)}
+              </button>
+            ))}
+            <button
+              onClick={() => setMode(mode === "series" ? "franchise" : "series")}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white transition-all"
+            >
+              {mode === "series" ? "Franchise rules" : "Series rules"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+          <span>
+            {fixture.venue} · {fixture.city}
+          </span>
+          <span className="text-slate-700">|</span>
+          {mode === "series" ? (
+            <>
+              <span>
+                Pool locked to {sideName(series, side)} ·{" "}
+                <span className={squadSize >= MAX_XI ? "text-emerald-300" : "text-amber-300"}>
+                  {squadSize} in the database
+                </span>
+              </span>
+              <span className="text-slate-700">|</span>
+              <span>
+                Opponent squad on file: {opponentSquad.length}
+                {opponentSquad.length < MAX_XI
+                  ? " — not enough to name a full XI"
+                  : ""}
+              </span>
+            </>
+          ) : (
+            <span>Overseas cap 4 · purse-aware auto-pick · any franchise pool</span>
+          )}
+        </div>
+      </div>
+
       {/* ─── Pitch ─── */}
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -587,13 +728,24 @@ export default function XiBuilderClient() {
           </div>
 
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-400">Overseas</span>
+            <span className="text-slate-400">
+              {mode === "series" ? "Bowling options" : "Overseas"}
+            </span>
             <span
               className={`font-mono font-bold ${
-                overseasCount > 4 ? "text-red-300" : "text-slate-200"
+                mode === "series"
+                  ? bowlingOptions < ODI_RULES.minBowlingOptions ||
+                    bowlingOptions > ODI_RULES.maxBowlingOptions
+                    ? "text-amber-300"
+                    : "text-slate-200"
+                  : overseasCount > 4
+                  ? "text-red-300"
+                  : "text-slate-200"
               }`}
             >
-              Overseas {overseasCount}/4
+              {mode === "series"
+                ? `${bowlingOptions}/${ODI_RULES.minBowlingOptions}–${ODI_RULES.maxBowlingOptions}`
+                : `Overseas ${overseasCount}/4`}
             </span>
           </div>
 
@@ -651,36 +803,38 @@ export default function XiBuilderClient() {
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-            <button
-              onClick={() => setTeam("ALL")}
-              className={`shrink-0 rounded-xl px-3 py-2 border text-[11px] font-bold transition-all ${
-                team === "ALL"
-                  ? "border-slate-400/60 bg-white/10 text-white"
-                  : "border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white"
-              }`}
-            >
-              All
-            </button>
-            {TEAMS.map((meta) => {
-              const selected = team === meta.id;
-              return (
-                <button
-                  key={meta.id}
-                  onClick={() => setTeam(meta.id)}
-                  aria-pressed={selected}
-                  title={meta.name}
-                  className={`shrink-0 grid place-items-center rounded-xl p-1.5 border transition-all ${
-                    selected
-                      ? `${meta.ring} bg-white/10`
-                      : "border-slate-800 bg-slate-900/60 hover:bg-slate-900"
-                  }`}
-                >
-                  <TeamBadge team={meta.id} size={28} active={selected} />
-                </button>
-              );
-            })}
-          </div>
+          {mode === "franchise" && (
+            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+              <button
+                onClick={() => setTeam("ALL")}
+                className={`shrink-0 rounded-xl px-3 py-2 border text-[11px] font-bold transition-all ${
+                  team === "ALL"
+                    ? "border-slate-400/60 bg-white/10 text-white"
+                    : "border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white"
+                }`}
+              >
+                All
+              </button>
+              {TEAMS.map((meta) => {
+                const selected = team === meta.id;
+                return (
+                  <button
+                    key={meta.id}
+                    onClick={() => setTeam(meta.id)}
+                    aria-pressed={selected}
+                    title={meta.name}
+                    className={`shrink-0 grid place-items-center rounded-xl p-1.5 border transition-all ${
+                      selected
+                        ? `${meta.ring} bg-white/10`
+                        : "border-slate-800 bg-slate-900/60 hover:bg-slate-900"
+                    }`}
+                  >
+                    <TeamBadge team={meta.id} size={28} active={selected} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-1.5 mt-2">
             <button
@@ -781,7 +935,11 @@ export default function XiBuilderClient() {
         {/* Actions */}
         <button
           onClick={autoPick}
-          title="Pick a balanced XI — max 4 overseas, keeper and five bowling options"
+          title={
+            mode === "series"
+              ? `Pick a balanced ${sideName(series, side)} ODI XI — keeper and 5–7 bowling options`
+              : "Pick a balanced XI — max 4 overseas, keeper and five bowling options"
+          }
           className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-black bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:scale-[1.01] active:scale-[0.99] transition-all"
         >
           <Sparkles className="w-4 h-4" />

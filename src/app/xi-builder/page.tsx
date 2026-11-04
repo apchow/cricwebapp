@@ -4,7 +4,7 @@ import ToolHeader from "@/components/tool-header";
 export const metadata = {
   title: "XI Builder — Pavilion XI",
   description:
-    "Architect your dream eleven on a top-down pitch. Drag and drop, respect the four-overseas cap, and name a captain and vice-captain.",
+    "Name your eleven for the India vs New Zealand ODI series on a top-down pitch, or switch to franchise rules with the four-overseas cap and purse-aware auto-pick.",
 };
 
 // The builder ships the whole player drawer and drag-and-drop wiring, so it is
@@ -35,7 +35,7 @@ export default function XiBuilderPage() {
         <ToolHeader
           eyebrow="Selection Room"
           title="XI Builder"
-          blurb="Architect your dream eleven on the pitch. Four overseas, one captain, one vice-captain — no exceptions."
+          blurb="Pick your eleven for an India vs New Zealand ODI, one captain, one vice-captain. Franchise mode keeps the four-overseas cap."
           gradient="from-emerald-200 via-white to-indigo-200"
         />
         <XiBuilderClient />

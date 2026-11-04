@@ -61,6 +61,24 @@ const UPCOMING = {
   matchEnded: false,
 };
 
+const FINISHED_TEST = {
+  id: "intl-1",
+  name: "India vs New Zealand, 2nd Test",
+  matchType: "Test",
+  status: "India won by 8 wkts",
+  venue: "Kolkata",
+  date: "2026-11-02",
+  dateTimeGMT: "2026-11-02T04:00:00Z",
+  teams: ["India", "New Zealand"],
+  teamInfo: [
+    { name: "India", shortname: "IND" },
+    { name: "New Zealand", shortname: "NZ" },
+  ],
+  score: [],
+  matchStarted: true,
+  matchEnded: true,
+};
+
 test("innings are matched to their side by name, not by position", () => {
   const [match] = normaliseCricApi({ status: "success", data: [FINISHED] });
   assert.equal(match.teams[0].name, "Lumbini Lions");
@@ -111,27 +129,32 @@ test("a match with no teamInfo falls back to the teams array", () => {
   assert.equal(match.teams[0].score, undefined);
 });
 
-test("splitFeed buckets in-play, scheduled and finished matches", () => {
-  const matches = normaliseCricApi({ data: [LIVE, UPCOMING, FINISHED] });
-  const { live, upcoming, recent } = splitFeed(matches);
+test("splitFeed keeps in-play matches and international results only", () => {
+  const matches = normaliseCricApi({ data: [LIVE, UPCOMING, FINISHED, FINISHED_TEST] });
+  const { live, recent } = splitFeed(matches);
   assert.deepEqual(live.map((m) => m.id), ["live-1"]);
-  assert.deepEqual(upcoming.map((m) => m.id), ["up-1"]);
-  assert.deepEqual(recent.map((m) => m.id), [FINISHED.id]);
+  assert.deepEqual(
+    recent.map((m) => m.id),
+    ["intl-1"],
+    "domestic league results are not internationals"
+  );
 });
 
-test("splitFeed orders upcoming soonest first and caps the list", () => {
-  const rows = Array.from({ length: 12 }, (_, index) => ({
+test("recent results are newest first and capped at six", () => {
+  const rows = Array.from({ length: 10 }, (_, index) => ({
     id: `t${index}`,
     name: `Series ${index}`,
-    matchType: "t20",
+    matchType: "ODI",
     teams: ["A", "B"],
-    dateTimeGMT: new Date(Date.UTC(2026, 10, 20, 4) + index * 3_600_000).toISOString(),
-    matchStarted: false,
-    matchEnded: false,
+    dateTimeGMT: new Date(
+      Date.UTC(2026, 10, 20, 4) + index * 3_600_000
+    ).toISOString(),
+    matchStarted: true,
+    matchEnded: true,
   }));
-  const { upcoming } = splitFeed(normaliseCricApi({ data: rows }));
-  assert.equal(upcoming.length, 8);
-  assert.equal(upcoming[0].id, "t0");
+  const { recent } = splitFeed(normaliseCricApi({ data: rows }));
+  assert.equal(recent.length, 6);
+  assert.equal(recent[0].id, "t9");
 });
 
 test("shouldFetchUpstream serves cached polls instead of spending quota", () => {

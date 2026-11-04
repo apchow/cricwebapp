@@ -11,32 +11,16 @@ function countdown(iso: string): string {
   return `${Math.round(seconds / 60)}m`;
 }
 
-function startsIn(startsAt: string | null): string {
-  if (!startsAt) return "TBC";
-  const minutes = Math.round((Date.parse(startsAt) - Date.now()) / 60000);
-  if (minutes <= 0) return "starting";
-  if (minutes < 60) return `in ${minutes} min`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `in ${hours}h`;
-  return new Date(startsAt).toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
-
 function MatchRow({
   match,
   tone,
 }: {
   match: LiveMatch;
-  tone: "live" | "upcoming" | "recent";
+  tone: "live" | "recent";
 }) {
   const badge =
     tone === "live"
       ? "border-red-500/40 bg-red-500/15 text-red-300"
-      : tone === "upcoming"
-      ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-200"
       : "border-slate-700/70 bg-slate-800/60 text-slate-400";
 
   return (
@@ -52,11 +36,7 @@ function MatchRow({
         <span
           className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge}`}
         >
-          {tone === "live"
-            ? "live"
-            : tone === "upcoming"
-            ? startsIn(match.startsAt)
-            : "result"}
+          {tone === "live" ? "live" : "result"}
         </span>
       </div>
 
@@ -107,8 +87,7 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
     };
   }, [load]);
 
-  const empty =
-    !feed || (!feed.live.length && !feed.upcoming.length && !feed.recent.length);
+  const empty = !feed || (!feed.live.length && !feed.recent.length);
 
   return (
     <section className="mb-16">
@@ -166,7 +145,7 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="glass rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -179,7 +158,7 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
             </div>
             {feed?.live.length ? (
               <ul className="space-y-2">
-                {feed.live.slice(0, 3).map((match) => (
+                {feed.live.slice(0, 4).map((match) => (
                   <MatchRow key={match.id} match={match} tone="live" />
                 ))}
               </ul>
@@ -190,32 +169,9 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
 
           <div className="glass rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-              <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-300">
-                Upcoming
-              </h3>
-              <span className="ml-auto text-[11px] text-slate-500 font-mono">
-                {feed?.upcoming.length ?? 0}
-              </span>
-            </div>
-            {feed?.upcoming.length ? (
-              <ul className="space-y-2">
-                {feed.upcoming.slice(0, 3).map((match) => (
-                  <MatchRow key={match.id} match={match} tone="upcoming" />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-slate-500">
-                No fixtures in the provider window.
-              </p>
-            )}
-          </div>
-
-          <div className="glass rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Recently concluded
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                International results
               </h3>
               <span className="ml-auto text-[11px] text-slate-500 font-mono">
                 {feed?.recent.length ?? 0}
@@ -223,12 +179,14 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
             </div>
             {feed?.recent.length ? (
               <ul className="space-y-2">
-                {feed.recent.slice(0, 3).map((match) => (
+                {feed.recent.slice(0, 4).map((match) => (
                   <MatchRow key={match.id} match={match} tone="recent" />
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-slate-500">No results yet.</p>
+              <p className="text-xs text-slate-500">
+                No completed international in the provider window.
+              </p>
             )}
           </div>
         </div>
