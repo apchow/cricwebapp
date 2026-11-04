@@ -26,6 +26,7 @@ export interface LiveFeed {
   error: string | null;
   live: LiveMatch[];
   upcoming: LiveMatch[];
+  recent: LiveMatch[];
   fetchedAt: string;
   /** True when served from the shared cache instead of the provider. */
   cached: boolean;
@@ -37,14 +38,15 @@ export interface LiveFeed {
 }
 
 /**
- * One `currentMatches` call carries both live and upcoming fixtures, and every
- * browser poll is served from this process's cache, so the provider is called
- * at most once per interval no matter how many tabs are open.
+ * One `currentMatches` call carries in-play, scheduled and recently finished
+ * matches. Every browser poll is answered from this process's cache, so the
+ * provider is called at most once per interval however many tabs are open.
  */
 export const UPSTREAM_MIN_INTERVAL_MS = 4 * 60_000;
 export const DEFAULT_DAILY_BUDGET = 450;
 
-const INTERNATIONAL_TYPES = ["Test", "ODI", "T20I", "T20", "Women ODI", "Women T20I"];
+/** `matchType` is lowercase for domestic leagues, mixed case for international. */
+const INTERNATIONAL_TYPES = ["t20i", "odi", "test", "test match", "women odi", "women t20i"];
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -54,99 +56,134 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function first(value: unknown): string {
+/** CricAPI sends `status` as a sentence; older payloads use an array. */
+function statusText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
   return str(asArray(value)[0]);
 }
 
+function shortName(name: string, given: string): string {
+  if (given) return given;
+  const words = name.split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  return words[0].slice(0, 3).toUpperCase();
+}
+
 /**
- * CricAPI's `current_matches` payload is loose: `status` and `score` are arrays
- * per innings, `teamInfo` may be missing on older series, and `startTimeUtc` can
- * be an empty string. Everything degrades to an empty string rather than
- * throwing, because a bad payload should show an empty board, not a 500.
+ * `score` rows look like `{ r: 97, w: 9, o: "20", inning: "Pokhara Avengers
+ * Inning 1" }` and are listed in batting order, which is *not* the order of
+ * `teams` — so each innings is matched to its side by name, otherwise a score
+ * is printed next to the wrong team.
+ */
+function inningsByTeam(score: unknown, names: string[]): Map<number, string> {
+  const byTeam = new Map<number, string>();
+  for (const entry of asArray(score)) {
+    const row = entry as Record<string, unknown>;
+    if (row.r === undefined) continue;
+    const inning = str(row.inning).toLowerCase();
+    let position = names.findIndex(
+      (name) => name !== "" && inning.includes(name.toLowerCase())
+    );
+    if (position === -1) position = byTeam.size;
+    if (position >= names.length) continue;
+
+    const overs = str(row.o);
+    const wickets = typeof row.w === "number" ? `/${row.w}` : "";
+    const line = `${row.r}${wickets}${overs ? ` (${overs})` : ""}`;
+    byTeam.set(
+      position,
+      byTeam.has(position) ? `${byTeam.get(position)} · ${line}` : line
+    );
+  }
+  return byTeam;
+}
+
+/**
+ * The payload is loose: `teamInfo[].shortname` can be null, `startTimeUtc` is
+ * often absent, and `status` changes shape between endpoints. Everything
+ * degrades to an empty string rather than throwing, because a bad payload
+ * should show an empty board, not a 500.
  */
 export function normaliseCricApi(payload: unknown): LiveMatch[] {
   const rows = asArray(
-    (payload as { data?: unknown })?.data ?? (payload as { matches?: unknown })?.matches
+    (payload as { data?: unknown })?.data ??
+      (payload as { matches?: unknown })?.matches
   );
 
   return rows
-    .map((raw, index): LiveMatch | null => {
+    .map((raw): LiveMatch | null => {
       const item = raw as Record<string, unknown>;
       if (!item || typeof item !== "object") return null;
 
       const id = str(item.id ?? item.matchId);
       if (!id) return null;
 
-      const info = asArray(item.teamInfo).map((entry) => {
-        const team = entry as Record<string, unknown>;
-        return {
-          name: str(team.name) || str(team.teamName),
-          short: str(team.shortname) || str(team.shortName),
-        };
-      });
-      const names = asArray(item.teams).map((name) => str(name)).filter(Boolean);
-      const scores = asArray(item.score).map((entry) => {
-        const innings = entry as Record<string, unknown>;
-        const runs = innings.runs;
-        const wickets = innings.wickets;
-        const overs = innings.overs;
-        if (runs === undefined) return "";
-        return `${str(innings.team) || names[0] || ""} ${runs}${
-          wickets !== undefined ? `/${wickets}` : ""
-        }${overs !== undefined ? ` (${overs})` : ""}`.trim();
-      });
+      const info = asArray(item.teamInfo) as Record<string, unknown>[];
+      const fromInfo = info
+        .map((team) => str(team.name) || str(team.teamName))
+        .filter(Boolean);
+      const names = fromInfo.length
+        ? fromInfo
+        : asArray(item.teams)
+            .map((name) => str(name))
+            .filter(Boolean);
 
-      const teams: LiveTeam[] = (
-        info.length ? info : names.map((name) => ({ name, short: "" }))
-      )
-        .slice(0, 2)
-        .map((team, position) => ({
-          ...team,
-          score: scores[position] || undefined,
-        }));
+      const scores = inningsByTeam(item.score, names);
+      const teams: LiveTeam[] = names.slice(0, 2).map((name, position) => ({
+        name,
+        short: shortName(name, str(info[position]?.shortname)),
+        score: scores.get(position),
+      }));
 
       const started = item.matchStarted === true;
       const finished = item.matchEnded === true;
-      const startRaw = str(item.startTimeUtc ?? item.startDateUtc);
+      const startRaw = str(
+        item.startTimeUtc ?? item.dateTimeGMT ?? item.startDateUtc
+      );
       const startsAt =
         startRaw && !Number.isNaN(Date.parse(startRaw))
           ? new Date(startRaw).toISOString()
           : null;
 
-      const matchType = str(item.type) || str(item.format);
+      const matchType = str(item.matchType) || str(item.type);
 
       return {
         id,
-        title: str(item.name) || `${teams[0]?.short ?? "?"} vs ${teams[1]?.short ?? "?"}`,
+        title:
+          str(item.name) || `${teams[0]?.short ?? "?"} vs ${teams[1]?.short ?? "?"}`,
         matchType,
         venue: str(item.venue),
         teams,
-        status: first(item.status) || first(item.statusText),
+        status: statusText(item.status) || statusText(item.statusText),
         live: started && !finished,
         started,
         finished,
         startsAt,
-        international: INTERNATIONAL_TYPES.includes(matchType),
+        international: INTERNATIONAL_TYPES.includes(matchType.toLowerCase()),
       };
     })
     .filter((match): match is LiveMatch => match !== null);
 }
 
-/** Live right now, and internationals still to start, soonest first. */
-export function splitFeed(matches: LiveMatch[], now = Date.now()) {
+/** In play now, scheduled next, and the most recent results. */
+export function splitFeed(matches: LiveMatch[]) {
+  const time = (match: LiveMatch, fallback: number) =>
+    match.startsAt ? Date.parse(match.startsAt) : fallback;
+
   const live = matches.filter((match) => match.live);
   const upcoming = matches
-    .filter(
-      (match) =>
-        match.international &&
-        !match.started &&
-        !match.finished &&
-        match.startsAt !== null &&
-        Date.parse(match.startsAt) > now
+    .filter((match) => !match.started && !match.finished)
+    .sort(
+      (a, b) =>
+        time(a, Number.MAX_SAFE_INTEGER) - time(b, Number.MAX_SAFE_INTEGER)
     )
-    .sort((a, b) => Date.parse(a.startsAt!) - Date.parse(b.startsAt!));
+    .slice(0, 8);
+  const recent = matches
+    .filter((match) => match.finished)
+    .sort((a, b) => time(b, 0) - time(a, 0))
+    .slice(0, 6);
 
-  return { live, upcoming: upcoming.slice(0, 8) };
+  return { live, upcoming, recent };
 }
 
 export function dailyBudget(): number {
@@ -212,23 +249,25 @@ let cache: { feed: LiveFeed; fetchedAt: number } | null = null;
 let inflight: Promise<LiveFeed> | null = null;
 
 function assemble(
-  key: string,
   live: LiveMatch[],
   upcoming: LiveMatch[],
+  recent: LiveMatch[],
   now: number,
   usedToday: number,
   extra: { error?: string | null; cached?: boolean } = {}
 ): LiveFeed {
   const budget = dailyBudget();
+  const error = extra.error ?? null;
   return {
     enabled: true,
-    error: extra.error ?? null,
+    error,
     live,
     upcoming,
+    recent,
     fetchedAt: new Date(now).toISOString(),
     cached: extra.cached ?? false,
     nextRefreshAt:
-      extra.error || usedToday >= budget
+      error || usedToday >= budget
         ? null
         : new Date(now + UPSTREAM_MIN_INTERVAL_MS).toISOString(),
     usedToday,
@@ -236,24 +275,26 @@ function assemble(
   };
 }
 
+function disabledFeed(now: number): LiveFeed {
+  return {
+    enabled: false,
+    error: null,
+    live: [],
+    upcoming: [],
+    recent: [],
+    fetchedAt: new Date(now).toISOString(),
+    cached: false,
+    nextRefreshAt: null,
+    usedToday: 0,
+    budget: dailyBudget(),
+  };
+}
+
 /** Server-only: the key never reaches the browser. */
 export async function fetchLiveFeed(): Promise<LiveFeed> {
   const key = str(process.env.CRICAPI_KEY);
   const now = Date.now();
-
-  if (!key) {
-    return {
-      enabled: false,
-      error: null,
-      live: [],
-      upcoming: [],
-      fetchedAt: new Date(now).toISOString(),
-      cached: false,
-      nextRefreshAt: null,
-      usedToday: 0,
-      budget: dailyBudget(),
-    };
-  }
+  if (!key) return disabledFeed(now);
 
   // Collapse concurrent polls into a single upstream call.
   if (inflight) return inflight;
@@ -280,13 +321,9 @@ async function build(key: string, now: number): Promise<LiveFeed> {
         cached: true,
         fetchedAt: new Date(cache.fetchedAt).toISOString(),
         usedToday,
-        nextRefreshAt:
-          usedToday >= budget || cache.feed.error
-            ? null
-            : new Date(cache.fetchedAt + UPSTREAM_MIN_INTERVAL_MS).toISOString(),
       };
     }
-    return assemble(key, [], [], now, usedToday, {
+    return assemble([], [], [], now, usedToday, {
       error:
         decision.reason === "budget"
           ? `Daily live-feed budget of ${budget} requests is used up — it resets tomorrow.`
@@ -301,9 +338,9 @@ async function build(key: string, now: number): Promise<LiveFeed> {
     const response = await fetch(url, { cache: "no-store" });
     await writeUsage(now, usedToday + 1);
 
+    // Failures are cached like successes, so a dead key cannot burn the quota.
     if (!response.ok) {
-      // Failures are cached too, so a dead key cannot spend the whole quota.
-      const feed = assemble(key, [], [], now, usedToday + 1, {
+      const feed = assemble([], [], [], now, usedToday + 1, {
         error: `Live provider returned ${response.status}`,
       });
       cache = { feed, fetchedAt: now };
@@ -315,19 +352,25 @@ async function build(key: string, now: number): Promise<LiveFeed> {
     // only way to tell "bad key" apart from "nothing is playing".
     const status = str(payload.status);
     if (status && status !== "success" && status !== "true") {
-      const feed = assemble(key, [], [], now, usedToday + 1, {
+      const feed = assemble([], [], [], now, usedToday + 1, {
         error: `Live provider rejected the key (${str(payload.reason) || status})`,
       });
       cache = { feed, fetchedAt: now };
       return feed;
     }
 
-    const { live, upcoming } = splitFeed(normaliseCricApi(payload), now);
-    const feed = assemble(key, live, upcoming, now, usedToday + 1);
+    const split = splitFeed(normaliseCricApi(payload));
+    const feed = assemble(
+      split.live,
+      split.upcoming,
+      split.recent,
+      now,
+      usedToday + 1
+    );
     cache = { feed, fetchedAt: now };
     return feed;
   } catch {
-    const feed = assemble(key, [], [], now, usedToday + 1, {
+    const feed = assemble([], [], [], now, usedToday + 1, {
       error: "Live provider unreachable",
     });
     cache = { feed, fetchedAt: now };

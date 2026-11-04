@@ -25,25 +25,38 @@ function startsIn(startsAt: string | null): string {
   });
 }
 
-function MatchRow({ match, tone }: { match: LiveMatch; tone: "live" | "upcoming" }) {
+function MatchRow({
+  match,
+  tone,
+}: {
+  match: LiveMatch;
+  tone: "live" | "upcoming" | "recent";
+}) {
+  const badge =
+    tone === "live"
+      ? "border-red-500/40 bg-red-500/15 text-red-300"
+      : tone === "upcoming"
+      ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-200"
+      : "border-slate-700/70 bg-slate-800/60 text-slate-400";
+
   return (
     <li className="rounded-xl border border-slate-800/70 bg-slate-900/50 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold truncate">{match.title}</div>
           <div className="text-[11px] text-slate-500 truncate">
-            {match.matchType}
+            {match.matchType.toUpperCase()}
             {match.venue ? ` · ${match.venue}` : ""}
           </div>
         </div>
         <span
-          className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-            tone === "live"
-              ? "border-red-500/40 bg-red-500/15 text-red-300"
-              : "border-indigo-500/40 bg-indigo-500/15 text-indigo-200"
-          }`}
+          className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge}`}
         >
-          {tone === "live" ? "live" : startsIn(match.startsAt)}
+          {tone === "live"
+            ? "live"
+            : tone === "upcoming"
+            ? startsIn(match.startsAt)
+            : "result"}
         </span>
       </div>
 
@@ -67,8 +80,8 @@ function MatchRow({ match, tone }: { match: LiveMatch; tone: "live" | "upcoming"
   );
 }
 
-export default function LiveBoard() {
-  const [feed, setFeed] = useState<LiveFeed | null>(null);
+export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
+  const [feed, setFeed] = useState<LiveFeed | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -94,7 +107,8 @@ export default function LiveBoard() {
     };
   }, [load]);
 
-  const empty = !feed || (!feed.live.length && !feed.upcoming.length);
+  const empty =
+    !feed || (!feed.live.length && !feed.upcoming.length && !feed.recent.length);
 
   return (
     <section className="mb-16">
@@ -152,7 +166,7 @@ export default function LiveBoard() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="glass rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -165,7 +179,7 @@ export default function LiveBoard() {
             </div>
             {feed?.live.length ? (
               <ul className="space-y-2">
-                {feed.live.slice(0, 4).map((match) => (
+                {feed.live.slice(0, 3).map((match) => (
                   <MatchRow key={match.id} match={match} tone="live" />
                 ))}
               </ul>
@@ -178,7 +192,7 @@ export default function LiveBoard() {
             <div className="flex items-center gap-2 mb-3">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
               <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-300">
-                Upcoming internationals
+                Upcoming
               </h3>
               <span className="ml-auto text-[11px] text-slate-500 font-mono">
                 {feed?.upcoming.length ?? 0}
@@ -186,12 +200,35 @@ export default function LiveBoard() {
             </div>
             {feed?.upcoming.length ? (
               <ul className="space-y-2">
-                {feed.upcoming.slice(0, 4).map((match) => (
+                {feed.upcoming.slice(0, 3).map((match) => (
                   <MatchRow key={match.id} match={match} tone="upcoming" />
                 ))}
               </ul>
             ) : (
-              <p className="text-xs text-slate-500">No fixtures in the current window.</p>
+              <p className="text-xs text-slate-500">
+                No fixtures in the provider window.
+              </p>
+            )}
+          </div>
+
+          <div className="glass rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Recently concluded
+              </h3>
+              <span className="ml-auto text-[11px] text-slate-500 font-mono">
+                {feed?.recent.length ?? 0}
+              </span>
+            </div>
+            {feed?.recent.length ? (
+              <ul className="space-y-2">
+                {feed.recent.slice(0, 3).map((match) => (
+                  <MatchRow key={match.id} match={match} tone="recent" />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-slate-500">No results yet.</p>
             )}
           </div>
         </div>

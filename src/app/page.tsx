@@ -1,8 +1,11 @@
 import Link from "next/link";
 import LiveBoard from "@/components/live-board";
 import { TOOLS } from "@/data/tools";
+import { fetchLiveFeed } from "@/lib/live";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const live = await fetchLiveFeed();
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background orbs */}
@@ -31,7 +34,7 @@ export default function HomePage() {
           </p>
         </header>
 
-        <LiveBoard />
+        <LiveBoard initial={live} />
 
         {/* Tool Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
