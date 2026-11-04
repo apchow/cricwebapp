@@ -53,7 +53,7 @@ export const TOOLS: Tool[] = [
     href: "/xi-builder",
     emoji: "👥",
     navLabel: "XI Builder",
-    title: "Pavilion XI",
+    title: "XI Builder",
     subtitle: "Squad Architect",
     description:
       "Drag your eleven onto the pitch, hand out the captaincy, and keep an eye on the overseas cap while you build.",

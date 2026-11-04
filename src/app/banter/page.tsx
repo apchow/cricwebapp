@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BanterWall from "./banter-client";
 
 export const metadata: Metadata = {
-  title: "Banter Wall — Pavilion XI",
+  title: "Banter Wall — Pundit Arena",
   description:
     "Hot takes, cold takes and everything in between. Post your reaction and see what the rest of the arena has to say.",
 };

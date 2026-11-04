@@ -1,7 +1,7 @@
 import SeriesClient from "./series-client";
 
 export const metadata = {
-  title: "Series — Pavilion XI",
+  title: "Series — Pundit Arena",
   description:
     "Group your scored matches into a tournament and track the points table and net run rate.",
 };

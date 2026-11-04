@@ -105,7 +105,7 @@ export default function AuthModal() {
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Sign in to Pavilion XI"
+            aria-label="Sign in to Pundit Arena"
             initial={{ opacity: 0, scale: 0.94, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}

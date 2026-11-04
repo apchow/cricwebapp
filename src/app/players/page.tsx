@@ -1,7 +1,7 @@
 import PlayersClient from "./players-client";
 
 export const metadata = {
-  title: "Stats Hub — Pavilion XI",
+  title: "Stats Hub — Pundit Arena",
   description:
     "Search the full player database by franchise, role and price, then dig into batting and bowling figures from your own scored matches.",
 };

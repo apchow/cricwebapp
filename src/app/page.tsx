@@ -24,7 +24,7 @@ export default async function HomePage() {
           </div>
           <h1 className="text-6xl sm:text-7xl font-black tracking-tighter mb-6">
             <span className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent">
-              PAVILION XI
+              PUNDIT ARENA
             </span>
           </h1>
           <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
@@ -95,7 +95,7 @@ export default async function HomePage() {
         {/* Footer */}
         <footer className="mt-32 text-center">
           <div className="inline-block px-4 py-1.5 rounded-full border border-slate-800/50 text-slate-600 text-xs font-medium uppercase tracking-widest">
-            Pavilion XI • Pundit Arena
+            Pundit Arena
           </div>
         </footer>
       </div>

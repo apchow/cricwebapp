@@ -21,9 +21,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { token } = await params;
   const match = await findByToken(token);
-  if (!match) return { title: "Scorecard not found — Pavilion XI" };
+  if (!match) return { title: "Scorecard not found — Pundit Arena" };
   return {
-    title: `${match.scoreline} — Pavilion XI`,
+    title: `${match.scoreline} — Pundit Arena`,
     description: `${match.result} · ${match.format} · ${match.venue}`,
     openGraph: {
       title: match.scoreline,

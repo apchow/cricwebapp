@@ -6,7 +6,7 @@ import { playerById } from "@/data/player-db";
 import { flagOf } from "@/lib/flags";
 import { activityStreak, battingStats, bowlingStats } from "@/lib/stats";
 
-export const metadata = { title: "Dashboard — Pavilion XI" };
+export const metadata = { title: "Dashboard — Pundit Arena" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {

@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import ToolHeader from "@/components/tool-header";
 
 export const metadata = {
-  title: "Street Strike — Pavilion XI",
+  title: "Street Strike — Pundit Arena",
   description:
     "Two overs, two wickets, one neon pitch. Time the sweep gauge, pick your gap and smash sixes in Street Strike.",
 };

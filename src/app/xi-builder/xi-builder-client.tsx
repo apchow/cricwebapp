@@ -24,6 +24,8 @@ import {
   otherSide,
   seriesById,
   sideName,
+  squadFor,
+  windowFor,
   type CountryCode,
 } from "@/data/fixtures";
 import { autoPickXI } from "@/lib/autopick";
@@ -103,17 +105,30 @@ export default function XiBuilderClient() {
   const opponent = otherSide(series, side);
   const fixture = series.fixtures.find((item) => item.no === fixtureNo) ?? series.fixtures[0];
   const storageKey = `${STORE_KEY}:${mode}:${seriesId}:${fixtureNo}:${side}`;
-  const squadSize = useMemo(
-    () => POOL.filter((player) => player.country === side).length,
-    [side]
+
+  /* Only players named in this match's squad are selectable. */
+  const squad = squadFor(series, side, fixtureNo);
+  const opponentSquad = squadFor(series, opponent, fixtureNo);
+  const byName = useMemo(() => {
+    const map = new Map<string, Player>();
+    for (const player of POOL) map.set(player.name.toLowerCase(), player);
+    return map;
+  }, []);
+  const squadSet = useMemo(
+    () => new Set(squad.players.map((name) => name.toLowerCase())),
+    [squad]
   );
-  const opponentSquad = useMemo(
-    () =>
-      POOL.filter((player) => player.country === opponent).sort(
-        (a, b) => b.form - a.form
-      ),
-    [opponent]
+  const squadPlayers = useMemo(
+    () => squad.players.map((name) => byName.get(name.toLowerCase())).filter(Boolean) as Player[],
+    [squad, byName]
   );
+  const squadOnFile = squadPlayers.length;
+  const squadMissing = squad.players.filter(
+    (name) => !byName.has(name.toLowerCase())
+  );
+  const opponentOnFile = opponentSquad.players.filter((name) =>
+    byName.has(name.toLowerCase())
+  ).length;
 
   const [selectedPoolId, setSelectedPoolId] = useState<number | null>(null);
   const [dragPlayerId, setDragPlayerId] = useState<number | null>(null);
@@ -217,9 +232,9 @@ export default function XiBuilderClient() {
   if (bowlingTooDeep) {
     unmet.push(`More than ${ODI_RULES.maxBowlingOptions} bowling options for an ODI`);
   }
-  if (mode === "series" && selectedCount > squadSize) {
+  if (mode === "series" && selectedCount > squadOnFile) {
     unmet.push(
-      `${sideName(series, side)} have only ${squadSize} players in the database`
+      `${sideName(series, side)} have only ${squadOnFile} squad players on file`
     );
   }
 
@@ -227,7 +242,7 @@ export default function XiBuilderClient() {
     const needle = query.trim().toLowerCase();
     return POOL.filter((player) => {
       if (mode === "series") {
-        if (player.country !== side) return false;
+        if (!squadSet.has(player.name.toLowerCase())) return false;
       } else if (team !== "ALL" && player.team !== team) {
         return false;
       }
@@ -235,7 +250,7 @@ export default function XiBuilderClient() {
       if (needle && !player.name.toLowerCase().includes(needle)) return false;
       return true;
     }).sort((a, b) => b.form - a.form || b.basePrice - a.basePrice);
-  }, [mode, side, team, role, query]);
+  }, [mode, squadSet, team, role, query]);
 
   /* ── helpers ── */
 
@@ -302,8 +317,7 @@ export default function XiBuilderClient() {
   }
 
   function autoPick() {
-    const seriesPool =
-      mode === "series" ? POOL.filter((player) => player.country === side) : POOL;
+    const seriesPool = mode === "series" ? squadPlayers : POOL;
     /*
      * In series mode the whole pool is one nation, so the four-overseas cap
      * would stop the pick after four players. It only applies to franchise
@@ -433,7 +447,7 @@ export default function XiBuilderClient() {
       return;
     }
 
-    const text = `Pavilion XI — My XI\n${lines.join("\n")}`;
+    const text = `Pundit Arena — My XI\n${lines.join("\n")}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -482,7 +496,7 @@ export default function XiBuilderClient() {
                     : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
-                {item.date}
+                ODI {item.no}
               </button>
             ))}
           </div>
@@ -512,24 +526,27 @@ export default function XiBuilderClient() {
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
           <span>
-            {fixture.venue} · {fixture.city}
+            {fixture.venue} · {fixture.city} · {fixture.day}
           </span>
           <span className="text-slate-700">|</span>
           {mode === "series" ? (
             <>
               <span>
-                Pool locked to {sideName(series, side)} ·{" "}
-                <span className={squadSize >= MAX_XI ? "text-emerald-300" : "text-amber-300"}>
-                  {squadSize} in the database
+                Squad {windowFor(series, fixtureNo).label} ·{" "}
+                <span className={squadOnFile >= MAX_XI ? "text-emerald-300" : "text-amber-300"}>
+                  {squadOnFile}/{squad.players.length} on file
                 </span>
               </span>
               <span className="text-slate-700">|</span>
               <span>
-                Opponent squad on file: {opponentSquad.length}
-                {opponentSquad.length < MAX_XI
-                  ? " — not enough to name a full XI"
-                  : ""}
+                {sideName(series, opponent)}: {opponentOnFile}/
+                {opponentSquad.players.length} on file
               </span>
+              {squadMissing.length > 0 && (
+                <span className="text-amber-300/80">
+                  missing from database: {squadMissing.join(", ")}
+                </span>
+              )}
             </>
           ) : (
             <span>Overseas cap 4 · purse-aware auto-pick · any franchise pool</span>

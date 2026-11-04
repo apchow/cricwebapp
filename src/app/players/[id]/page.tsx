@@ -27,9 +27,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const player = playerById(Number(id));
-  if (!player) return { title: "Player not found — Pavilion XI" };
+  if (!player) return { title: "Player not found — Pundit Arena" };
   return {
-    title: `${player.name} — Pavilion XI`,
+    title: `${player.name} — Pundit Arena`,
     description: `${player.role} · ${player.country} · ${player.team} — form, powerplay and death-overs profile plus career figures from scored matches.`,
   };
 }

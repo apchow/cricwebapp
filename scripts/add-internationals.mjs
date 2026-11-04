@@ -115,6 +115,25 @@ const ADDITIONS = [
   // ── South Africa ─────────────────────────────────────────
   ["Keshav Maharaj", "SA", "Bowler", 80, 58, 74, 80, 125],
   ["Temba Bavuma", "SA", "Batter", 76, 66, 58, 74, 100],
+
+  // ── Named in the New Zealand ODI squads but missing ──────
+  ["Finn Allen", "NZ", "Batter", 80, 92, 50, 76, 150],
+  ["Tim Seifert", "NZ", "Wicket-Keeper", 76, 74, 60, 74, 100],
+  ["Josh Clarkson", "NZ", "All-Rounder", 72, 66, 64, 72, 75],
+  ["Bevon Jacobs", "NZ", "Batter", 70, 64, 58, 71, 50],
+  ["Kyle Jamieson", "NZ", "Bowler", 74, 62, 68, 72, 100],
+  ["Matt Henry", "NZ", "Bowler", 78, 70, 66, 76, 125],
+  ["Matthew Fisher", "NZ", "Bowler", 72, 60, 66, 73, 75],
+  ["Zak Foulkes", "NZ", "Bowler", 70, 58, 64, 72, 50],
+  ["Nathan Smith", "NZ", "Bowler", 71, 60, 66, 73, 50],
+  ["Blair Tickner", "NZ", "Bowler", 69, 64, 58, 70, 50],
+
+  // ── Named in the India ODI squads but missing ────────────
+  ["Gurnoor Brar", "IND", "All-Rounder", 70, 56, 66, 72, 50],
+  ["Anshul Kamboj", "IND", "All-Rounder", 73, 62, 68, 75, 75],
+  ["Kumar Kushagra", "IND", "Wicket-Keeper", 71, 66, 58, 73, 50],
+  ["Yash Thakur", "IND", "Bowler", 70, 62, 64, 71, 50],
+  ["Auqab Nabi", "IND", "Bowler", 68, 56, 62, 70, 50],
 ];
 
 function tagFor(form, vfm) {

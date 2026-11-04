@@ -17,7 +17,7 @@ export default function SharedMatch({ match }: { match: PublicMatch }) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <span className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold">
-            Pavilion XI · Shared scorecard
+            Pundit Arena · Shared scorecard
           </span>
           <Link
             href="/scorer"

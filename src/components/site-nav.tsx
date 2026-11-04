@@ -43,7 +43,7 @@ export default function SiteNav({ email }: { email: string | null }) {
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <span className="text-xl">🏏</span>
             <span className="font-black text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent group-hover:to-green-400 transition-all">
-              PAVILION XI
+              PUNDIT ARENA
             </span>
           </Link>
 

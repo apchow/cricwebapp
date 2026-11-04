@@ -13,8 +13,8 @@ import { RETENTION_RULES } from "@/lib/retention/constants";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Retention Rules 2027 — Pavilion XI",
-  description: "IPL 2027 retention and RTM rules used by the Pavilion XI planner.",
+  title: "Retention Rules 2027 — Pundit Arena",
+  description: "IPL 2027 retention and RTM rules used by the Pundit Arena planner.",
 };
 
 export default function RetentionRulesPage() {
@@ -85,7 +85,7 @@ export default function RetentionRulesPage() {
             leagues worldwide.
           </p>
           <p className="text-xs text-slate-500">
-            Cricsheet data is ODC-By 1.0; the XML subset is CC BY 4.0. Pavilion XI is reputation-coin
+            Cricsheet data is ODC-By 1.0; the XML subset is CC BY 4.0. Pundit Arena is reputation-coin
             only — no betting, no crypto, no cash.
           </p>
           <div className="pt-2">

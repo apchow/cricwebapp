@@ -1,5 +1,5 @@
 /**
- * Pavilion XI — IPL retention planner rules (shared constants).
+ * Pundit Arena — IPL retention planner rules (shared constants).
  *
  * Labels are provisional until BCCI confirms IPL 2027 retention mechanics.
  * All money is reputation-coin value expressed in crore (cr); no real cash,

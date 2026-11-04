@@ -20,14 +20,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pavilion XI — Pundit Arena",
+  title: "Pundit Arena",
   description:
     "Retain your six, build the perfect XI, score ball by ball and take on the Street Strike timing challenge.",
-  applicationName: "Pavilion XI",
+  applicationName: "Pundit Arena",
   openGraph: {
-    title: "Pavilion XI — Pundit Arena",
+    title: "Pundit Arena",
     description: "Retain. Build. Score. Smash.",
-    siteName: "Pavilion XI",
+    siteName: "Pundit Arena",
     type: "website",
   },
   twitter: { card: "summary" },

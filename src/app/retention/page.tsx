@@ -6,7 +6,7 @@ import { getIplSquads } from "@/lib/retention/squads";
 import { RETENTION_RULES } from "@/lib/retention/constants";
 
 export const metadata = {
-  title: "Retention 2027 — Pavilion XI",
+  title: "Retention 2027 — Pundit Arena",
   description:
     "Plan your six retentions: four capped, two uncapped, with prices, RTM picks and a shareable final roster.",
 };

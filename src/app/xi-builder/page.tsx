@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import ToolHeader from "@/components/tool-header";
 
 export const metadata = {
-  title: "XI Builder — Pavilion XI",
+  title: "XI Builder — Pundit Arena",
   description:
     "Name your eleven for the India vs New Zealand ODI series on a top-down pitch, or switch to franchise rules with the four-overseas cap and purse-aware auto-pick.",
 };

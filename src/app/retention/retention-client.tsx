@@ -145,7 +145,7 @@ export default function RetentionClient() {
     const lines = roster.map(
       (player) => `${player.name} (${player.team}) — ${crores(player.basePrice)}`
     );
-    const text = `Pavilion XI · Retention 2027\n${lines.join(
+    const text = `Pundit Arena · Retention 2027\n${lines.join(
       "\n"
     )}\nTotal: ${crores(spent)}`;
     try {
