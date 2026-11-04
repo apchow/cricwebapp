@@ -4,6 +4,7 @@ import "./globals.css";
 import SiteNav from "@/components/site-nav";
 import ServiceWorker from "@/components/service-worker";
 import { currentSession } from "@/lib/auth";
+import { appUrl } from "@/lib/app-url";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,6 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl()),
   title: "Pundit Arena",
   description:
     "Retain your six, build the perfect XI, score ball by ball and take on the Street Strike timing challenge.",

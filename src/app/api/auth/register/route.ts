@@ -22,7 +22,7 @@ const SIGNUP_LIMIT: RateLimitOptions = {
 };
 
 export async function POST(request: Request) {
-  const attempt = rateLimit(request, SIGNUP_LIMIT);
+  const attempt = await rateLimit(request, SIGNUP_LIMIT);
   if (!attempt.allowed) {
     return NextResponse.json(
       { error: "Too many sign-up attempts. Try again later." },

@@ -3,7 +3,7 @@ import { currentSession } from "@/lib/auth";
 import ScorerClient from "./scorer-client";
 
 export const metadata = {
-  title: "Gully Scorer — CricHub",
+  title: "Gully Scorer — Pundit Arena",
   description: "Ball-by-ball gully cricket scoring with custom rules.",
 };
 export const dynamic = "force-dynamic";

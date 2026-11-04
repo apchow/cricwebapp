@@ -52,6 +52,22 @@ export function cleanBanterText(raw: unknown): string | null {
   return text;
 }
 
+/**
+ * Links are how an open wall fills with spam, and cricket talk never needs one.
+ * Catches schemes, `www.`, e-mail addresses and bare domains with a path, while
+ * leaving "52.4 vs 48.1" and "@kohli" alone.
+ */
+const LINK_SHAPES = [
+  /:\/\//,
+  /\bwww\./i,
+  /[\w.+-]+@[\w-]+\.[a-z]{2,}/i,
+  /[\w-]+\.[a-z]{2,6}\/[^\s]*/i,
+];
+
+export function looksLikeLink(text: string): boolean {
+  return LINK_SHAPES.some((shape) => shape.test(text));
+}
+
 export function authorLabel(email: string): string {
   const local = email.split("@")[0] ?? email;
   const spaced = local

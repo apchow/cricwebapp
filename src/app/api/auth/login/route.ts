@@ -20,7 +20,7 @@ const ATTEMPT_LIMIT: RateLimitOptions = {
 };
 
 export async function POST(request: Request) {
-  const attempt = rateLimit(request, ATTEMPT_LIMIT);
+  const attempt = await rateLimit(request, ATTEMPT_LIMIT);
   if (!attempt.allowed) {
     return NextResponse.json(
       { error: "Too many sign-in attempts. Try again later." },

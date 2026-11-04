@@ -9,6 +9,7 @@ export default function LoginForm({ next }: { next: string }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function demo() {
     setBusy(true);
@@ -53,7 +54,7 @@ export default function LoginForm({ next }: { next: string }) {
   return (
     <div className="glass rounded-2xl p-6 sm:p-8">
       <div className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300/80 mb-2">
-        CricHub account
+        Pundit Arena account
       </div>
       <h1 className="text-3xl font-black tracking-tight mb-2">
         {mode === "login" ? "Sign in" : "Create your account"}
@@ -106,16 +107,28 @@ export default function LoginForm({ next }: { next: string }) {
           >
             Password {mode === "register" && "(min 8 characters)"}
           </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={mode === "register" ? 8 : undefined}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={mode === "register" ? 8 : undefined}
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold px-2 py-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/60 transition-all"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -151,11 +164,15 @@ export default function LoginForm({ next }: { next: string }) {
         disabled={busy}
         className="w-full rounded-xl py-3 font-bold bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        ⚡ Try the demo — no sign-up
+        ⚡ Look around the demo account
       </button>
+      <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+        The demo is one account shared by every visitor — anything saved there
+        is visible to the next person. Create an account to keep your own.
+      </p>
 
       <p className="text-xs text-slate-500 mt-5">
-        The scorer needs an account.{" "}
+        Scoring and the wall need an account.{" "}
         <Link href="/" className="text-slate-400 hover:text-white underline">
           Back to hub
         </Link>

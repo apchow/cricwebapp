@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
+  Bookmark,
   Check,
   Search,
   Share2,
@@ -31,6 +33,8 @@ import {
 import { autoPickXI } from "@/lib/autopick";
 import { flagOf } from "@/lib/flags";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
+import type { PublicXI } from "@/lib/dto";
+import { useArena, useArenaHydration } from "@/store/arena";
 import type { IplTeam, Player, PlayerRole } from "@/types/player";
 
 /* ─── Constants ────────────────────────────────────────── */
@@ -137,6 +141,12 @@ export default function XiBuilderClient() {
   const dragCount = useRef<Map<number, number>>(new Map());
 
   const { message, notify } = useToast();
+
+  /** Identity comes from the session cookie, so saving needs an account. */
+  const user = useArena((state) => state.user);
+  useArenaHydration();
+  const [savedXis, setSavedXis] = useState<PublicXI[] | null>(null);
+  const [saving, setSaving] = useState(false);
 
   /* ── persistence, one saved XI per fixture and side ── */
 
@@ -286,6 +296,22 @@ export default function XiBuilderClient() {
     setSelectedPoolId(null);
   }
 
+  /**
+   * Drag works on a desktop, but on a phone the pitch is small and the slots
+   * are tight — so every card also has an explicit Add that fills the first
+   * empty batting slot.
+   */
+  function addToFirstFree(player: Player) {
+    if (blockReason(player)) return;
+    const free = slots.findIndex((id) => id === null);
+    if (free === -1) {
+      notify("The XI is full — take one out first");
+      return;
+    }
+    placeInSlot(free, player.id);
+    notify(`${player.name} in at ${SLOT_LABELS[free].toLowerCase()}`);
+  }
+
   function returnToPool(playerId: number) {
     setSlots((prev) => prev.map((id) => (id === playerId ? null : id)));
     setCaptainId((current) => (current === playerId ? null : current));
@@ -426,6 +452,107 @@ export default function XiBuilderClient() {
     placeInSlot(slotIndex, playerId);
   }
 
+  /* ── account library ── */
+
+  const refreshSaved = useCallback(async () => {
+    if (!user) {
+      setSavedXis(null);
+      return;
+    }
+    try {
+      const response = await fetch("/api/xis", { cache: "no-store" });
+      const data = (await response.json().catch(() => null)) as {
+        xis?: PublicXI[];
+      } | null;
+      setSavedXis(Array.isArray(data?.xis) ? data.xis : []);
+    } catch {
+      setSavedXis([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void refreshSaved();
+  }, [refreshSaved]);
+
+  async function saveToAccount() {
+    if (!user) {
+      notify("Sign in to keep this XI on your account");
+      return;
+    }
+    if (!placedIds.length) {
+      notify("Pick a few players first");
+      return;
+    }
+    setSaving(true);
+    try {
+      const name = `${sideName(series, side)} XI · ${
+        mode === "series" ? `ODI ${fixtureNo}` : "franchise"
+      }`.slice(0, 40);
+      const response = await fetch("/api/xis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, players: placedIds }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        notify(data?.error ?? "Could not save that XI");
+        return;
+      }
+      notify(`${placedIds.length} players saved to your account`);
+      void refreshSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * A saved XI is restored in the order it was written, so the batting card
+   * comes back the same way. Players who are no longer in this squad are
+   * dropped rather than smuggled in.
+   */
+  function loadSavedXI(xi: PublicXI) {
+    const next = emptySlots();
+    let dropped = 0;
+    xi.players.forEach((id, index) => {
+      if (index >= MAX_XI) return;
+      const player = playerById(id);
+      if (!player) {
+        dropped += 1;
+        return;
+      }
+      if (mode === "series" && !squadSet.has(player.name.toLowerCase())) {
+        dropped += 1;
+        return;
+      }
+      next[index] = id;
+    });
+    const kept = next.filter((id) => id !== null).length;
+    if (!kept) {
+      notify("None of that XI is in this squad any more");
+      return;
+    }
+    setSlots(next);
+    setCaptainId(null);
+    setViceCaptainId(null);
+    notify(
+      dropped
+        ? `Loaded ${kept} of ${xi.name} — ${dropped} no longer in the squad`
+        : `${xi.name} loaded onto the card`
+    );
+  }
+
+  async function removeSavedXI(id: string) {
+    const response = await fetch(`/api/xis/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      notify("Could not remove that saved XI");
+      return;
+    }
+    notify("Saved XI removed");
+    void refreshSaved();
+  }
+
   /* ── share ── */
 
   async function shareXI() {
@@ -561,7 +688,7 @@ export default function XiBuilderClient() {
             The pitch · batting order
           </h2>
           <span className="text-[11px] text-slate-500">
-            Drag a player to a slot, or tap to select then tap a slot.
+            Drag a player to a slot, tap Add, or tap to select then tap a slot.
           </span>
         </div>
 
@@ -910,7 +1037,7 @@ export default function XiBuilderClient() {
                   onDragStart={(event) => onPoolDragStart(event, player)}
                   onDragEnd={endDrag}
                   onClick={() => selectPoolPlayer(player)}
-                  title={blocked ?? "Drag to the pitch, or tap to select"}
+                  title={blocked ?? "Drag to the pitch, tap Add, or tap to select"}
                   className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all ${
                     blocked
                       ? "border-slate-800/60 bg-slate-900/40 opacity-50 cursor-not-allowed"
@@ -938,12 +1065,25 @@ export default function XiBuilderClient() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <TeamBadge team={player.team} size={22} />
-                    {placed && (
+                    {placed ? (
                       <span className="text-[9px] font-bold text-emerald-300">
                         In XI
                       </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          addToFirstFree(player);
+                        }}
+                        disabled={Boolean(blocked)}
+                        aria-label={`Add ${player.name} to your XI`}
+                        className="rounded-lg px-2.5 py-1 text-[11px] font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-emerald-500/15 border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/25 active:scale-95"
+                      >
+                        Add
+                      </button>
                     )}
+                    <TeamBadge team={player.team} size={22} />
                   </div>
                 </div>
               );
@@ -987,6 +1127,77 @@ export default function XiBuilderClient() {
             <Trash2 className="w-4 h-4" />
             Clear team
           </button>
+        </div>
+
+        {/* Account library */}
+        <div className="rounded-xl border border-slate-800/80 bg-slate-900/40 p-3">
+          {user ? (
+            <>
+              <button
+                onClick={saveToAccount}
+                disabled={selectedCount === 0 || saving}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black bg-indigo-500/15 border border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/25 active:scale-[0.99] disabled:opacity-35 disabled:cursor-not-allowed transition-all"
+              >
+                <Bookmark className="w-4 h-4" />
+                {saving ? "Saving…" : "Save this XI to my account"}
+              </button>
+              <p className="text-[10px] leading-relaxed text-slate-500 mt-2">
+                Kept on the server, so it is here whenever you sign in. Captain
+                and vice-captain stay on this device.
+              </p>
+              {savedXis?.length ? (
+                <ul className="mt-2.5 space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  {savedXis.map((xi) => (
+                    <li
+                      key={xi.id}
+                      className="flex items-center gap-2 rounded-lg bg-slate-900/70 border border-slate-800 px-2.5 py-1.5"
+                    >
+                      <button
+                        onClick={() => loadSavedXI(xi)}
+                        title="Load onto the card"
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span className="block truncate text-[11px] font-bold text-slate-200">
+                          {xi.name}
+                        </span>
+                        <span className="block text-[10px] font-mono text-slate-500">
+                          {xi.players.length}/11 ·{" "}
+                          {new Date(xi.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => removeSavedXI(xi.id)}
+                        aria-label={`Delete saved XI ${xi.name}`}
+                        className="text-slate-500 hover:text-rose-300 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                savedXis && (
+                  <p className="text-[10px] text-slate-500 mt-2">
+                    Nothing saved yet.
+                  </p>
+                )
+              )}
+            </>
+          ) : (
+            <p className="text-[11px] leading-relaxed text-slate-400">
+              This board is kept on your device only.{" "}
+              <Link
+                href="/login?next=%2Fxi-builder"
+                className="text-indigo-300 font-bold hover:underline"
+              >
+                Sign in
+              </Link>{" "}
+              to keep XIs on your account.
+            </p>
+          )}
         </div>
       </aside>
 

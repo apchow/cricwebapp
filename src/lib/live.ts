@@ -1,5 +1,6 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
+// Relative, extension-qualified import: this module is also loaded by
+// `node --test`, which does not understand the "@/lib" alias.
+import { mutate, query } from "./store.ts";
 
 export interface LiveTeam {
   name: string;
@@ -202,39 +203,24 @@ export function shouldFetchUpstream(input: {
   return { fetch: true };
 }
 
-function usageFile() {
-  return path.join(process.cwd(), "data", "live-usage.json");
-}
-
 function todayKey(now: number): string {
   return new Date(now).toISOString().slice(0, 10);
 }
 
+/**
+ * The counter lives in the shared document, so a day's quota is one budget
+ * across every instance rather than one per lambda.
+ */
 async function readUsage(now: number): Promise<number> {
-  try {
-    const parsed = JSON.parse(await fs.readFile(usageFile(), "utf8")) as {
-      day?: unknown;
-      count?: unknown;
-    };
-    if (str(parsed.day) !== todayKey(now)) return 0;
-    const count = typeof parsed.count === "number" ? Math.floor(parsed.count) : 0;
-    return count > 0 ? count : 0;
-  } catch {
-    return 0;
-  }
+  const usage = await query((db) => db.liveUsage);
+  if (usage.day !== todayKey(now)) return 0;
+  return usage.count > 0 ? usage.count : 0;
 }
 
-async function writeUsage(now: number, count: number): Promise<void> {
-  try {
-    await fs.mkdir(path.dirname(usageFile()), { recursive: true });
-    await fs.writeFile(
-      usageFile(),
-      JSON.stringify({ day: todayKey(now), count }),
-      "utf8"
-    );
-  } catch {
-    // Quota bookkeeping must never break the feed itself.
-  }
+async function bumpUsage(now: number, count: number): Promise<void> {
+  await mutate((db) => {
+    db.liveUsage = { day: todayKey(now), count };
+  });
 }
 
 let cache: { feed: LiveFeed; fetchedAt: number } | null = null;
@@ -295,6 +281,13 @@ export async function fetchLiveFeed(): Promise<LiveFeed> {
 
 async function build(key: string, now: number): Promise<LiveFeed> {
   const budget = dailyBudget();
+
+  // A fresh cache answers without touching the database at all, so a page left
+  // open costs nothing between refreshes.
+  if (cache && now - cache.fetchedAt < UPSTREAM_MIN_INTERVAL_MS) {
+    return { ...cache.feed, cached: true };
+  }
+
   const usedToday = await readUsage(now);
   const decision = shouldFetchUpstream({
     now,
@@ -325,7 +318,7 @@ async function build(key: string, now: number): Promise<LiveFeed> {
       key
     )}&offset=0`;
     const response = await fetch(url, { cache: "no-store" });
-    await writeUsage(now, usedToday + 1);
+    await bumpUsage(now, usedToday + 1);
 
     // Failures are cached like successes, so a dead key cannot burn the quota.
     if (!response.ok) {

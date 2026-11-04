@@ -2,8 +2,9 @@ import type { MetadataRoute } from "next";
 import { PLAYERS, PLAYER_UPDATED } from "@/data/player-db";
 import { TOOLS } from "@/data/tools";
 import { getIplSquads } from "@/lib/retention/squads";
+import { appUrl } from "@/lib/app-url";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:4000";
+const BASE_URL = appUrl();
 
 /** These redirect a signed-out visitor to /login, so a crawler never lands on them. */
 const SESSION_GATED = new Set(["/scorer", "/dashboard"]);

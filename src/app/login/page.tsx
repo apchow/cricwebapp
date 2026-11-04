@@ -2,11 +2,20 @@ import { redirect } from "next/navigation";
 import { currentSession } from "@/lib/auth";
 import LoginForm from "./login-form";
 
-export const metadata = { title: "Sign in — CricHub" };
+export const metadata = {
+  title: "Sign in — Pundit Arena",
+  description:
+    "Sign in or create a free account to keep your saved XIs, scored matches and banter.",
+};
 export const dynamic = "force-dynamic";
 
+/**
+ * Only ever send the visitor somewhere on this site. Browsers read both `//host`
+ * and `/\host` as protocol-relative, so a leading slash alone is not enough.
+ */
 function safeNext(value?: string): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
+  if (!value || !value.startsWith("/")) return "/";
+  if (value.startsWith("//") || value.includes("\\")) return "/";
   return value;
 }
 

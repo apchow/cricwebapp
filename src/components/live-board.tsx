@@ -119,9 +119,8 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
                 Live scores are switched off
               </p>
               <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                Add <code className="font-mono">CRICAPI_KEY</code> to{" "}
-                <code className="font-mono">cric-hub/.env</code> — a free key at
-                cricapi.com — and this fills itself in.
+                This deployment has no live score feed configured yet. International
+                matches appear here automatically once it is switched on.
               </p>
             </>
           ) : feed?.error ? (

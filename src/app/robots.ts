@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { appUrl } from "@/lib/app-url";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:4000";
+const BASE_URL = appUrl();
 
 export default function robots(): MetadataRoute.Robots {
   return {

@@ -454,7 +454,7 @@ export default function ScorerClient() {
           inn.legalBalls
         )}/${limitFor(index)})`
     );
-    const text = `🏏 CricHub — Gully Scorer\n${lines.join(
+    const text = `🏏 Pundit Arena — Gully Scorer\n${lines.join(
       "\n"
     )}\n${resultText(match)}\nVenue: ${config.venue}`;
     navigator.clipboard

@@ -27,18 +27,18 @@ export default function AccountMenu({ email }: { email: string | null }) {
   useArenaHydration();
 
   const user = useArena((state) => state.user);
-  const openAuth = useArena((state) => state.openAuth);
   const signOut = useArena((state) => state.signOut);
 
   if (!user && !email) {
     return (
-      <button
-        type="button"
-        onClick={openAuth}
+      <Link
+        href={`/login?next=${encodeURIComponent(
+          typeof window === "undefined" ? "/" : window.location.pathname
+        )}`}
         className="ml-1 px-3 py-1.5 rounded-lg text-sm font-semibold bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-500/25 transition-all"
       >
         Sign in
-      </button>
+      </Link>
     );
   }
 

@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DEMO_EMAIL = "demo@crichub.app";
+const DEMO_EMAIL = "demo@punditarena.app";
 
 /**
  * One-tap access for anyone who wants to look before signing up. The account
@@ -16,7 +16,7 @@ const DEMO_EMAIL = "demo@crichub.app";
  * anything a demo user saves is visible to the next one.
  */
 export async function POST(request: Request) {
-  const limit = rateLimit(request, {
+  const limit = await rateLimit(request, {
     name: "demo-login",
     limit: 10,
     windowMs: 60 * 60_000,

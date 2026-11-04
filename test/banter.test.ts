@@ -9,6 +9,7 @@ import {
   displayPosts,
   gradientFor,
   handleFor,
+  looksLikeLink,
   trimBanter,
 } from "../src/lib/banter.ts";
 import type { StoredBanter } from "../src/lib/store.ts";
@@ -41,6 +42,25 @@ test("cleanBanterText collapses whitespace so length means visible characters", 
   assert.equal(cleanBanterText(`a${" ".repeat(500)}bc`), "a bc");
   // Run-on spaces cannot be used to smuggle past the cap.
   assert.equal(cleanBanterText(`${"x".repeat(240)}${" ".repeat(200)}y`), null);
+});
+
+test("looksLikeLink blocks links without blocking cricket talk", () => {
+  for (const spam of [
+    "check out https://tips.example.com for fixed matches",
+    "best odds www.bet-site.in/daily",
+    "dm me on cricket.tips@spam.com now",
+    "join cricket-tips.xyz/whatsapp today",
+  ]) {
+    assert.equal(looksLikeLink(spam), true, spam);
+  }
+  for (const take of [
+    "Kohli 100* off 88 is the innings of the series",
+    "he bowled 2/41 in the death — plenty",
+    "@bumrah should have kept that ball short",
+    "52.4 vs 48.1 run rate, still a game",
+  ]) {
+    assert.equal(looksLikeLink(take), false, take);
+  }
 });
 
 test("the wall keeps only the newest posts", () => {

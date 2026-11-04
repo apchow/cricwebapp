@@ -11,14 +11,14 @@ wall. No database service, no third-party auth, no telemetry —
 | Route | What it is |
 | --- | --- |
 | `/retention` | Protect six players from the IPL auction pool under capped/uncapped and purse rules. |
-| `/xi-builder` | Name your eleven on a top-down pitch. Series mode is locked to the actual India tour of New Zealand squads; franchise mode keeps the four-overseas cap and purse-aware auto-pick. |
+| `/xi-builder` | Name your eleven on a top-down pitch — drag to a slot, tap **Add**, or tap a player then a slot. Series mode is locked to the actual India tour of New Zealand squads; franchise mode keeps the four-overseas cap and purse-aware auto-pick. Signed-in XIs can be saved to your account. |
 | `/scorer` | Ball-by-ball scoring, 1–60 overs, custom gully rules, undo, scorecard, auto-saved to your account. **Sign-in required.** |
 | `/mini-game` | Street Strike — a top-down batting simulation with real delivery timings and timing-error outcomes. Personal best stays in your browser. |
 | `/players` | Search the whole player database; your own scored-match figures sit on top. |
 | `/series` | Points table and net run rate across your completed matches. |
 | `/history` | Match centre: every scored match with analytics. |
 | `/dashboard` | Streaks, aggregates and your saved XIs. |
-| `/banter` | A shared comment wall, hosted on the server. Reading is public; posting needs an account. Only the **latest 10 takes** are kept — older ones roll off. |
+| `/banter` | A shared comment wall, hosted on the server. Reading is public; posting needs an account. Only the **latest 10 takes** are kept — older ones roll off. Links are rejected server-side, so the wall cannot be used to advertise. |
 
 ## The live series
 
@@ -57,7 +57,7 @@ One `currentMatches` call per refresh carries in-play and finished international
 
 - `CRICAPI_KEY` (free tier at [cricapi.com](https://cricapi.com)) enables it; without a key the panel says so plainly.
 - Upstream calls are throttled to **one per 4 minutes per process** and served from a shared cache, so any number of open tabs costs the same quota.
-- A persisted counter in `data/live-usage.json` caps the day at **450** (`CRICAPI_DAILY_BUDGET` to change).
+- A persisted counter — stored with the rest of the document, so it survives restarts and is shared across instances — caps the day at **450** (`CRICAPI_DAILY_BUDGET` to change).
 - Provider failures are cached like successes, so a bad key cannot burn the quota.
 - CricAPI answers HTTP 200 with `status: "unauthorized"` for a rejected key; that is checked explicitly so a dead key is not mistaken for an empty schedule.
 - The key is read server-side only — the browser receives a normalised summary.
@@ -142,16 +142,42 @@ Requires Node 18.17+.
 | Variable | Purpose |
 | --- | --- |
 | `CRICHUB_SECRET` | Session signing key. Set it in production. |
+| `DATABASE_URL` | Postgres connection string. Unset = local `data/` files; set = the whole document lives in Postgres. |
 | `CRICAPI_KEY` | Live scores. Optional. |
 | `CRICAPI_DAILY_BUDGET` | Defaults to 450. |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin for robots.txt and sitemap.xml. |
 
-**Hosting requirement: a writable disk.** Accounts, saved XIs, matches and quota
-counters are files under `data/`. On a persistent host (VPS, Railway, Fly, a
-container with a mounted volume) it works as-is. On a read-only serverless
-filesystem, reads still work but nothing persists — replace `src/lib/store.ts`
-with a real database before that deploy. It is the one change standing between
-this app and Vercel/Netlify.
+### Two storage drivers, one code path
+
+`src/lib/store.ts` reads and writes the whole application document — users,
+saved XIs, matches, series, in-progress matches, the wall, the live-feed quota —
+as one JSON value.
+
+- **No `DATABASE_URL`** → `data/crichub.json`, serialised through an in-process
+  chain. Good for local development and a VPS with a mounted volume.
+- **`DATABASE_URL` set** → a single `app_state` row in Postgres, read and
+  written inside a transaction holding `pg_advisory_xact_lock`, so any number of
+  serverless instances share it without losing writes. Rate-limit counters move
+  to `rate_window` at the same time, so a limit is no longer per cold-start.
+
+### Deploying to Vercel
+
+1. Push this repo, import it in Vercel. Framework, build and output are detected
+   from Next; no `vercel.json` is needed.
+2. Storage → **Create Postgres** (Vercel Postgres, or add a Neon/Supabase
+   string). `DATABASE_URL` is injected automatically.
+3. Apply the schema once, from your machine with the same URL:
+   ```bash
+   psql "$DATABASE_URL" -f db/schema.sql
+   ```
+4. Project Settings → Environment Variables: `CRICHUB_SECRET` (a real random
+   value), `NEXT_PUBLIC_APP_URL`, and `CRICAPI_KEY` if you want live scores.
+5. Deploy, then check `GET /api/health` — it answers `{"ok":true,"driver":"postgres"}`
+   only when the database is reachable.
+
+Without a database, a Vercel deploy will *appear* to work and then lose every
+account, saved XI and scored match, because the filesystem is read-only and
+ephemeral. `/api/health` reports that as `driver: "file"`.
 
 Before traffic: set `CRICHUB_SECRET` to something other than the locally
 generated value, keep `data/` out of version control (already ignored), and
@@ -160,10 +186,10 @@ it grants no access to user data.
 
 ## Known gaps before you call it finished
 
-- **Moderation is thin.** The wall blocks a short list of flagged words server-
-  side, caps posting per IP, and lets an author delete their own take — but
-  there is no report button, no admin takedown and no per-user history. For a
-  public comment wall that is the weakest part of this app.
+- **Moderation is thin.** The wall blocks a short list of flagged words, rejects
+  anything link-shaped, caps posting per IP, and lets an author delete their own
+  take — but there is no report button, no admin takedown and no per-user
+  history. For a public comment wall that is the weakest part of this app.
 - **Retention and stats-hub data are IPL-shaped.** Squad lists and franchise
   fields come from `ipl-squads.json`; international series selection reads the
   same player rows by name, so a squad member missing from the database shows
@@ -173,7 +199,7 @@ it grants no access to user data.
 
 ```bash
 npx tsc --noEmit
-npm test          # 82 tests: scoring engine, stats, series, insights, auto-pick, live feed, wall
+npm test          # 83 tests: scoring engine, stats, series, insights, auto-pick, live feed, wall
 npm run build
 ```
 
@@ -183,9 +209,10 @@ npm run build
 src/app/            routes, API handlers, robots and sitemap
 src/components/     shared client UI (nav, live board, scorecard, retention planner)
 src/data/           fixtures, IPL squads, tool catalogue
-src/lib/            scoring, auth, JSON store, validation, live feed, stats, series
+src/lib/            scoring, auth, store (file + Postgres), validation, live feed, stats, series
 src/store/          zustand client state
+db/                 schema.sql — applied once when you move to Postgres
 scripts/            add-internationals.mjs
 public/data/        players.json — the player database
-data/               runtime: accounts, saved matches, quota (git-ignored)
+data/               runtime: accounts, saved matches (git-ignored)
 ```

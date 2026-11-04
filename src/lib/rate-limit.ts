@@ -1,7 +1,4 @@
-interface RateWindow {
-  count: number;
-  resetAt: number;
-}
+import { dbClient } from "@/lib/store";
 
 export interface RateLimitOptions {
   /** Keeps separate endpoints from sharing a counter. */
@@ -18,8 +15,17 @@ export interface RateLimitDecision {
   retryAfterSeconds: number;
 }
 
-// Counters live in this process only: a restart (or a second instance) clears
-// them, which is acceptable for slowing down credential stuffing.
+interface RateWindow {
+  count: number;
+  resetAt: number;
+}
+
+/*
+ * In-process counters, used when there is no database. They reset on every
+ * cold start and are per instance, which is fine locally and not enough for a
+ * public deploy — with DATABASE_URL set the counters move into rate_window and
+ * hold across every instance.
+ */
 const windows = new Map<string, RateWindow>();
 
 /** Ceiling on tracked keys, so spoofed forwarded-for headers cannot grow it. */
@@ -62,17 +68,75 @@ function currentWindow(key: string, windowMs: number, now: number): RateWindow {
   return fresh;
 }
 
-/** Counts this request against the caller's IP and says whether to proceed. */
-export function rateLimit(
-  request: Request,
-  { name, limit, windowMs }: RateLimitOptions
+function localLimit(
+  key: string,
+  { limit, windowMs }: RateLimitOptions,
+  now: number
 ): RateLimitDecision {
-  const now = Date.now();
   sweep(now);
-  const window = currentWindow(`${name}:${clientIp(request)}`, windowMs, now);
+  const window = currentWindow(key, windowMs, now);
   window.count += 1;
   return {
     allowed: window.count <= limit,
     retryAfterSeconds: Math.max(1, Math.ceil((window.resetAt - now) / 1000)),
   };
+}
+
+let lastPruneAt = 0;
+
+async function sharedLimit(
+  key: string,
+  { limit, windowMs }: RateLimitOptions,
+  now: number
+): Promise<RateLimitDecision> {
+  const run = dbClient();
+  if (!run) throw new Error("shared limiter needs a database client");
+
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const rows = await run<{ count: number }[]>`
+    INSERT INTO rate_window (bucket, window_start, count, updated_at)
+    VALUES (${key}, ${windowStart}, 1, now())
+    ON CONFLICT (bucket) DO UPDATE
+    SET count = CASE
+          WHEN rate_window.window_start = ${windowStart}
+          THEN rate_window.count + 1 ELSE 1 END,
+        window_start = ${windowStart},
+        updated_at = now()
+    RETURNING count
+  `;
+
+  if (now - lastPruneAt > 10 * 60_000) {
+    lastPruneAt = now;
+    await run`DELETE FROM rate_window WHERE updated_at < now() - interval '1 day'`;
+  }
+
+  const count = rows[0]?.count ?? 1;
+  return {
+    allowed: count <= limit,
+    retryAfterSeconds: Math.max(
+      1,
+      Math.ceil((windowStart + windowMs - now) / 1000)
+    ),
+  };
+}
+
+/** Counts this request against the caller's IP and says whether to proceed. */
+export async function rateLimit(
+  request: Request,
+  options: RateLimitOptions
+): Promise<RateLimitDecision> {
+  const now = Date.now();
+  const key = `${options.name}:${clientIp(request)}`;
+  if (!dbClient()) return localLimit(key, options, now);
+
+  try {
+    return await sharedLimit(key, options, now);
+  } catch {
+    /*
+     * Fail closed on the auth-critical endpoints: if the limiter's own storage
+     * is unreachable, an attacker is exactly who we should not be waving
+     * through. The database is already required to log in at all.
+     */
+    return { allowed: false, retryAfterSeconds: 30 };
+  }
 }

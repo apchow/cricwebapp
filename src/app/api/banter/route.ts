@@ -7,6 +7,7 @@ import {
   cleanBanterText,
   displayPosts,
   flaggedHit,
+  looksLikeLink,
   trimBanter,
 } from "@/lib/banter";
 import { mutate, query } from "@/lib/store";
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
    * Slightly under the window size per short period: enough for a live-match
    * argument, not enough for one browser to own the wall.
    */
-  const limit = rateLimit(request, {
+  const limit = await rateLimit(request, {
     name: "banter-post",
     limit: 8,
     windowMs: 5 * 60_000,
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
   if (hit) {
     return NextResponse.json(
       { error: `Silenced — "${hit}" does not get past the umpires.` },
+      { status: 400 }
+    );
+  }
+
+  if (looksLikeLink(text)) {
+    return NextResponse.json(
+      { error: "No links on the wall — say it in your own words." },
       { status: 400 }
     );
   }
