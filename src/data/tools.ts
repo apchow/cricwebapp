@@ -1,3 +1,6 @@
+import dataset from "../../public/data/players.json";
+import squads from "./ipl-squads.json";
+
 export interface Tool {
   id: string;
   href: string;
@@ -16,6 +19,18 @@ export interface Tool {
 }
 
 /**
+ * Counts the hub cards advertise, derived from the data itself so a player
+ * addition cannot leave a stale number on the home page.
+ */
+const RETENTION_POOL_SIZE = new Set(
+  Object.values(squads.teams).flatMap((team) =>
+    (team.squad ?? []).map((player) => player.name)
+  )
+).size;
+
+const DATABASE_SIZE = dataset.players.length;
+
+/**
  * Single source of truth for the arena. Navigation and the hub cards both
  * render from this list so a rename only has to happen once.
  */
@@ -29,7 +44,7 @@ export const TOOLS: Tool[] = [
     subtitle: "Auction Room",
     description:
       "Pick the six you refuse to lose. Four capped, two uncapped. Lock the squad and share it with your group chat.",
-    features: ["185 players", "Strict rules", "Shareable squad"],
+    features: [`${RETENTION_POOL_SIZE} players`, "Strict rules", "Shareable squad"],
     cardGradient: "from-emerald-500 to-teal-900",
     glow: "bg-emerald-500/20",
   },
@@ -107,7 +122,7 @@ export const TOOLS: Tool[] = [
     subtitle: "Player Stats",
     description:
       "Search the full database by role, franchise and price, then dig into the figures from your own scored matches.",
-    features: ["185 players", "Role filters", "Your figures"],
+    features: [`${DATABASE_SIZE} in the database`, "Role filters", "Your figures"],
     cardGradient: "from-sky-500 to-violet-900",
     glow: "bg-sky-500/20",
   },

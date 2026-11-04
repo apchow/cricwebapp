@@ -302,9 +302,16 @@ export default function XiBuilderClient() {
   }
 
   function autoPick() {
-    const source =
+    const seriesPool =
       mode === "series" ? POOL.filter((player) => player.country === side) : POOL;
-    const result = autoPickXI(source);
+    /*
+     * In series mode the whole pool is one nation, so the four-overseas cap
+     * would stop the pick after four players. It only applies to franchise
+     * builds, where "overseas" is measured against the Indian core.
+     */
+    const result = autoPickXI(seriesPool, {
+      maxOverseas: mode === "series" ? MAX_XI : 4,
+    });
     if (result.players.length === 0) {
       notify("No active players available");
       return;
@@ -903,7 +910,7 @@ export default function XiBuilderClient() {
                       <span className="text-sm font-semibold text-slate-100 truncate">
                         {player.name}
                       </span>
-                      {isOverseas(player.country) && (
+                      {mode === "franchise" && isOverseas(player.country) && (
                         <span className="text-[8px] px-1 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-bold shrink-0">
                           OS
                         </span>
