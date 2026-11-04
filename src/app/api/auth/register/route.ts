@@ -8,12 +8,31 @@ import {
   validEmail,
   validPassword,
 } from "@/lib/auth";
+import { rateLimit, type RateLimitOptions } from "@/lib/rate-limit";
 import { mutate } from "@/lib/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** A few sign-ups per IP per half hour covers a house or office, not a bot farm. */
+const SIGNUP_LIMIT: RateLimitOptions = {
+  name: "register",
+  limit: 5,
+  windowMs: 30 * 60 * 1000,
+};
+
 export async function POST(request: Request) {
+  const attempt = rateLimit(request, SIGNUP_LIMIT);
+  if (!attempt.allowed) {
+    return NextResponse.json(
+      { error: "Too many sign-up attempts. Try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(attempt.retryAfterSeconds) },
+      }
+    );
+  }
+
   const body = await jsonBody(request);
   const email = normalizeEmail(typeof body?.email === "string" ? body.email : "");
   const password = typeof body?.password === "string" ? body.password : "";
