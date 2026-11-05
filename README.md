@@ -56,8 +56,9 @@ editorial estimates pass for statistics in anything you sell.
 One `currentMatches` call per refresh carries in-play and finished internationals.
 
 - `CRICAPI_KEY` (free tier at [cricapi.com](https://cricapi.com)) enables it; without a key the panel says so plainly.
-- Upstream calls are throttled to **one per 4 minutes per process** and served from a shared cache, so any number of open tabs costs the same quota.
-- A persisted counter — stored with the rest of the document, so it survives restarts and is shared across instances — caps the day at **450** (`CRICAPI_DAILY_BUDGET` to change).
+- Upstream calls are throttled to **one per 4 minutes** and served from a shared cache, so any number of open tabs costs the same quota.
+- The feed and its daily counter live in the shared document, so a day's quota is one budget across every instance rather than one per lambda. On Vercel that matters: instances share no memory, so an unshared cache would buy a fresh copy of the same four minutes on every cold start.
+- **Storage is optional for the feed.** A host with no `DATABASE_URL` cannot write the counter at all, and an exception there used to discard the scores it arrived with. Reads and writes of the counter now fall back to this process's memory, so live scores show even when accounts cannot persist.
 - Provider failures are cached like successes, so a bad key cannot burn the quota.
 - CricAPI answers HTTP 200 with `status: "unauthorized"` for a rejected key; that is checked explicitly so a dead key is not mistaken for an empty schedule.
 - The key is read server-side only — the browser receives a normalised summary.
@@ -151,6 +152,13 @@ is also what Vercel reads to choose the runtime.
 | `CRICAPI_DAILY_BUDGET` | Defaults to 450. |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin for robots.txt and sitemap.xml. |
 
+Each is "optional" only because the build succeeds without it. Every one that is
+missing quietly costs a feature in production: no `DATABASE_URL` means nothing
+saves, no `CRICHUB_SECRET` means visitors are signed out on each cold start, and
+no `CRICAPI_KEY` means the live board stays switched off. `.env` is git-ignored,
+so nothing you set locally reaches Vercel by itself — the values have to be typed
+into Project Settings → Environment Variables.
+
 ### Two storage drivers, one code path
 
 `src/lib/store.ts` reads and writes the whole application document — users,
@@ -183,6 +191,9 @@ as one JSON value.
      `DATABASE_URL` is missing, so accounts and matches would be lost.
    - a `warnings` entry about the session secret — `CRICHUB_SECRET` is unset or
      under 16 characters, so every cold start signs users out.
+   - `liveFeed:false` — `CRICAPI_KEY` never arrived, so the live board answers
+     "Live scores are switched off". This is the usual cause when a deploy that
+     works locally shows no scores.
 
    The probe **writes**, it does not just read: on a read-only filesystem reads
    succeed while saves fail, so a read-only check would call a broken deploy

@@ -112,8 +112,19 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
 
       {empty ? (
         <div className="glass rounded-2xl px-6 py-8 text-center">
-          <div className="text-3xl mb-3">{feed?.error ? "⚠️" : "📡"}</div>
-          {feed && !feed.enabled ? (
+          <div className="text-3xl mb-3">
+            {failed || feed?.error ? "⚠️" : "📡"}
+          </div>
+          {failed && !feed ? (
+            <>
+              <p className="text-sm text-amber-300 font-semibold">
+                Live feed unreachable
+              </p>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                The scores endpoint did not answer. Retrying every minute.
+              </p>
+            </>
+          ) : feed && !feed.enabled ? (
             <>
               <p className="text-sm text-slate-300 font-semibold">
                 Live scores are switched off

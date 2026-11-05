@@ -207,24 +207,75 @@ function todayKey(now: number): string {
   return new Date(now).toISOString().slice(0, 10);
 }
 
+interface Memory {
+  day: string;
+  count: number;
+  fetchedAt: number;
+  feed: LiveFeed | null;
+}
+
 /**
- * The counter lives in the shared document, so a day's quota is one budget
- * across every instance rather than one per lambda.
+ * This process's own copy of the day. Serverless instances share neither
+ * memory nor — without `DATABASE_URL` — a writable disk, so the shared
+ * document is an optimisation and this is the floor underneath it.
  */
-async function readUsage(now: number): Promise<number> {
-  const usage = await query((db) => db.liveUsage);
-  if (usage.day !== todayKey(now)) return 0;
-  return usage.count > 0 ? usage.count : 0;
-}
-
-async function bumpUsage(now: number, count: number): Promise<void> {
-  await mutate((db) => {
-    db.liveUsage = { day: todayKey(now), count };
-  });
-}
-
-let cache: { feed: LiveFeed; fetchedAt: number } | null = null;
+let memory: Memory = { day: "", count: 0, fetchedAt: 0, feed: null };
 let inflight: Promise<LiveFeed> | null = null;
+
+function rollover(now: number): void {
+  if (memory.day !== todayKey(now)) {
+    memory = { day: todayKey(now), count: 0, fetchedAt: 0, feed: null };
+  }
+}
+
+interface SharedState {
+  usedToday: number;
+  lastFetchedAt: number | null;
+  feed: LiveFeed | null;
+}
+
+/**
+ * Storage trouble must not take the scores down with it. On a read-only host
+ * the counter cannot be written at all, and a throw from here would discard a
+ * perfectly good provider response.
+ */
+async function readState(now: number): Promise<SharedState> {
+  rollover(now);
+  const own: SharedState = {
+    usedToday: memory.count,
+    lastFetchedAt: memory.fetchedAt || null,
+    feed: memory.feed,
+  };
+
+  try {
+    const usage = await query((db) => db.liveUsage);
+    if (usage.day !== todayKey(now)) return own;
+    return {
+      usedToday: Math.max(usage.count, memory.count),
+      lastFetchedAt: Math.max(usage.fetchedAt ?? 0, memory.fetchedAt) || null,
+      feed: (usage.feed as LiveFeed | undefined) ?? memory.feed,
+    };
+  } catch {
+    return own;
+  }
+}
+
+/** Records an upstream call in memory first, then in the shared document. */
+async function recordFetch(
+  now: number,
+  feed: LiveFeed,
+  usedToday: number
+): Promise<void> {
+  const count = usedToday + 1;
+  memory = { day: todayKey(now), count, fetchedAt: now, feed };
+  try {
+    await mutate((db) => {
+      db.liveUsage = { day: todayKey(now), count, fetchedAt: now, feed };
+    });
+  } catch {
+    /* Nothing writable: this instance keeps the feed, others re-fetch. */
+  }
+}
 
 function assemble(
   live: LiveMatch[],
@@ -282,30 +333,45 @@ export async function fetchLiveFeed(): Promise<LiveFeed> {
 async function build(key: string, now: number): Promise<LiveFeed> {
   const budget = dailyBudget();
 
-  // A fresh cache answers without touching the database at all, so a page left
-  // open costs nothing between refreshes.
-  if (cache && now - cache.fetchedAt < UPSTREAM_MIN_INTERVAL_MS) {
-    return { ...cache.feed, cached: true };
+  // A fresh feed in memory answers without touching storage at all, so a page
+  // left open costs nothing between refreshes.
+  if (memory.feed && now - memory.fetchedAt < UPSTREAM_MIN_INTERVAL_MS) {
+    return { ...memory.feed, cached: true, usedToday: memory.count };
   }
 
-  const usedToday = await readUsage(now);
+  const state = await readState(now);
+  const shared = state.feed;
+  const sharedAt = state.lastFetchedAt;
+
+  // Another instance may already have spent a call on these same four minutes;
+  // adopt its payload rather than buy a second copy.
+  if (shared && sharedAt !== null && now - sharedAt < UPSTREAM_MIN_INTERVAL_MS) {
+    memory = {
+      day: todayKey(now),
+      count: state.usedToday,
+      fetchedAt: sharedAt,
+      feed: shared,
+    };
+    return { ...shared, cached: true, usedToday: state.usedToday };
+  }
+
   const decision = shouldFetchUpstream({
     now,
-    lastFetchedAt: cache?.fetchedAt ?? null,
-    usedToday,
+    lastFetchedAt: state.lastFetchedAt,
+    usedToday: state.usedToday,
     budget,
   });
 
   if (!decision.fetch) {
-    if (cache) {
+    if (shared) {
       return {
-        ...cache.feed,
+        ...shared,
         cached: true,
-        fetchedAt: new Date(cache.fetchedAt).toISOString(),
-        usedToday,
+        fetchedAt: new Date(sharedAt ?? now).toISOString(),
+        usedToday: state.usedToday,
       };
     }
-    return assemble([], [], now, usedToday, {
+    return assemble([], [], now, state.usedToday, {
       error:
         decision.reason === "budget"
           ? `Daily live-feed budget of ${budget} requests is used up — it resets tomorrow.`
@@ -313,49 +379,63 @@ async function build(key: string, now: number): Promise<LiveFeed> {
     });
   }
 
-  try {
-    const url = `https://api.cricapi.com/v1/currentMatches?apikey=${encodeURIComponent(
-      key
-    )}&offset=0`;
-    const response = await fetch(url, { cache: "no-store" });
-    await bumpUsage(now, usedToday + 1);
-
-    // Failures are cached like successes, so a dead key cannot burn the quota.
-    if (!response.ok) {
-      const feed = assemble([], [], now, usedToday + 1, {
-        error: `Live provider returned ${response.status}`,
-      });
-      cache = { feed, fetchedAt: now };
-      return feed;
-    }
-
-    const payload = (await response.json()) as Record<string, unknown>;
-    // CricAPI answers 200 even for a rejected key, so the status field is the
-    // only way to tell "bad key" apart from "nothing is playing".
-    const status = str(payload.status);
-    if (status && status !== "success" && status !== "true") {
-      const feed = assemble([], [], now, usedToday + 1, {
-        error: `Live provider rejected the key (${str(payload.reason) || status})`,
-      });
-      cache = { feed, fetchedAt: now };
-      return feed;
-    }
-
-    const split = splitFeed(normaliseCricApi(payload));
-    const feed = assemble(split.live, split.recent, now, usedToday + 1);
-    cache = { feed, fetchedAt: now };
-    return feed;
-  } catch {
-    const feed = assemble([], [], now, usedToday + 1, {
-      error: "Live provider unreachable",
-    });
-    cache = { feed, fetchedAt: now };
-    return feed;
-  }
+  const feed = await callProvider(key, now, state.usedToday);
+  await recordFetch(now, feed, state.usedToday);
+  return feed;
 }
 
-/** Test seam: forget the shared cache. */
+/**
+ * Failures come back as feeds rather than throws, and are recorded like
+ * successes, so a dead key cannot burn the quota by being retried every poll.
+ */
+async function callProvider(
+  key: string,
+  now: number,
+  usedToday: number
+): Promise<LiveFeed> {
+  const url = `https://api.cricapi.com/v1/currentMatches?apikey=${encodeURIComponent(
+    key
+  )}&offset=0`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store" });
+  } catch {
+    return assemble([], [], now, usedToday + 1, {
+      error: "Live provider unreachable",
+    });
+  }
+
+  if (!response.ok) {
+    return assemble([], [], now, usedToday + 1, {
+      error: `Live provider returned ${response.status}`,
+    });
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    return assemble([], [], now, usedToday + 1, {
+      error: "Live provider sent an unreadable response",
+    });
+  }
+
+  // CricAPI answers 200 even for a rejected key, so the status field is the
+  // only way to tell "bad key" apart from "nothing is playing".
+  const status = str(payload.status);
+  if (status && status !== "success" && status !== "true") {
+    return assemble([], [], now, usedToday + 1, {
+      error: `Live provider rejected the key (${str(payload.reason) || status})`,
+    });
+  }
+
+  const split = splitFeed(normaliseCricApi(payload));
+  return assemble(split.live, split.recent, now, usedToday + 1);
+}
+
+/** Test seam: forget what this process has fetched. */
 export function resetLiveCache(): void {
-  cache = null;
+  memory = { day: "", count: 0, fetchedAt: 0, feed: null };
   inflight = null;
 }

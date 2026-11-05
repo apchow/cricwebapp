@@ -61,6 +61,14 @@ export interface DailyUsage {
   /** ISO day the counter belongs to. */
   day: string;
   count: number;
+  /** Epoch ms of the last upstream call, so instances share one interval. */
+  fetchedAt?: number;
+  /**
+   * The feed that call produced. Serverless instances do not share memory, so
+   * without this each cold lambda would spend its own quota on the same four
+   * minutes. Untyped to keep the store from importing the live module.
+   */
+  feed?: unknown;
 }
 
 export interface Database {
@@ -107,6 +115,8 @@ function normalize(value: unknown): Database {
     liveUsage: {
       day: typeof usage.day === "string" ? usage.day : "",
       count: typeof usage.count === "number" && usage.count > 0 ? usage.count : 0,
+      ...(typeof usage.fetchedAt === "number" ? { fetchedAt: usage.fetchedAt } : {}),
+      ...(usage.feed === undefined ? {} : { feed: usage.feed }),
     },
   };
 }
