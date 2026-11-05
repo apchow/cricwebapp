@@ -32,3 +32,8 @@ server.err
 
 # vendored copy of the other app — reference only, never committed
 pavilion-xi/
+
+# Vercel CLI link + every real .env; the documented template still ships
+.vercel
+.env*
+!.env.example
