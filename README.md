@@ -208,6 +208,10 @@ as one JSON value.
    The probe **writes**, it does not just read: on a read-only filesystem reads
    succeed while saves fail, so a read-only check would call a broken deploy
    healthy.
+6. With `DATABASE_URL` set, run `node scripts/verify-postgres.mjs`. It proves a
+   write survives the next read and that parallel writes are not lost — neither
+   of which the file driver can demonstrate, which is how two separate
+   persistence bugs reached a hosted deploy quietly.
 
 Without a database, a Vercel deploy will *appear* to work and then lose every
 account, saved XI and scored match, because the filesystem is read-only and

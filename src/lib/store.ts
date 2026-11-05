@@ -169,10 +169,21 @@ async function readRow(run: Sql): Promise<Database> {
   return normalize(rows[0]?.data);
 }
 
+/**
+ * The driver JSON-encodes the document itself. Pre-stringifying it — with a
+ * `::jsonb` cast or a `CAST(... AS JSONB)` — stores a jsonb *string* instead of
+ * an object, so the row reads back as text, `normalize` finds no keys in it and
+ * every account, XI and match silently evaporates between requests. Only a
+ * Postgres deploy can hit this, and local file storage never will.
+ */
+function jsonb(value: Database): postgres.Parameter {
+  return sql().json(value as unknown as postgres.JSONValue);
+}
+
 async function writeRow(run: Sql, db: Database): Promise<void> {
   await run`
     INSERT INTO app_state (id, data, updated_at)
-    VALUES (1, ${JSON.stringify(db)}::jsonb, now())
+    VALUES (1, ${jsonb(db)}, now())
     ON CONFLICT (id) DO UPDATE
     SET data = EXCLUDED.data, updated_at = now()
   `;
@@ -193,7 +204,7 @@ async function withLock<T>(run: (tx: Sql) => Promise<T>): Promise<T> {
   const rows = await sql().begin(async (tx): Promise<unknown[]> => {
     await tx`
       INSERT INTO app_state (id, data)
-      VALUES (1, ${JSON.stringify(EMPTY_DOC)}::jsonb)
+      VALUES (1, ${jsonb(EMPTY_DOC)})
       ON CONFLICT (id) DO NOTHING
     `;
     await tx`SELECT id FROM app_state WHERE id = 1 FOR UPDATE`;
