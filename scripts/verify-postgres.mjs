@@ -13,14 +13,16 @@
 
 import { existsSync, readFileSync } from "node:fs";
 
-for (const file of [".env.local", ".env"]) {
-  if (!existsSync(file)) continue;
-  for (const match of readFileSync(file, "utf8")
-    .split(/\r?\n/)
-    .map((line) => /^([A-Z_0-9]+)=(.*)$/.exec(line))
-    .filter(Boolean)) {
-    process.env[match[1]] ??= match[2].trim().replace(/^"|"$/g, "");
-  }
+/* Read the connection string from where `vercel env pull` was pointed at, NOT
+ * from .env.local: Next loads that file automatically, so a production URL
+ * parked there means `npm run dev` writes straight into live user data. */
+for (const match of existsSync(".vercel/env.local")
+  ? readFileSync(".vercel/env.local", "utf8")
+      .split(/\r?\n/)
+      .map((line) => /^([A-Z_0-9]+)=(.*)$/.exec(line))
+      .filter(Boolean)
+  : []) {
+  process.env[match[1]] ??= match[2].trim().replace(/^"|"$/g, "");
 }
 
 if (!process.env.DATABASE_URL) {

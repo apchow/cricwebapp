@@ -227,6 +227,33 @@ generated value, keep `data/` out of version control (already ignored), and
 treat a leaked `CRICAPI_KEY` as a quota emergency rather than a security one —
 it grants no access to user data.
 
+### After the first deploy, pushing is the whole release
+
+```bash
+git push origin main          # Vercel builds it and re-aliases the production URL
+node scripts/check-deploy.mjs # optional: asks GitHub, needs no Vercel login
+```
+
+Nothing else is required, and re-running the CLI is not part of the loop. The
+Git integration posts its result onto the commit as a GitHub status, which is
+what `check-deploy.mjs` reads. Three things are deliberately not in this state,
+so do not "tidy" them back:
+
+- **Require verified commits is off** (Project Settings → Git). Your commits are
+  unsigned, so turning it on silently refuses every push — the deployment is
+  created, then `Blocked`, which looks identical to the integration being dead.
+- **`DATABASE_URL`, `CRICHUB_SECRET`, `CRICAPI_KEY` and
+  `CRICAPI_DAILY_BUDGET` live in the Vercel project**, not in this repo. `.env`
+  is ignored, so nothing you set locally ever reaches the deploy.
+- **`npm run dev` uses file storage on purpose.** `.env` carries no
+  `DATABASE_URL`. Never park the production connection string in `.env.local` —
+  Next auto-loads that file and your local dev server would then read and write
+  live user data. It belongs in `.vercel/env.local` (ignored, not auto-loaded),
+  which is where `apply-schema.mjs` and `verify-postgres.mjs` look for it.
+
+Genuinely needing the dashboard later: changing or rotating an environment
+variable, adding a custom domain, and reading a build log if a push goes red.
+
 ## Known gaps before you call it finished
 
 - **Moderation is thin.** The wall blocks a short list of flagged words, rejects

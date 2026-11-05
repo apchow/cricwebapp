@@ -13,9 +13,13 @@
 
 import { existsSync, readFileSync } from "node:fs";
 
-for (const file of [".env.local", ".env"]) {
-  if (!existsSync(file)) continue;
-  for (const match of readFileSync(file, "utf8")
+/* The production URL lives in .vercel/env.local, never in .env.local — Next
+ * auto-loads .env.local, and a database holding real users must not be what
+ * `npm run dev` connects to. Export DATABASE_URL yourself if you keep it
+ * elsewhere. */
+const source = ".vercel/env.local";
+if (existsSync(source)) {
+  for (const match of readFileSync(source, "utf8")
     .split(/\r?\n/)
     .map((line) => /^([A-Z_0-9]+)=(.*)$/.exec(line))
     .filter(Boolean)) {
