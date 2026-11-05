@@ -192,6 +192,9 @@ as one JSON value.
    ```bash
    psql "$DATABASE_URL" -f db/schema.sql
    ```
+   No `psql`? `vercel link && vercel env pull` then
+   `node scripts/apply-schema.mjs` — it uses the app's own driver and is safe to
+   re-run.
 4. Project Settings → Environment Variables: `CRICHUB_SECRET` (a real random
    value), `NEXT_PUBLIC_APP_URL`, and `CRICAPI_KEY` if you want live scores.
 5. Deploy, then check `GET /api/health`. A healthy deploy answers
