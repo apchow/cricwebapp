@@ -168,9 +168,13 @@ as one JSON value.
 - **No `DATABASE_URL`** → `data/crichub.json`, serialised through an in-process
   chain. Good for local development and a VPS with a mounted volume.
 - **`DATABASE_URL` set** → a single `app_state` row in Postgres, read and
-  written inside a transaction holding `pg_advisory_xact_lock`, so any number of
-  serverless instances share it without losing writes. Rate-limit counters move
+  written inside a transaction holding `FOR UPDATE` on that row, so any number
+  of serverless instances share it without losing writes. Rate-limit counters move
   to `rate_window` at the same time, so a limit is no longer per cold-start.
+  Do not swap that for `pg_advisory_xact_lock`: Neon and Vercel Postgres hand
+  over a *pooled* URL by default, pooled transactions land on different
+  backends, and a session-scoped advisory lock excludes nothing there —
+  interleaved writes then delete each other's accounts without any error.
 
 ### Deploying to Vercel
 

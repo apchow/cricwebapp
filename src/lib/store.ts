@@ -151,7 +151,7 @@ let sqlInstance: Sql | null = null;
 function sql(): Sql {
   if (!sqlInstance) {
     sqlInstance = postgres(connectionString, {
-      // One connection per lambda instance: the advisory lock serialises the
+      // One connection per lambda instance: the row lock serialises the
       // read-modify-write, and more connections would only queue anyway.
       max: 1,
       prepare: false,
@@ -181,13 +181,22 @@ async function writeRow(run: Sql, db: Database): Promise<void> {
 /**
  * The document is read-modify-written as one unit, so two requests must not
  * interleave. On a single process the chain below does that; across serverless
- * instances a transaction-scoped advisory lock does it in the database. Every
- * statement inside the transaction runs on `tx`, never on the bare pool, or the
- * lock would protect nothing.
+ * instances the database does it. The lock is a *row* lock, not an advisory
+ * one: pooled endpoints such as Neon hand each transaction to a different
+ * backend, and a session-scoped advisory lock excludes nothing there. Two
+ * interleaved read-modify-writes silently delete each other's users.
+ *
+ * Every statement inside the transaction runs on `tx`, never on the bare pool,
+ * or the lock would protect nothing.
  */
 async function withLock<T>(run: (tx: Sql) => Promise<T>): Promise<T> {
   const rows = await sql().begin(async (tx): Promise<unknown[]> => {
-    await tx`SELECT pg_advisory_xact_lock(748291)`;
+    await tx`
+      INSERT INTO app_state (id, data)
+      VALUES (1, ${JSON.stringify(EMPTY_DOC)}::jsonb)
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await tx`SELECT id FROM app_state WHERE id = 1 FOR UPDATE`;
     return [await run(tx as unknown as Sql)];
   });
   return rows[0] as T;

@@ -8,9 +8,10 @@ CREATE TABLE IF NOT EXISTS app_state (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- The whole document lives in one row and is read-modify-written under a
--- transaction-scoped advisory lock (key 748291), so any number of serverless
--- instances can share it without losing writes.
+-- The whole document lives in one row and is read-modify-written while holding
+-- a `FOR UPDATE` row lock on it, so any number of serverless instances can
+-- share it without losing writes. A row lock rather than an advisory lock
+-- because pooled endpoints spread transactions over several backends.
 
 CREATE TABLE IF NOT EXISTS rate_window (
   bucket       TEXT        PRIMARY KEY,
