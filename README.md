@@ -149,7 +149,7 @@ is also what Vercel reads to choose the runtime.
 | `CRICHUB_SECRET` | Session signing key. Set it in production. |
 | `DATABASE_URL` | Postgres connection string. Unset = local `data/` files; set = the whole document lives in Postgres. |
 | `CRICAPI_KEY` | Live scores. Optional. |
-| `CRICAPI_DAILY_BUDGET` | Defaults to 450. |
+| `CRICAPI_DAILY_BUDGET` | Defaults to 450. CricAPI's free tier only answers 100 calls a day, so set this to about 90 — the feed then stops politely instead of spending the rest of the day on provider rejections. |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin for robots.txt and sitemap.xml. |
 
 Each is "optional" only because the build succeeds without it. Every one that is
@@ -176,6 +176,12 @@ as one JSON value.
 
 1. Push this repo, import it in Vercel. Framework, build and output are detected
    from Next; no `vercel.json` is needed.
+   *If pushes stop deploying*, check Project Settings → Git → **Require verified
+   commits**. With it on, Vercel refuses any commit GitHub cannot tie to a
+   signing key — the deployment is created and immediately `Blocked` with
+   *"commit signature couldn't be verified"*, which looks exactly like the Git
+   integration being broken. Commits made by a script or a CI bot without a
+   signing key are caught by this.
 2. Storage → **Create Postgres** (Vercel Postgres, or add a Neon/Supabase
    string). `DATABASE_URL` is injected automatically.
 3. Apply the schema once, from your machine with the same URL:
