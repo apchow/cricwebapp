@@ -13,6 +13,7 @@ import {
   resultText,
   scoreline,
   teamRuns,
+  wicketCap,
   type Innings,
   type MatchState,
 } from "../src/lib/scoring.ts";
@@ -415,4 +416,156 @@ test("scoreline marks a declaration and drops an unlimited cap", () => {
   const capped = scoreline(match, (index) => (index === 1 ? 20 : 50));
   assert.match(capped, /\(40\.0\/50\)/);
   assert.match(capped, /\(40\.0\/20\)/);
+});
+
+/* ─── Turf 1 v 1: a chosen number of wickets ────────────── */
+
+/** One player a side, batting to `wickets` dismissals rather than to a roster. */
+function solo(wickets = 3): Innings {
+  const innings = makeInnings("Arjun", "Ravi", ["Arjun"], ["Ravi"], wickets);
+  innings.bowler = "Ravi";
+  return innings;
+}
+
+const out = (innings: Innings): Innings =>
+  applyBall(innings, { runs: 0, wicket: "Bowled" }, Number.POSITIVE_INFINITY, null);
+
+test("a chosen wicket count overrides the size of the squad", () => {
+  assert.equal(maxWickets(11, 3), 3);
+  assert.equal(maxWickets(1, 5), 5);
+  assert.equal(maxWickets(11), 10);
+  assert.equal(maxWickets(11, 0), 10, "zero means unset, not an unbeatable innings");
+  assert.equal(wicketCap(solo(5)), 5);
+  assert.equal(wicketCap(makeInnings("IND", "AUS", ORDER, BOWLERS)), 10);
+});
+
+test("makeInnings only stores a wicket limit when one was chosen", () => {
+  assert.equal(solo(4).wicketLimit, 4);
+  assert.equal(makeInnings("IND", "AUS", ORDER, BOWLERS).wicketLimit, undefined);
+});
+
+test("a lone batter comes back after a dismissal and the innings continues", () => {
+  const after = out(solo(3));
+  assert.equal(after.done, false);
+  assert.equal(after.wickets, 1);
+  assert.equal(after.striker, 0);
+  assert.equal(after.nonStriker, -1);
+  assert.equal(after.batters[0].out, null, "back at the crease, so not out");
+  assert.equal(after.batters[0].dismissals, 1);
+  assert.deepEqual(after.fow, ["0/1 (Arjun, 0.1)"]);
+});
+
+test("the innings closes on the chosen wicket and keeps the last dismissal", () => {
+  let innings = solo(3);
+  for (let i = 0; i < 3; i += 1) innings = out(innings);
+  assert.equal(innings.done, true);
+  assert.equal(innings.wickets, 3);
+  assert.equal(innings.batters[0].out, "Bowled");
+  assert.equal(innings.batters[0].dismissals, 3);
+  assert.equal(innings.fow.length, 3);
+  // A closed innings ignores further deliveries.
+  assert.equal(applyBall(innings, { runs: 4 }, 20, null).runs, 0);
+});
+
+test("a lone batter keeps the strike through singles and over ends", () => {
+  let innings = solo(3);
+  for (let i = 0; i < 6; i += 1) {
+    innings = applyBall(innings, { runs: 1 }, Number.POSITIVE_INFINITY, null);
+  }
+  assert.equal(innings.runs, 6);
+  assert.equal(innings.striker, 0);
+  assert.equal(innings.nonStriker, -1);
+  assert.equal(innings.legalBalls, 6);
+  assert.equal(innings.bowler, null, "the over still ends");
+  assert.equal(innings.lastBowler, "Ravi");
+  assert.equal(innings.bowlers.length, 1, "one bowler, so overs can follow each other");
+  assert.equal(innings.done, false);
+});
+
+test("runs accumulate across a lone batter's returns", () => {
+  let innings = solo(4);
+  innings = applyBall(innings, { runs: 4 }, Number.POSITIVE_INFINITY, null);
+  innings = out(innings);
+  innings = applyBall(innings, { runs: 6 }, Number.POSITIVE_INFINITY, null);
+  innings = out(innings);
+  innings = applyBall(innings, { runs: 2 }, Number.POSITIVE_INFINITY, null);
+  assert.equal(innings.runs, 12);
+  assert.equal(innings.batters[0].runs, 12);
+  assert.equal(innings.batters[0].balls, 5);
+  assert.equal(innings.batters[0].fours, 1);
+  assert.equal(innings.batters[0].sixes, 1);
+  assert.equal(innings.batters[0].dismissals, 2);
+  assert.equal(innings.done, false);
+});
+
+test("a squad playing to a short count ends with batters still in the hut", () => {
+  let innings = makeInnings("IND", "AUS", ORDER.slice(0, 6), BOWLERS, 3);
+  innings.bowler = "P1";
+  for (let i = 0; i < 3; i += 1) {
+    innings = applyBall(innings, { runs: 0, wicket: "Caught" }, 20, null);
+  }
+  assert.equal(innings.done, true);
+  assert.equal(innings.wickets, 3);
+  assert.equal(innings.nextIndex, 4, "two batters never had to come in");
+  assert.equal(innings.batters[5].balls, 0);
+});
+
+test("a count above the squad size returns the last batter instead of ending", () => {
+  let innings = makeInnings("IND", "AUS", ORDER, BOWLERS, 12);
+  innings.bowler = "P1";
+  for (let i = 0; i < 12; i += 1) {
+    innings = applyBall(innings, { runs: 0, wicket: "Bowled" }, 50, null);
+  }
+  assert.equal(innings.wickets, 12);
+  assert.equal(innings.done, true);
+  // Ten batters came in, then the eleventh returned twice.
+  assert.equal(innings.batters[10].dismissals, 3);
+  assert.equal(innings.fow.length, 12);
+});
+
+test("a wickets margin is measured against the chosen count", () => {
+  const match: MatchState = {
+    innings: [
+      { ...solo(3), runs: 40, wickets: 3, done: true },
+      {
+        ...makeInnings("Ravi", "Arjun", ["Ravi"], ["Arjun"], 3),
+        runs: 41,
+        wickets: 1,
+        done: true,
+      },
+    ],
+    current: 1,
+    target: 41,
+  };
+  assert.equal(resultText(match), "Ravi won by 2 wickets");
+});
+
+test("a four-innings turf 1 v 1 Test plays through to a result", () => {
+  const closedSolo = (
+    batting: string,
+    bowling: string,
+    runs: number,
+    wickets: number
+  ): Innings => ({
+    ...makeInnings(batting, bowling, [batting], [bowling], 3),
+    runs,
+    wickets,
+    legalBalls: 120,
+    done: true,
+  });
+  const match: MatchState = {
+    innings: [
+      closedSolo("Arjun", "Ravi", 50, 3),
+      closedSolo("Ravi", "Arjun", 40, 3),
+      closedSolo("Arjun", "Ravi", 30, 3),
+      { ...closedSolo("Ravi", "Arjun", 41, 1), legalBalls: 90 },
+    ],
+    current: 3,
+    target: 41,
+    isTest: true,
+  };
+  assert.equal(isSettled(match), true);
+  assert.equal(teamRuns(match, "Arjun"), 80);
+  assert.equal(resultText(match), "Ravi won by 2 wickets");
+  assert.match(scoreline(match, () => Number.POSITIVE_INFINITY), /Arjun 50\/3 \(20\.0\)/);
 });

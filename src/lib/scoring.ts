@@ -66,8 +66,11 @@ export function oversString(balls: number): string {
   return `${Math.floor(balls / 6)}.${balls % 6}`;
 }
 
-export function maxWickets(battingOrderLength: number): number {
-  return Math.max(1, battingOrderLength - 1);
+/** Ceiling on a hand-picked wicket count, shared by the engine and the API. */
+export const MAX_WICKET_LIMIT = 50;
+
+export function maxWickets(battingOrderLength: number, chosen?: number): number {
+  return chosen && chosen > 0 ? chosen : Math.max(1, battingOrderLength - 1);
 }
 
 export interface Batter {
@@ -77,6 +80,11 @@ export interface Batter {
   fours: number;
   sixes: number;
   out: WicketType | null;
+  /**
+   * Times dismissed. `out` only holds the dismissal that ended the innings, so
+   * a lone batter who keeps coming back needs the count kept separately.
+   */
+  dismissals?: number;
 }
 
 export interface Bowler {
@@ -119,6 +127,17 @@ export interface Innings {
   done: boolean;
   /** A closed Test innings that ended short of its overs or its wickets. */
   declared?: boolean;
+  /**
+   * Wickets this innings is played to, when the sides picked a number instead
+   * of losing everyone but the last batter. A turf 1 v 1 lives on this: one
+   * batter returns after every dismissal until the count runs out.
+   */
+  wicketLimit?: number;
+}
+
+/** Wickets the innings may lose before it closes. */
+export function wicketCap(innings: Innings): number {
+  return maxWickets(innings.order.length, innings.wicketLimit);
 }
 
 export interface BallInput {
@@ -141,7 +160,8 @@ export function makeInnings(
   battingTeam: string,
   bowlingTeam: string,
   order: string[],
-  bowlers: string[]
+  bowlers: string[],
+  wickets?: number
 ): Innings {
   return {
     battingTeam,
@@ -173,6 +193,7 @@ export function makeInnings(
     events: [],
     fow: [],
     done: false,
+    ...(wickets && wickets > 0 ? { wicketLimit: wickets } : {}),
   };
 }
 
@@ -235,19 +256,22 @@ export function applyBall(
   if (input.wicket) {
     next.wickets += 1;
     batter.out = input.wicket;
+    batter.dismissals = (batter.dismissals ?? 0) + 1;
     if (bowler && input.wicket !== "Run Out") bowler.wickets += 1;
     next.fow.push(
       `${next.runs}/${next.wickets} (${batter.name}, ${oversString(
         next.legalBalls
       )})`
     );
-    if (next.wickets >= maxWickets(next.order.length)) {
+    if (next.wickets >= wicketCap(next)) {
       next.done = true;
     } else if (next.nextIndex < next.order.length) {
       next.striker = next.nextIndex;
       next.nextIndex += 1;
     } else {
-      next.done = true;
+      // Nobody left to come in, so the same batter returns. This is what lets
+      // a turf 1 v 1 play out a chosen number of wickets with one player a side.
+      batter.out = null;
     }
   }
 
@@ -399,7 +423,7 @@ export function resultText(match: MatchState): string {
   if (!last || !last.done || match.target === null) return "Drawn";
   const target = match.target;
   if (last.runs >= target) {
-    const left = maxWickets(last.order.length) - last.wickets;
+    const left = wicketCap(last) - last.wickets;
     return `${last.battingTeam} won by ${left} wicket${left === 1 ? "" : "s"}`;
   }
   if (last.runs === target - 1) {

@@ -16,6 +16,7 @@ import {
   isSettled,
   makeInnings,
   MatchState,
+  MAX_WICKET_LIMIT,
   maxWickets,
   oversString,
   resultText,
@@ -24,6 +25,7 @@ import {
   teamRuns,
   TEST_INNINGS,
   VENUES,
+  wicketCap,
   WicketType,
 } from "@/lib/scoring";
 
@@ -51,6 +53,14 @@ interface Config {
   isTest?: boolean;
   /** Cap per Test innings; 0 or unset means bat until all out or declared. */
   testOvers?: number;
+  /**
+   * One player a side bats and bowls. The squad below stays intact so turning
+   * this off brings the whole XI back rather than a roster the user has to
+   * retype.
+   */
+  oneVOne?: boolean;
+  /** Wickets each innings is played to; unset means all but the last batter. */
+  wickets?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -73,6 +83,12 @@ const DEFAULT_CONFIG: Config = {
 
 /** Offline mirror of the live match so a refresh can pick up where you left off. */
 const SCORER_STORE_KEY = "pavilion.scorer.v16";
+
+/** Who takes the field: the whole squad, or only its first name in a 1 v 1. */
+function rosterOf(team: TeamSetup, oneVOne: boolean): string[] {
+  const players = team.players.map((player) => player.trim()).filter(Boolean);
+  return oneVOne ? players.slice(0, 1) : players;
+}
 
 /**
  * What the next innings must chase: the opposition's total plus one in a
@@ -221,8 +237,9 @@ export default function ScorerClient() {
   // Offline mirror: keep localStorage in step with the live match + config.
   useEffect(() => {
     if (!match) return;
-    // Finished matches are saved to the account instead.
-    if (match.innings[1]?.done) return;
+    // Finished matches are saved to the account instead. A Test is not finished
+    // when its second innings ends — it has two more to mirror.
+    if (isSettled(match)) return;
     writeLocal(
       SCORER_STORE_KEY,
       JSON.stringify({ match, config, savedAt: Date.now() })
@@ -288,7 +305,7 @@ export default function ScorerClient() {
       await fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
       clearStoredMatch();
     })();
-  }, [match, view, config.overs, config.venue]);
+  }, [match, view, config, isTest, oversFor]);
 
   const innings = match ? match.innings[match.current] : null;
 
@@ -391,11 +408,13 @@ export default function ScorerClient() {
       return;
     }
     const nextConfig: Config = { ...config, teamA, teamB, oversB: undefined };
+    const solo = Boolean(nextConfig.oneVOne);
     const first = makeInnings(
       teamA.name,
       teamB.name,
-      teamA.players,
-      teamB.players
+      rosterOf(teamA, solo),
+      rosterOf(teamB, solo),
+      nextConfig.wickets
     );
     setConfig(nextConfig);
     setMatch({
@@ -442,11 +461,13 @@ export default function ScorerClient() {
     }
 
     pushUndo(match);
+    const solo = Boolean(config.oneVOne);
     const next = makeInnings(
       bat.name,
       bowl.name,
-      bat.setup.players,
-      bowl.setup.players
+      rosterOf(bat.setup, solo),
+      rosterOf(bowl.setup, solo),
+      config.wickets
     );
     setMatch({
       ...match,
@@ -471,7 +492,7 @@ export default function ScorerClient() {
     if (lead <= 0) return null;
     const innings = match.innings.find((item) => item.battingTeam === ahead);
     if (!innings) return null;
-    const left = maxWickets(innings.order.length) - innings.wickets;
+    const left = wicketCap(innings) - innings.wickets;
     return `${ahead} won by ${left} wicket${left === 1 ? "" : "s"}`;
   }, [match]);
 
@@ -723,7 +744,9 @@ export default function ScorerClient() {
   }, [handleApply, innings, view, wicketOpen, extrasOpen, runsOpen, undo, redo]);
 
   return (
-    <div className="min-h-screen text-white relative overflow-hidden">
+    // overflow-x-clip, not hidden: a scroll container here would stop the
+    // sticky camera bar from sticking while the scorecard scrolls.
+    <div className="min-h-screen text-white relative overflow-x-clip">
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute -top-40 right-1/4 w-[520px] h-[520px] bg-emerald-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-[420px] h-[420px] bg-indigo-600/10 rounded-full blur-[120px]" />
@@ -735,9 +758,18 @@ export default function ScorerClient() {
         <ToolHeader
           eyebrow="Match Scorer"
           title="Gully Scorer"
-          blurb="Your street, your rules. Ball-by-ball scoring for any format from 1 to 60 overs."
+          blurb="Your street, your rules. Ball-by-ball scoring for any format — overs, a Test, or a turf 1 v 1 — with the camera rolling."
           gradient="from-emerald-300 via-teal-200 to-indigo-300"
         />
+
+        {/* Mounted once, above every view: a recording must survive the jump
+            from setup to live to the result, and stay reachable while scoring.
+            top-14 clears the fixed site nav. */}
+        {!loading && (
+          <div className="sticky top-14 z-30 mb-5">
+            <ScorerRecorder />
+          </div>
+        )}
 
         {loading && (
           <div className="glass rounded-2xl p-10 text-center text-slate-400">
@@ -790,16 +822,26 @@ export default function ScorerClient() {
             <section className="glass rounded-2xl p-5 sm:p-6 mb-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs uppercase tracking-widest text-slate-500 font-bold">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="text-xs uppercase tracking-widest text-slate-500 font-bold whitespace-nowrap">
                       Innings {match.current + 1} of {breakExpected}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-bold uppercase tracking-wider">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-bold uppercase tracking-wider whitespace-nowrap">
                       {formatTag}
                     </span>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[10px] text-slate-500 whitespace-nowrap">
                       {config.venue}
                     </span>
+                    {innings.wicketLimit ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 font-bold uppercase tracking-wider whitespace-nowrap">
+                        {innings.wickets}/{innings.wicketLimit} wickets
+                      </span>
+                    ) : null}
+                    {innings.order.length === 1 ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/25 font-bold uppercase tracking-wider whitespace-nowrap">
+                        1 v 1
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-xl font-bold">{innings.battingTeam}</div>
                 </div>
@@ -1135,8 +1177,6 @@ export default function ScorerClient() {
               </div>
 
               <div className="space-y-5">
-                <ScorerRecorder />
-
                 <div className="glass rounded-2xl p-5">
                   <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
                     At the crease
@@ -1164,25 +1204,41 @@ export default function ScorerClient() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 opacity-80">
-                      <span className="w-1.5 h-8 rounded-full bg-slate-600" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">
-                          {nonStriker?.name ?? "—"}
+                    {innings.nonStriker >= 0 ? (
+                      <div className="flex items-center gap-3 opacity-80">
+                        <span className="w-1.5 h-8 rounded-full bg-slate-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">
+                            {nonStriker?.name ?? "—"}
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            non-striker
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-500">
-                          non-striker
+                        <div className="text-right font-mono">
+                          <span className="text-lg font-bold">
+                            {nonStriker?.runs ?? 0}
+                          </span>
+                          <span className="text-slate-500 text-xs">
+                            ({nonStriker?.balls ?? 0})
+                          </span>
                         </div>
                       </div>
-                      <div className="text-right font-mono">
-                        <span className="text-lg font-bold">
-                          {nonStriker?.runs ?? 0}
-                        </span>
-                        <span className="text-slate-500 text-xs">
-                          ({nonStriker?.balls ?? 0})
-                        </span>
+                    ) : (
+                      <div className="rounded-lg border border-sky-500/25 bg-sky-500/5 px-3 py-2.5">
+                        <div className="text-[11px] text-sky-200 font-semibold">
+                          Batting alone — {striker?.name ?? "the batter"} comes
+                          back after every dismissal.
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                          {Math.max(wicketCap(innings) - innings.wickets, 0)} of{" "}
+                          {wicketCap(innings)} wickets left
+                          {striker?.dismissals
+                            ? ` · out ${striker.dismissals}×`
+                            : ""}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-800/80">
@@ -1378,6 +1434,10 @@ function SetupScreen({
 }) {
   const isTest = Boolean(config.isTest);
   const format = formatLabel(config.overs, isTest);
+  const solo = Boolean(config.oneVOne);
+  const squadA = rosterOf(config.teamA, solo);
+  const squadB = rosterOf(config.teamB, solo);
+  const squadWickets = maxWickets(squadA.length);
 
   return (
     <div className="space-y-6">
@@ -1396,11 +1456,71 @@ function SetupScreen({
         />
       </div>
 
+      {solo && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
+          <span className="font-bold text-emerald-100">
+            {squadA[0] ?? "Player 1"}{" "}
+            <span className="text-emerald-400/70">v</span>{" "}
+            {squadB[0] ?? "Player 2"}
+          </span>
+          <span className="text-emerald-200/70">
+            {" "}— each bats and bowls alone, and comes back after every dismissal
+            until the wicket count runs out. The rest of both squads stays on the
+            bench; turn 1 v 1 off to bring them back.
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="glass rounded-2xl p-5 lg:col-span-2">
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
             Match settings
           </h3>
+
+          <button
+            onClick={() =>
+              setConfig(
+                solo
+                  ? { ...config, oneVOne: false }
+                  : {
+                      ...config,
+                      oneVOne: true,
+                      isTest: true,
+                      testOvers: 0,
+                      venue: "Turf",
+                      wickets: config.wickets ?? 3,
+                    }
+              )
+            }
+            aria-pressed={solo}
+            className={`w-full text-left rounded-xl border px-4 py-3 mb-3 transition-all ${
+              solo
+                ? "bg-emerald-500/15 border-emerald-500/45"
+                : "bg-gradient-to-r from-sky-500/10 to-emerald-500/10 border-slate-700/60 hover:border-emerald-500/40"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold">
+                  {solo ? "1 v 1 is on" : "Turf 1 v 1 Test"}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {solo
+                    ? "Tap to bring the full squads back"
+                    : "One player a side · two innings each · unlimited overs · your wicket count"}
+                </div>
+              </div>
+              <span
+                className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                  solo
+                    ? "bg-emerald-500/25 border-emerald-400/50 text-emerald-100"
+                    : "bg-slate-800/70 border-slate-700 text-slate-300"
+                }`}
+              >
+                {solo ? "On" : "Set up"}
+              </span>
+            </div>
+          </button>
 
           <div className="grid grid-cols-2 gap-2 mb-4">
             {[false, true].map((test) => (
@@ -1476,23 +1596,101 @@ function SetupScreen({
           </div>
 
           <div className="mt-4">
-            <label className="text-xs text-slate-500 mb-1.5 block">
-              Quick overs
+            <label
+              htmlFor="wickets-per-innings"
+              className="text-xs text-slate-500 mb-1.5 block"
+            >
+              Wickets per innings
             </label>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 5, 6, 10, 20, 50].map((overs) => (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                id="wickets-per-innings"
+                type="number"
+                min={1}
+                max={MAX_WICKET_LIMIT}
+                value={config.wickets ?? ""}
+                placeholder={String(squadWickets)}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  if (raw === "") {
+                    setConfig({ ...config, wickets: undefined });
+                    return;
+                  }
+                  const value = Number(raw);
+                  setConfig({
+                    ...config,
+                    wickets: Math.min(
+                      MAX_WICKET_LIMIT,
+                      Math.max(1, Number.isFinite(value) ? Math.round(value) : 1)
+                    ),
+                  });
+                }}
+                className="w-24 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+              {[1, 2, 3, 5, 10].map((count) => (
                 <button
-                  key={overs}
-                  onClick={() => setConfig({ ...config, overs })}
+                  key={count}
+                  onClick={() => setConfig({ ...config, wickets: count })}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                    config.overs === overs
+                    config.wickets === count
                       ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
                       : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-white"
                   }`}
                 >
-                  {overs} ov
+                  {count}
                 </button>
               ))}
+              <button
+                onClick={() => setConfig({ ...config, wickets: undefined })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  config.wickets === undefined
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-white"
+                }`}
+              >
+                Squad default
+              </button>
+            </div>
+            <div className="text-[11px] text-emerald-300 mt-1.5 font-semibold">
+              {config.wickets
+                ? `${config.wickets} wicket${config.wickets === 1 ? "" : "s"} a side${
+                    solo ? " — the batter returns after each one" : ""
+                  }`
+                : `All but the last batter (${squadWickets})`}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="text-xs text-slate-500 mb-1.5 block">
+              {isTest ? "Quick overs per innings" : "Quick overs"}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(isTest ? [0, 10, 20, 30, 50] : [1, 2, 5, 6, 10, 20, 50]).map(
+                (overs) => {
+                  const active = isTest
+                    ? (config.testOvers ?? 0) === overs
+                    : config.overs === overs;
+                  return (
+                    <button
+                      key={overs}
+                      onClick={() =>
+                        setConfig(
+                          isTest
+                            ? { ...config, testOvers: overs }
+                            : { ...config, overs }
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        active
+                          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                          : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {overs === 0 ? "∞" : `${overs} ov`}
+                    </button>
+                  );
+                }
+              )}
             </div>
           </div>
 
@@ -1962,9 +2160,16 @@ function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
                   <td className="py-2 px-2 text-xs text-slate-400">
                     {batter.out
                       ? batter.out
+                      : (batter.dismissals ?? 0) > 0
+                      ? "returned"
                       : batted
                       ? "not out"
                       : "did not bat"}
+                    {(batter.dismissals ?? 0) > 1 ? (
+                      <span className="text-slate-500">
+                        {" "}· {batter.dismissals}× out
+                      </span>
+                    ) : null}
                   </td>
                   <td className="py-2 px-2 text-right font-mono font-bold">
                     {batter.runs}

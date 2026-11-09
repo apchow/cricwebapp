@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useArena, useArenaHydration, type ArenaUser } from "@/store/arena";
 
 function initials(name: string): string {
@@ -25,6 +26,7 @@ function Avatar({ user }: { user: ArenaUser }) {
 
 export default function AccountMenu({ email }: { email: string | null }) {
   useArenaHydration();
+  const pathname = usePathname();
 
   const user = useArena((state) => state.user);
   const signOut = useArena((state) => state.signOut);
@@ -32,9 +34,7 @@ export default function AccountMenu({ email }: { email: string | null }) {
   if (!user && !email) {
     return (
       <Link
-        href={`/login?next=${encodeURIComponent(
-          typeof window === "undefined" ? "/" : window.location.pathname
-        )}`}
+        href={`/login?next=${encodeURIComponent(pathname)}`}
         className="ml-1 px-3 py-1.5 rounded-lg text-sm font-semibold bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 hover:bg-indigo-500/25 transition-all"
       >
         Sign in
@@ -49,10 +49,10 @@ export default function AccountMenu({ email }: { email: string | null }) {
   }
 
   return (
-    <div className="ml-1 flex items-center gap-2">
+    <div className="ml-1 flex items-center gap-2 shrink-0">
       <Link
         href="/dashboard"
-        className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/40 transition-all"
+        className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/40 transition-all whitespace-nowrap"
       >
         Dashboard
       </Link>
@@ -72,7 +72,7 @@ export default function AccountMenu({ email }: { email: string | null }) {
       <button
         type="button"
         onClick={handleSignOut}
-        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/40 transition-all"
+        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/40 transition-all whitespace-nowrap"
       >
         Sign out
       </button>

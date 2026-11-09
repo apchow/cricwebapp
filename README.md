@@ -12,7 +12,7 @@ wall. No database service, no third-party auth, no telemetry —
 | --- | --- |
 | `/retention` | Protect six players from the IPL auction pool under capped/uncapped and purse rules. |
 | `/xi-builder` | Name your eleven on a top-down pitch — drag to a slot, tap **Add**, or tap a player then a slot. Series mode is locked to the actual India tour of New Zealand squads; franchise mode keeps the four-overseas cap and purse-aware auto-pick. Signed-in XIs can be saved to your account. |
-| `/scorer` | Ball-by-ball scoring with custom gully rules, undo, scorecard, a **Test** format, and hour-long camera recording. Auto-saved to your account. **Sign-in required.** |
+| `/scorer` | Ball-by-ball scoring with custom gully rules, undo, scorecard, a **Test** format, a **turf 1 v 1** preset with a chosen wicket count, and hour-long camera recording. Auto-saved to your account. **Sign-in required.** |
 | `/mini-game` | Street Strike — a top-down batting simulation with real delivery timings and timing-error outcomes. Personal best stays in your browser. |
 | `/players` | Search the whole player database; your own scored-match figures sit on top. |
 | `/series` | Points table and net run rate across your completed matches. |
@@ -42,9 +42,20 @@ are worth knowing:
 
 Follow-on needs no code: sides alternate A, B, A, B whichever way they got there.
 
+**Turf 1 v 1** is one tap in Match settings: one player a side bats and bowls,
+two innings each, uncapped overs, and a wicket count you choose (1–50, chips for
+the common counts). The lone batter **returns after every dismissal** until the
+count runs out, so the innings ends on your number, not on the roster size; the
+scorecard marks them `returned · N× out` and the batting average divides by every
+dismissal. Turning the preset off brings the full squads back untouched. The
+same wicket count works with a full squad too — it simply ends the innings early.
+
 ### Camera recording
 
-`Record` in the scorer's right column captures the camera (microphone optional)
+The camera bar sits **above every scorer view**, sticky under the site nav, so
+`Record` is reachable before the match starts and stays on screen while you
+score; a recording survives setup → live → break → result without restarting.
+It captures the camera (microphone optional) with a live preview you can hide,
 and keeps going for hours. On Chrome and Edge the chunks stream into a file you
 choose once, so memory stays flat across a full day; Firefox and Safari have no
 file-write API, so the film is rotated into 10-minute segments that download as

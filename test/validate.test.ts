@@ -173,4 +173,138 @@ test("a limited-overs config gains no Test fields", () => {
   });
   assert.equal(clean?.isTest, undefined);
   assert.equal(clean?.testOvers, undefined);
+  assert.equal(clean?.oneVOne, undefined);
+  assert.equal(clean?.wickets, undefined);
+});
+
+/* ─── Turf 1 v 1 through the API boundary ───────────────── */
+
+const soloInn = (batting: string, bowling: string, extra = {}) => ({
+  ...makeInnings(batting, bowling, [batting], [bowling], 5),
+  ...extra,
+});
+
+test("cleanConfig carries the 1 v 1 mode and its wicket count", () => {
+  const clean = cleanConfig({
+    teamA: { name: "Arjun", players: ["Arjun", "Ravi", "Sameer"] },
+    teamB: { name: "Ravi", players: ["Ravi", "Dev"] },
+    overs: 6,
+    isTest: true,
+    oneVOne: true,
+    wickets: 5,
+    venue: "Turf",
+    ruleIds: [],
+  });
+  assert.equal(clean?.oneVOne, true);
+  assert.equal(clean?.wickets, 5);
+  // The bench is kept, not deleted: turning 1 v 1 off brings the squad back.
+  assert.equal(clean?.teamA.players.length, 3);
+});
+
+test("cleanConfig refuses a wicket count outside the supported range", () => {
+  const base = {
+    teamA: { name: "A", players: ORDER },
+    teamB: { name: "B", players: ORDER },
+    overs: 6,
+    venue: "Turf",
+    ruleIds: [],
+  };
+  assert.equal(cleanConfig({ ...base, wickets: 0 })?.wickets, undefined);
+  assert.equal(cleanConfig({ ...base, wickets: 51 })?.wickets, undefined);
+  assert.equal(cleanConfig({ ...base, wickets: 50 })?.wickets, 50);
+  assert.equal(cleanConfig({ ...base, wickets: "3" })?.wickets, 3);
+});
+
+test("a lone batter's innings survives storage with its wicket limit", () => {
+  const clean = cleanMatch({
+    innings: [
+      soloInn("Arjun", "Ravi", {
+        runs: 84,
+        wickets: 4,
+        legalBalls: 150,
+        fow: Array.from({ length: 4 }, (_, i) => `${i * 20}/${i + 1} (Arjun, ${i}.1)`),
+      }),
+    ],
+    current: 0,
+    target: null,
+    isTest: true,
+  });
+  const innings = clean?.innings[0];
+  assert.equal(innings?.wicketLimit, 5);
+  assert.equal(innings?.wickets, 4, "a count above ten is not reset to zero");
+  assert.equal(innings?.nonStriker, -1);
+  assert.equal(innings?.order.length, 1);
+  assert.equal(innings?.fow.length, 4);
+  assert.equal(innings?.legalBalls, 150);
+});
+
+test("every dismissal of a returning batter is kept", () => {
+  const clean = cleanMatch({
+    innings: [
+      soloInn("Arjun", "Ravi", {
+        wickets: 12,
+        wicketLimit: 12,
+        fow: Array.from({ length: 12 }, (_, i) => `${i}/${i + 1} (Arjun, 0.${i + 1})`),
+        batters: [
+          { name: "Arjun", runs: 60, balls: 40, fours: 6, sixes: 2, out: null, dismissals: 12 },
+        ],
+      }),
+    ],
+    current: 0,
+    target: null,
+  });
+  assert.equal(clean?.innings[0].wickets, 12);
+  assert.equal(clean?.innings[0].fow.length, 12);
+  assert.equal(clean?.innings[0].batters[0].dismissals, 12);
+});
+
+test("a long solo innings keeps its ball figures and event log", () => {
+  const events = Array.from({ length: 700 }, (_, i) => ({
+    id: i + 1,
+    label: "1",
+    detail: "1 run — Arjun",
+    legal: true,
+    runs: 1,
+    wicket: null,
+    striker: "Arjun",
+    bowler: "Ravi",
+    overText: `${Math.floor(i / 6)}.${(i % 6) + 1}`,
+  }));
+  const clean = cleanMatch({
+    innings: [
+      soloInn("Arjun", "Ravi", {
+        legalBalls: 700,
+        runs: 700,
+        events,
+        batters: [
+          { name: "Arjun", runs: 700, balls: 700, fours: 70, sixes: 20, out: null },
+        ],
+        bowlers: [{ name: "Ravi", balls: 700, runs: 700, wickets: 4 }],
+      }),
+    ],
+    current: 0,
+    target: null,
+    isTest: true,
+  });
+  const innings = clean?.innings[0];
+  assert.equal(innings?.legalBalls, 700);
+  assert.equal(innings?.events.length, 700, "the worm and the log stay whole");
+  assert.equal(innings?.batters[0].balls, 700);
+  assert.equal(innings?.bowlers[0].balls, 700);
+});
+
+test("cleanMatchEntry stores a 1 v 1 result", () => {
+  const entry = cleanMatchEntry({
+    format: "Test",
+    venue: "Turf",
+    scoreline: "Arjun 50/3 (20.0) · Ravi 40/3 (18.0)",
+    result: "Ravi won by 2 wickets",
+    innings: [
+      soloInn("Arjun", "Ravi", { runs: 50, wickets: 3, done: true }),
+      soloInn("Ravi", "Arjun", { runs: 41, wickets: 1, done: true }),
+    ],
+  });
+  assert.equal(entry?.innings.length, 2);
+  assert.equal(entry?.innings[0].wicketLimit, 5);
+  assert.equal(entry?.result, "Ravi won by 2 wickets");
 });

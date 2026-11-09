@@ -1,6 +1,6 @@
 // Relative and extension-qualified: `node --test` loads this module too, and
 // it does not understand the "@/lib" alias for value imports.
-import { TEST_INNINGS } from "./scoring.ts";
+import { MAX_WICKET_LIMIT, TEST_INNINGS } from "./scoring.ts";
 import type {
   BallEvent,
   Batter,
@@ -19,6 +19,13 @@ const WICKETS: WicketType[] = [
   "Hit Wicket",
   "Gully Rule",
 ];
+
+/**
+ * 200 overs of legal deliveries. Every per-ball figure shares this ceiling: a
+ * lone batter in a 1 v 1 faces every ball of the innings, so a tighter cap on
+ * `balls` or on the event log would quietly erase the back half of a long Test.
+ */
+const MAX_BALLS = 1200;
 
 export function text(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
@@ -84,6 +91,10 @@ export interface CleanConfig {
   /** Two innings per side, and an optional cap per innings. */
   isTest?: boolean;
   testOvers?: number;
+  /** One player a side bats and bowls; the rest of the squad stays on the bench. */
+  oneVOne?: boolean;
+  /** Wickets each innings is played to, instead of all but the last batter. */
+  wickets?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -112,6 +123,12 @@ export function cleanConfig(value: unknown): CleanConfig | null {
     input.testOvers === undefined || input.testOvers === null
       ? undefined
       : whole(input.testOvers, 0, 90) ?? undefined;
+  // A resumed 1 v 1 has to keep both its lone-batter mode and its wicket count,
+  // or the innings silently reverts to ending at the first dismissal.
+  const wickets =
+    input.wickets === undefined || input.wickets === null
+      ? undefined
+      : whole(input.wickets, 1, MAX_WICKET_LIMIT) ?? undefined;
   return {
     teamA,
     teamB,
@@ -119,6 +136,8 @@ export function cleanConfig(value: unknown): CleanConfig | null {
     ...(oversB ? { oversB } : {}),
     ...(bool(input.isTest) ? { isTest: true } : {}),
     ...(testOvers ? { testOvers } : {}),
+    ...(bool(input.oneVOne) ? { oneVOne: true } : {}),
+    ...(wickets ? { wickets } : {}),
     venue,
     ruleIds,
   };
@@ -129,13 +148,15 @@ function cleanBatter(value: unknown): Batter | null {
   if (!input) return null;
   const name = text(input.name, 30);
   if (!name) return null;
+  const dismissals = whole(input.dismissals, 1, MAX_WICKET_LIMIT);
   return {
     name,
-    runs: whole(input.runs, 0, 2000) ?? 0,
-    balls: whole(input.balls, 0, 500) ?? 0,
-    fours: whole(input.fours, 0, 500) ?? 0,
-    sixes: whole(input.sixes, 0, 500) ?? 0,
+    runs: whole(input.runs, 0, 3000) ?? 0,
+    balls: whole(input.balls, 0, MAX_BALLS) ?? 0,
+    fours: whole(input.fours, 0, MAX_BALLS) ?? 0,
+    sixes: whole(input.sixes, 0, MAX_BALLS) ?? 0,
     out: input.out === null ? null : oneOf(input.out, WICKETS),
+    ...(dismissals ? { dismissals } : {}),
   };
 }
 
@@ -146,9 +167,9 @@ function cleanBowler(value: unknown): Bowler | null {
   if (!name) return null;
   return {
     name,
-    balls: whole(input.balls, 0, 500) ?? 0,
-    runs: whole(input.runs, 0, 2000) ?? 0,
-    wickets: whole(input.wickets, 0, 50) ?? 0,
+    balls: whole(input.balls, 0, MAX_BALLS) ?? 0,
+    runs: whole(input.runs, 0, 3000) ?? 0,
+    wickets: whole(input.wickets, 0, MAX_WICKET_LIMIT) ?? 0,
   };
 }
 
@@ -196,25 +217,26 @@ function cleanInnings(value: unknown): Innings | null {
     .filter((bowler): bowler is Bowler => Boolean(bowler));
   if (!Array.isArray(input.events) || !Array.isArray(input.fow)) return null;
   const events = input.events
-    .slice(0, 400)
+    .slice(0, MAX_BALLS)
     .map((event, index) => cleanEvent(event, index + 1))
     .filter((event): event is BallEvent => Boolean(event));
   const fow = input.fow
-    .slice(0, 11)
+    .slice(0, MAX_WICKET_LIMIT)
     .map((line) => text(line, 80))
     .filter((line): line is string => Boolean(line));
 
   // 60 overs used to be the ceiling, and a ball past it came back as zero —
   // which is every innings of a Test played to time.
-  const legalBalls = whole(input.legalBalls, 0, 1200) ?? 0;
-  const wickets = whole(input.wickets, 0, 10) ?? 0;
+  const legalBalls = whole(input.legalBalls, 0, MAX_BALLS) ?? 0;
+  const wickets = whole(input.wickets, 0, MAX_WICKET_LIMIT) ?? 0;
+  const wicketLimit = whole(input.wicketLimit, 1, MAX_WICKET_LIMIT);
   const extras = record(input.extras);
   const striker = whole(input.striker, 0, order.length - 1) ?? 0;
   const nonStrikerRaw = input.nonStriker === -1 ? -1 : input.nonStriker;
   const nonStriker =
     nonStrikerRaw === -1
       ? -1
-      : whole(nonStrikerRaw, 0, order.length - 1) ?? 1;
+      : whole(nonStrikerRaw, 0, order.length - 1) ?? (order.length > 1 ? 1 : -1);
 
   return {
     battingTeam,
@@ -223,11 +245,11 @@ function cleanInnings(value: unknown): Innings | null {
     wickets,
     legalBalls,
     extras: {
-      wd: whole(extras?.wd, 0, 300) ?? 0,
-      nb: whole(extras?.nb, 0, 300) ?? 0,
-      b: whole(extras?.b, 0, 300) ?? 0,
-      lb: whole(extras?.lb, 0, 300) ?? 0,
-      penalty: whole(extras?.penalty, 0, 300) ?? 0,
+      wd: whole(extras?.wd, 0, 3000) ?? 0,
+      nb: whole(extras?.nb, 0, 3000) ?? 0,
+      b: whole(extras?.b, 0, 3000) ?? 0,
+      lb: whole(extras?.lb, 0, 3000) ?? 0,
+      penalty: whole(extras?.penalty, 0, 3000) ?? 0,
     },
     batters,
     order,
@@ -241,6 +263,7 @@ function cleanInnings(value: unknown): Innings | null {
     fow,
     done: bool(input.done),
     ...(bool(input.declared) ? { declared: true } : {}),
+    ...(wicketLimit ? { wicketLimit } : {}),
   };
 }
 

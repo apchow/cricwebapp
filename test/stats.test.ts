@@ -101,6 +101,32 @@ test("battingStats sums career figures across matches", () => {
   assert.equal(battingAverage(row), 75);
 });
 
+test("a returning batter is out once per dismissal, not once per innings", () => {
+  let innings = makeInnings("Arjun", "Ravi", ["Arjun"], ["Ravi"], 3);
+  innings.bowler = "Ravi";
+  const unlimited = Number.POSITIVE_INFINITY;
+  innings = applyBall(innings, { runs: 6 }, unlimited, null);
+  innings = applyBall(innings, { runs: 0, wicket: "Bowled" }, unlimited, null);
+  innings = applyBall(innings, { runs: 4 }, unlimited, null);
+  innings = applyBall(innings, { runs: 0, wicket: "Caught" }, unlimited, null);
+  innings = applyBall(innings, { runs: 2 }, unlimited, null);
+  innings = applyBall(innings, { runs: 0, wicket: "LBW" }, unlimited, null);
+
+  const row = battingStats([{ innings: [innings] }]).find(
+    (item) => item.name === "Arjun"
+  )!;
+  assert.equal(row.innings, 1);
+  assert.equal(row.runs, 12);
+  assert.equal(row.outs, 3);
+  assert.equal(row.notOuts, 0);
+  assert.equal(battingAverage(row), 4);
+
+  const spell = bowlingStats([{ innings: [innings] }]).find(
+    (item) => item.name === "Ravi"
+  )!;
+  assert.equal(spell.wickets, 3);
+});
+
 /* ─── bowling ───────────────────────────────────────────── */
 
 test("bowlingStats keeps the best spell and sorts by wickets", () => {

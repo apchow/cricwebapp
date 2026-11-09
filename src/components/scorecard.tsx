@@ -12,6 +12,7 @@ function didBat(innings: Innings, index: number): boolean {
   return (
     batter.balls > 0 ||
     batter.out !== null ||
+    (batter.dismissals ?? 0) > 0 ||
     innings.striker === index ||
     innings.nonStriker === index
   );
@@ -202,7 +203,11 @@ export function Scorecard({ innings }: { innings: Innings }) {
                         batter.out ? "text-red-300/90" : "text-emerald-300/90"
                       }`}
                     >
-                      {batter.out ?? "not out"}
+                      {batter.out ??
+                        ((batter.dismissals ?? 0) > 0 ? "returned" : "not out")}
+                      {(batter.dismissals ?? 0) > 1
+                        ? ` · ${batter.dismissals}× out`
+                        : ""}
                     </span>
                   </td>
                   <td className="py-2 px-2 text-right font-mono font-bold">

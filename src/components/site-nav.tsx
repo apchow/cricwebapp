@@ -53,14 +53,15 @@ export default function SiteNav({ email }: { email: string | null }) {
                 key={tool.id}
                 href={tool.href}
                 aria-current={isActive(tool.href) ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                title={tool.navLabel}
+                className={`px-2 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   isActive(tool.href)
                     ? "text-white bg-white/10"
                     : "text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <span className="text-base">{tool.emoji}</span>
-                <span className="hidden lg:inline">{tool.navLabel}</span>
+                <span className="hidden xl:inline">{tool.navLabel}</span>
               </Link>
             ))}
           </div>

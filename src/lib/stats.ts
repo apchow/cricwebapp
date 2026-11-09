@@ -76,17 +76,20 @@ export function battingStats(sources: InningsSource[]): BattingStats[] {
         if (batter.balls === 0 && batter.out === null && !atCrease) continue;
 
         const record = table.get(batter.name) ?? emptyBatting(batter.name);
+        // A batter who returns after every dismissal is out more than once in
+        // a single innings, and the average has to divide by all of them.
+        const outs = batter.dismissals ?? (batter.out ? 1 : 0);
         record.innings += 1;
         record.runs += batter.runs;
         record.balls += batter.balls;
         record.fours += batter.fours;
         record.sixes += batter.sixes;
         record.highScore = Math.max(record.highScore, batter.runs);
-        if (batter.out) record.outs += 1;
-        else record.notOuts += 1;
+        record.outs += outs;
+        if (!outs) record.notOuts += 1;
         if (batter.runs >= 100) record.hundreds += 1;
         else if (batter.runs >= 50) record.fifties += 1;
-        if (batter.runs === 0 && batter.out) record.ducks += 1;
+        if (batter.runs === 0 && outs > 0) record.ducks += 1;
         table.set(batter.name, record);
       }
     }
