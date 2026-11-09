@@ -3,19 +3,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Toast from "@/components/toast";
 import ToolHeader from "@/components/tool-header";
+import ScorerRecorder from "@/components/scorer-recorder";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import type { PublicMatch } from "@/lib/dto";
 import {
   applyBall,
   cloneMatch,
+  expectedInnings,
   ExtraType,
-  formatForOvers,
+  formatLabel,
   Innings,
+  isSettled,
   makeInnings,
   MatchState,
+  maxWickets,
   oversString,
   resultText,
   RULE_PRESETS,
+  scoreline,
+  teamRuns,
+  TEST_INNINGS,
   VENUES,
   WicketType,
 } from "@/lib/scoring";
@@ -40,6 +47,10 @@ interface Config {
   overs: number;
   /** Overs for the chase — defaults to `overs` when the sides don't revise it. */
   oversB?: number;
+  /** Four innings per side, and overs that do not have to run out. */
+  isTest?: boolean;
+  /** Cap per Test innings; 0 or unset means bat until all out or declared. */
+  testOvers?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -62,6 +73,26 @@ const DEFAULT_CONFIG: Config = {
 
 /** Offline mirror of the live match so a refresh can pick up where you left off. */
 const SCORER_STORE_KEY = "pavilion.scorer.v16";
+
+/**
+ * What the next innings must chase: the opposition's total plus one in a
+ * limited-overs game, the lead plus one in a Test's final innings, and nothing
+ * in between. `null` also means "no chase applies" when a Test side is already
+ * ahead — that is a result, not a target.
+ */
+function chaseTargetFor(
+  match: MatchState,
+  teamA: string,
+  teamB: string
+): number | null {
+  const index = match.innings.length;
+  if (!match.isTest) return index === 1 ? match.innings[0].runs + 1 : null;
+  if (index !== TEST_INNINGS - 1) return null;
+  const batting = index % 2 === 0 ? teamA : teamB;
+  const bowling = batting === teamA ? teamB : teamA;
+  const lead = teamRuns(match, bowling) - teamRuns(match, batting);
+  return lead < 0 ? null : lead + 1;
+}
 
 interface StoredScorerState {
   match: MatchState;
@@ -97,6 +128,28 @@ export default function ScorerClient() {
   const [resumePrompt, setResumePrompt] = useState(false);
   const storedRef = useRef<StoredScorerState | null>(null);
 
+  const isTest = Boolean(match?.isTest ?? config.isTest);
+
+  /**
+   * Overs a given innings may use. A Test innings runs until all out or a
+   * declaration unless the scorer caps it, and `Infinity` says that without a
+   * special case in the engine — `legalBalls >= Infinity * 6` never fires.
+   */
+  const oversFor = useCallback(
+    (index: number): number => {
+      if (isTest) {
+        return config.testOvers && config.testOvers > 0
+          ? config.testOvers
+          : Number.POSITIVE_INFINITY;
+      }
+      return index === 1 ? config.oversB ?? config.overs : config.overs;
+    },
+    [isTest, config]
+  );
+
+  const currentOvers = oversFor(match?.current ?? 0);
+  const formatTag = formatLabel(currentOvers, isTest);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -124,7 +177,7 @@ export default function ScorerClient() {
           restoredFromServer = true;
           setConfig(stored.config);
           setMatch(stored.match);
-          const finished = Boolean(stored.match.innings[1]?.done);
+          const finished = isSettled(stored.match);
           savedRef.current = finished;
           setView(finished ? "done" : "live");
         }
@@ -197,28 +250,20 @@ export default function ScorerClient() {
   }, [match, config, loading, view]);
 
   useEffect(() => {
-    if (match && match.current === 1 && match.innings[1]?.done && view === "live") {
-      setView("done");
-    }
+    if (match && view === "live" && isSettled(match)) setView("done");
   }, [match, view]);
 
   useEffect(() => {
-    if (!match || view !== "done" || !match.innings[1]?.done) return;
+    if (!match || view !== "done" || !isSettled(match)) return;
     if (savedRef.current) return;
     savedRef.current = true;
 
-    const first = match.innings[0];
-    const second = match.innings[1];
     const entry = {
-      format: formatForOvers(config.overs),
+      format: formatLabel(config.overs, isTest),
       venue: config.venue,
-      scoreline: `${first.battingTeam} ${first.runs}/${first.wickets} (${oversString(
-        first.legalBalls
-      )}) · ${second.battingTeam} ${second.runs}/${second.wickets} (${oversString(
-        second.legalBalls
-      )})`,
+      scoreline: scoreline(match, oversFor),
       result: resultText(match),
-      innings: [first, second],
+      innings: match.innings,
     };
 
     (async () => {
@@ -246,8 +291,6 @@ export default function ScorerClient() {
   }, [match, view, config.overs, config.venue]);
 
   const innings = match ? match.innings[match.current] : null;
-  const currentOvers =
-    match && match.current === 1 ? config.oversB ?? config.overs : config.overs;
 
   const fieldingSetup = useMemo(() => {
     if (!match || !innings) return null;
@@ -284,7 +327,7 @@ export default function ScorerClient() {
       setMatch(nextMatch);
       setWicketOpen(false);
       setRunsOpen(false);
-      if (updated.done && match.current === 0) {
+      if (updated.done && match.innings.length < expectedInnings(match)) {
         notify("Innings over");
       }
     },
@@ -355,7 +398,12 @@ export default function ScorerClient() {
       teamB.players
     );
     setConfig(nextConfig);
-    setMatch({ innings: [first], current: 0, target: null });
+    setMatch({
+      innings: [first],
+      current: 0,
+      target: null,
+      ...(nextConfig.isTest ? { isTest: true } : {}),
+    });
     setUndoStack([]);
     setRedoStack([]);
     setView("live");
@@ -364,37 +412,101 @@ export default function ScorerClient() {
     notify("Match started — pick the opening bowler");
   }, [config, notify]);
 
-  const startSecondInnings = useCallback(() => {
+  /**
+   * Begins the next innings: the chase in a limited-overs game, the third or
+   * fourth in a Test. Sides always alternate, which is why a follow-on needs no
+   * code here — after A, B, A the fourth innings is B whichever way it got
+   * there. What a Test does need is the target for the final chase, which is
+   * the *lead*, not the opposition's total.
+   */
+  const startNextInnings = useCallback(() => {
     if (!match) return;
+    const index = match.innings.length;
+    if (index >= expectedInnings(match)) return;
+
+    // Sides come from the first innings rather than the live config, so
+    // renaming a team mid-match cannot misalign the alternation.
+    const opener = match.innings[0];
+    const battingFirst = index % 2 === 0;
+    const bat = battingFirst
+      ? { name: opener.battingTeam, setup: config.teamA }
+      : { name: opener.bowlingTeam, setup: config.teamB };
+    const bowl = battingFirst
+      ? { name: opener.bowlingTeam, setup: config.teamB }
+      : { name: opener.battingTeam, setup: config.teamA };
+
+    const target = chaseTargetFor(match, opener.battingTeam, opener.bowlingTeam);
+    if (match.isTest && index === TEST_INNINGS - 1 && target === null) {
+      notify(`${bat.name} are already ahead — close the match instead`);
+      return;
+    }
+
     pushUndo(match);
-    const first = match.innings[0];
-    const second = makeInnings(
-      config.teamB.name,
-      config.teamA.name,
-      config.teamB.players,
-      config.teamA.players
+    const next = makeInnings(
+      bat.name,
+      bowl.name,
+      bat.setup.players,
+      bowl.setup.players
     );
     setMatch({
-      innings: [first, second],
-      current: 1,
-      target: first.runs + 1,
+      ...match,
+      innings: [...match.innings, next],
+      current: index,
+      target,
     });
     setView("live");
     setShowCard(false);
-    notify(`Target: ${first.runs + 1}`);
+    notify(target === null ? "Innings begin" : `Target: ${target}`);
   }, [match, config, pushUndo, notify]);
 
-  const endInnings = useCallback(() => {
-    if (!match || !innings || innings.done) return;
-    if (!window.confirm("End this innings now?")) return;
-    pushUndo(match);
-    setMatch({
-      ...match,
-      innings: match.innings.map((item, index) =>
-        index === match.current ? { ...item, done: true, bowler: null } : item
-      ),
-    });
-  }, [match, innings, pushUndo]);
+  /**
+   * A Test decided without the last side ever batting again: A 100 and 100, B
+   * 400/6 — B won with four wickets in hand and no fourth innings to score.
+   */
+  const decidedAhead = useCallback((): string | null => {
+    if (!match?.isTest || match.innings.length < TEST_INNINGS - 1) return null;
+    const closing = match.innings[match.innings.length - 1];
+    const ahead = closing.bowlingTeam;
+    const lead = teamRuns(match, ahead) - teamRuns(match, closing.battingTeam);
+    if (lead <= 0) return null;
+    const innings = match.innings.find((item) => item.battingTeam === ahead);
+    if (!innings) return null;
+    const left = maxWickets(innings.order.length) - innings.wickets;
+    return `${ahead} won by ${left} wicket${left === 1 ? "" : "s"}`;
+  }, [match]);
+
+  /** Calls time: a draw, or the decision `decidedAhead` already found. */
+  const closeMatch = useCallback(
+    (recorded?: string) => {
+      if (!match) return;
+      const result = recorded ?? resultText({ ...match, complete: true });
+      if (!recorded && !window.confirm(`Close this match as ${result}?`)) return;
+      pushUndo(match);
+      setMatch({ ...match, complete: true, recordedResult: result });
+      setShowCard(false);
+      setView("done");
+      notify(recorded ? result : "Time called");
+    },
+    [match, pushUndo, notify]
+  );
+
+  const endInnings = useCallback(
+    (declared = false) => {
+      if (!match || !innings || innings.done) return;
+      const label = declared ? "Declare" : "End innings";
+      if (!window.confirm(`${label} now?`)) return;
+      pushUndo(match);
+      setMatch({
+        ...match,
+        innings: match.innings.map((item, index) =>
+          index === match.current
+            ? { ...item, done: true, bowler: null, ...(declared ? { declared: true } : {}) }
+            : item
+        ),
+      });
+    },
+    [match, innings, pushUndo]
+  );
 
   const resetToSetup = useCallback(() => {
     setMatch(null);
@@ -416,7 +528,7 @@ export default function ScorerClient() {
       setMatch(stored.match);
       setUndoStack([]);
       setRedoStack([]);
-      const finished = Boolean(stored.match.innings[1]?.done);
+      const finished = isSettled(stored.match);
       savedRef.current = finished;
       setView(finished ? "done" : "live");
       if (finished) clearStoredMatch();
@@ -446,15 +558,15 @@ export default function ScorerClient() {
 
   const shareResult = useCallback(() => {
     if (!match) return;
-    const limitFor = (index: number) =>
-      index === 1 ? config.oversB ?? config.overs : config.overs;
-    const lines = match.innings.map(
-      (inn, index) =>
-        `${inn.battingTeam}: ${inn.runs}/${inn.wickets} (${oversString(
-          inn.legalBalls
-        )}/${limitFor(index)})`
-    );
-    const text = `🏏 Pundit Arena — Gully Scorer\n${lines.join(
+    const lines = match.innings.map((inn, index) => {
+      const limit = oversFor(index);
+      return `${inn.battingTeam}: ${inn.runs}/${inn.wickets}${
+        inn.declared ? " declared" : ""
+      } (${oversString(inn.legalBalls)}${
+        Number.isFinite(limit) ? `/${limit}` : ""
+      })`;
+    });
+    const text = `🏏 Pundit Arena — Gully Scorer · ${formatTag}\n${lines.join(
       "\n"
     )}\n${resultText(match)}\nVenue: ${config.venue}`;
     navigator.clipboard
@@ -533,12 +645,82 @@ export default function ScorerClient() {
   const crr = innings && innings.legalBalls > 0
     ? innings.runs / (innings.legalBalls / 6)
     : 0;
-  const ballsLeft = currentOvers * 6 - (innings?.legalBalls ?? 0);
+  // An uncapped Test innings has no balls left to compute a required rate from.
+  const ballsLeft = Number.isFinite(currentOvers)
+    ? currentOvers * 6 - (innings?.legalBalls ?? 0)
+    : null;
   const runsNeeded = match?.target != null && innings ? match.target - innings.runs : null;
   const rrr =
-    match?.target != null && innings && ballsLeft > 0
+    match?.target != null && innings && ballsLeft !== null && ballsLeft > 0
       ? ((match.target - innings.runs) / (ballsLeft / 6))
       : null;
+
+  // The innings break must quote the same target the button will set, so the
+  // two cannot drift apart.
+  const opener = match?.innings[0];
+  const nextTarget =
+    match && opener && innings?.done
+      ? chaseTargetFor(match, opener.battingTeam, opener.bowlingTeam)
+      : null;
+  const inningsLeft = match ? expectedInnings(match) - match.innings.length : 0;
+  const breakExpected = match ? expectedInnings(match) : 2;
+  const decidedByLead = decidedAhead();
+
+  /**
+   * One-handed scoring. The keyboard covers the commonest deliveries so a
+   * scorer with the phone on a table can tap through an over without hunting;
+   * anything typed into a real field, and anything while a modal is open, is
+   * never read as a shortcut.
+   */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (wicketOpen || extrasOpen || runsOpen) return;
+      if (view !== "live" || !innings || innings.done || !innings.bowler) return;
+
+      const key = event.key.toLowerCase();
+      const input: { runs: number; extra?: ExtraType; wicket?: WicketType } | null =
+        /^[0-6]$/.test(key)
+          ? { runs: Number(key) }
+          : key === "w"
+          ? { runs: 0, extra: "wd" }
+          : key === "n"
+          ? { runs: 0, extra: "nb" }
+          : null;
+
+      if (input) {
+        event.preventDefault();
+        handleApply(input);
+        return;
+      }
+      if (key === "x") {
+        event.preventDefault();
+        setWicketOpen(true);
+        return;
+      }
+      if (key === "u") {
+        event.preventDefault();
+        undo();
+        return;
+      }
+      if (key === "y") {
+        event.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleApply, innings, view, wicketOpen, extrasOpen, runsOpen, undo, redo]);
 
   return (
     <div className="min-h-screen text-white relative overflow-hidden">
@@ -610,10 +792,10 @@ export default function ScorerClient() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs uppercase tracking-widest text-slate-500 font-bold">
-                      Innings {match.current + 1}
+                      Innings {match.current + 1} of {breakExpected}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-bold uppercase tracking-wider">
-                      {formatForOvers(currentOvers)}
+                      {formatTag}
                     </span>
                     <span className="text-[10px] text-slate-500">
                       {config.venue}
@@ -629,7 +811,8 @@ export default function ScorerClient() {
                       {innings.wickets}
                     </div>
                     <div className="text-xs text-slate-400 font-mono">
-                      {oversString(innings.legalBalls)} / {currentOvers} overs
+                      {oversString(innings.legalBalls)}
+                      {Number.isFinite(currentOvers) ? ` / ${currentOvers} overs` : " overs"}
                     </div>
                   </div>
                   <div className="text-right text-xs text-slate-400 space-y-1 pb-1">
@@ -642,7 +825,8 @@ export default function ScorerClient() {
                     {match.target !== null && runsNeeded !== null && (
                       <>
                         <div className="text-amber-300 font-semibold">
-                          Need {Math.max(runsNeeded, 0)} from {Math.max(ballsLeft, 0)}
+                          Need {Math.max(runsNeeded, 0)}
+                          {ballsLeft !== null ? ` from ${Math.max(ballsLeft, 0)}` : " to win"}
                         </div>
                         {rrr !== null && (
                           <div>
@@ -664,50 +848,96 @@ export default function ScorerClient() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2 space-y-5">
-                {innings.done && match.current === 0 ? (
+                {innings.done && inningsLeft > 0 ? (
                   <div className="glass rounded-2xl p-8 text-center">
-                    <div className="text-5xl mb-3">🥤</div>
-                    <h2 className="text-2xl font-black mb-1">Innings break</h2>
+                    <div className="text-5xl mb-3">{isTest ? "🏛️" : "🥤"}</div>
+                    <h2 className="text-2xl font-black mb-1">
+                      {isTest
+                        ? `Break after innings ${match.innings.length} of ${breakExpected}`
+                        : "Innings break"}
+                    </h2>
                     <p className="text-slate-400 mb-1">
                       {innings.battingTeam} made{" "}
                       <span className="text-white font-bold">
                         {innings.runs}/{innings.wickets}
-                      </span>{" "}
-                      in {oversString(innings.legalBalls)} overs.
-                    </p>
-                    <p className="text-amber-300 text-sm mb-4">
-                      {innings.bowlingTeam} need {(match.innings[0].runs + 1)} to win.
-                    </p>
-                    <div className="flex items-center justify-center gap-2 mb-5">
-                      <span className="text-xs text-slate-400">Chase overs</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={60}
-                        value={config.oversB ?? config.overs}
-                        onChange={(event) => {
-                          const value = Number(event.target.value);
-                          setConfig({
-                            ...config,
-                            oversB: Math.min(
-                              60,
-                              Math.max(1, Number.isFinite(value) ? value : 1)
-                            ),
-                          });
-                        }}
-                        className="w-20 bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                      />
-                      <span className="text-[10px] text-emerald-300 font-semibold">
-                        {formatForOvers(config.oversB ?? config.overs)}
                       </span>
-                    </div>
+                      {innings.declared ? " declared" : ""} in{" "}
+                      {oversString(innings.legalBalls)} overs.
+                    </p>
+                    <p className="text-slate-500 text-xs mb-3">
+                      {scoreline(match, oversFor)}
+                    </p>
+                    {decidedByLead ? (
+                      <p className="text-emerald-300 text-sm font-semibold mb-4">
+                        {decidedByLead} — the fourth innings cannot change it.
+                      </p>
+                    ) : nextTarget !== null ? (
+                      <p className="text-amber-300 text-sm mb-4">
+                        {match.innings.length % 2 === 0
+                          ? opener?.battingTeam
+                          : opener?.bowlingTeam}{" "}
+                        need {nextTarget} to win
+                        {isTest
+                          ? ` (the lead across ${match.innings.length} innings)`
+                          : ""}
+                        .
+                      </p>
+                    ) : (
+                      <p className="text-slate-400 text-sm mb-4">
+                        {match.innings.length % 2 === 0
+                          ? opener?.battingTeam
+                          : opener?.bowlingTeam}{" "}
+                        bat next — no target yet.
+                      </p>
+                    )}
+                    {!isTest && match.innings.length === 1 ? (
+                      <div className="flex items-center justify-center gap-2 mb-5">
+                        <span className="text-xs text-slate-400">Chase overs</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={60}
+                          value={config.oversB ?? config.overs}
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            setConfig({
+                              ...config,
+                              oversB: Math.min(
+                                60,
+                                Math.max(1, Number.isFinite(value) ? value : 1)
+                              ),
+                            });
+                          }}
+                          className="w-20 bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                        <span className="text-[10px] text-emerald-300 font-semibold">
+                          {formatLabel(config.oversB ?? config.overs, false)}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap justify-center gap-3">
                       <button
-                        onClick={startSecondInnings}
+                        onClick={
+                          decidedByLead
+                            ? () => closeMatch(decidedByLead)
+                            : startNextInnings
+                        }
                         className="rounded-xl px-6 py-3 font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.02] transition-all"
                       >
-                        Start the chase
+                        {decidedByLead
+                          ? "Record the result"
+                          : nextTarget !== null
+                          ? "Start the chase"
+                          : `Start innings ${match.innings.length + 1}`}
                       </button>
+                      {isTest ? (
+                        <button
+                          onClick={() => closeMatch()}
+                          className="rounded-xl px-6 py-3 font-bold bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all"
+                        >
+                          Call time — drawn
+                        </button>
+                      ) : null}
                       <button
                         onClick={() => setShowCard((v) => !v)}
                         className="rounded-xl px-6 py-3 font-bold bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all"
@@ -878,11 +1108,11 @@ export default function ScorerClient() {
                         {showCard ? "Hide scorecard" : "Scorecard"}
                       </button>
                       <button
-                        onClick={endInnings}
+                        onClick={() => endInnings(isTest)}
                         disabled={innings.done}
                         className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800/60 border border-slate-700/50 hover:bg-slate-800 disabled:opacity-40 transition-all"
                       >
-                        End innings
+                        {isTest ? 'Declare' : 'End innings'}
                       </button>
                       <button
                         onClick={abandonMatch}
@@ -891,6 +1121,11 @@ export default function ScorerClient() {
                         Abandon
                       </button>
                     </div>
+
+                    <p className="text-[10px] text-slate-500 mt-2">
+                      Keys: 0–6 runs · w wide · n no-ball · x how he is out · u
+                      undo · y redo
+                    </p>
                   </div>
                 )}
 
@@ -900,6 +1135,8 @@ export default function ScorerClient() {
               </div>
 
               <div className="space-y-5">
+                <ScorerRecorder />
+
                 <div className="glass rounded-2xl p-5">
                   <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
                     At the crease
@@ -1023,7 +1260,10 @@ export default function ScorerClient() {
                   <div className="flex justify-between">
                     <span>Format</span>
                     <span className="text-slate-200">
-                      {formatForOvers(currentOvers)} · {currentOvers} overs
+                      {formatTag} ·{" "}
+                      {Number.isFinite(currentOvers)
+                        ? `${currentOvers} overs`
+                        : "uncapped overs"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1103,8 +1343,8 @@ export default function ScorerClient() {
         {!loading && view === "done" && match && (
           <ResultScreen
             match={match}
-            overs={config.overs}
-            chaseOvers={config.oversB ?? config.overs}
+            oversFor={oversFor}
+            formatTag={formatTag}
             venue={config.venue}
             onShare={shareResult}
             onNew={resetToSetup}
@@ -1136,7 +1376,8 @@ function SetupScreen({
   setFormatFilter: (value: string) => void;
   legends: { name: string; runs: number; innings: number; best: number }[];
 }) {
-  const format = formatForOvers(config.overs);
+  const isTest = Boolean(config.isTest);
+  const format = formatLabel(config.overs, isTest);
 
   return (
     <div className="space-y-6">
@@ -1160,27 +1401,60 @@ function SetupScreen({
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">
             Match settings
           </h3>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[false, true].map((test) => (
+              <button
+                key={String(test)}
+                onClick={() => setConfig({ ...config, isTest: test })}
+                className={`rounded-xl px-4 py-3 text-left border transition-all ${
+                  isTest === test
+                    ? "bg-emerald-500/15 border-emerald-500/45"
+                    : "bg-slate-900/50 border-slate-800/70 hover:border-slate-700"
+                }`}
+              >
+                <div className="text-sm font-bold">
+                  {test ? "Test" : "Limited overs"}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {test
+                    ? "Two innings each · declare · draw"
+                    : "One innings each · a target"}
+                </div>
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-slate-500 mb-1.5 block">
-                Overs (1–60)
+                {isTest ? "Overs per innings (0 = unlimited)" : "Overs (1–60)"}
               </label>
               <input
                 type="number"
-                min={1}
-                max={60}
-                value={config.overs}
+                min={isTest ? 0 : 1}
+                max={isTest ? 90 : 60}
+                value={isTest ? config.testOvers ?? 0 : config.overs}
                 onChange={(e) => {
                   const value = Number(e.target.value);
-                  setConfig({
-                    ...config,
-                    overs: Math.min(60, Math.max(1, Number.isFinite(value) ? value : 1)),
-                  });
+                  const clean = Number.isFinite(value) ? value : 0;
+                  setConfig(
+                    isTest
+                      ? { ...config, testOvers: Math.min(90, Math.max(0, clean)) }
+                      : {
+                          ...config,
+                          overs: Math.min(60, Math.max(1, clean)),
+                        }
+                  );
                 }}
                 className="w-full bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               />
               <div className="text-[11px] text-emerald-300 mt-1.5 font-semibold">
-                {format}
+                {isTest
+                  ? (config.testOvers ?? 0) > 0
+                    ? `${config.testOvers} overs per innings`
+                    : "Bat until all out or declare"
+                  : format}
               </div>
             </div>
             <div>
@@ -1648,7 +1922,8 @@ function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
             {innings.runs}/{innings.wickets}
           </div>
           <div className="text-xs text-slate-500 font-mono">
-            {oversString(innings.legalBalls)}/{overs} ov
+            {oversString(innings.legalBalls)}
+            {Number.isFinite(overs) ? `/${overs} ov` : " ov"}
           </div>
         </div>
       </div>
@@ -1792,22 +2067,24 @@ function Scorecard({ innings, overs }: { innings: Innings; overs: number }) {
 
 function ResultScreen({
   match,
-  overs,
-  chaseOvers,
+  oversFor,
+  formatTag,
   venue,
   onShare,
   onNew,
 }: {
   match: MatchState;
-  overs: number;
-  chaseOvers: number;
+  oversFor: (index: number) => number;
+  formatTag: string;
   venue: string;
   onShare: () => void;
   onNew: () => void;
 }) {
-  const [first, second] = match.innings;
   const result = resultText(match);
-  const chaseWon = second.runs >= (match.target ?? Infinity);
+  const last = match.innings[match.innings.length - 1];
+  const chaseWon = Boolean(
+    last?.done && match.target !== null && last.runs >= match.target
+  );
 
   return (
     <div className="space-y-6">
@@ -1816,24 +2093,24 @@ function ResultScreen({
         <div className="relative">
           <div className="text-5xl mb-3">{chaseWon ? "🏆" : "🏏"}</div>
           <div className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">
-            Result · {overs}
-            {chaseOvers !== overs ? `/${chaseOvers}` : ""} overs · {venue}
+            Result · {formatTag} · {venue}
           </div>
           <h2 className="text-3xl sm:text-4xl font-black mb-4">{result}</h2>
-          <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto text-left">
-            {[first, second].map((inn, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto text-left">
+            {match.innings.map((inn, index) => (
               <div
-                key={index}
+                key={`${inn.battingTeam}-${index}`}
                 className="rounded-xl border border-slate-800/70 bg-slate-900/50 px-4 py-3"
               >
                 <div className="text-[11px] text-slate-500 truncate">
                   {inn.battingTeam}
                 </div>
-                <div className="text-2xl font-black font-mono">
+                <div className="text-xl font-black font-mono">
                   {inn.runs}/{inn.wickets}
                 </div>
                 <div className="text-[11px] text-slate-500 font-mono">
-                  {oversString(inn.legalBalls)} overs
+                  {oversString(inn.legalBalls)} ov
+                  {inn.declared ? " · dec" : ""}
                 </div>
               </div>
             ))}
@@ -1855,8 +2132,13 @@ function ResultScreen({
         </div>
       </div>
 
-      <Scorecard innings={first} overs={overs} />
-      <Scorecard innings={second} overs={chaseOvers} />
+      {match.innings.map((inn, index) => (
+        <Scorecard
+          key={`${inn.battingTeam}-card-${index}`}
+          innings={inn}
+          overs={oversFor(index)}
+        />
+      ))}
     </div>
   );
 }

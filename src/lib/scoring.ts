@@ -57,6 +57,11 @@ export function formatForOvers(overs: number): string {
   return "One Day";
 }
 
+/** A Test is not defined by an over count, so its label cannot come from one. */
+export function formatLabel(overs: number, isTest: boolean): string {
+  return isTest ? "Test" : formatForOvers(overs);
+}
+
 export function oversString(balls: number): string {
   return `${Math.floor(balls / 6)}.${balls % 6}`;
 }
@@ -112,6 +117,8 @@ export interface Innings {
   events: BallEvent[];
   fow: string[];
   done: boolean;
+  /** A closed Test innings that ended short of its overs or its wickets. */
+  declared?: boolean;
 }
 
 export interface BallInput {
@@ -315,7 +322,68 @@ export function applyBall(
 export interface MatchState {
   innings: Innings[];
   current: number;
+  /**
+   * Runs the *current* innings must reach to win — the remaining requirement,
+   * not the opponent's whole total. In a four-innings match each side has
+   * already scored in its first innings, so this is set from the difference.
+   */
   target: number | null;
+  /** Each side bats twice, overs are uncapped by default, and time can win. */
+  isTest?: boolean;
+  /** Set when the scorer closes the match; the only way a draw gets a result. */
+  complete?: boolean;
+  /**
+   * A result the scorer recorded by hand. A Test can be decided without the
+   * last side ever batting again — lead after three innings and you have won,
+   * by however many wickets you had left in hand — and no arithmetic over the
+   * innings that were played expresses that.
+   */
+  recordedResult?: string;
+}
+
+/** Innings in a completed Test. */
+export const TEST_INNINGS = 4;
+
+export function expectedInnings(match: MatchState): number {
+  return match.isTest ? TEST_INNINGS : 2;
+}
+
+/**
+ * Whether there is a result to show yet. `complete` is the flag the scorer
+ * sets, and it post-dates saved matches, so a finished two-innings chase is
+ * settled on its own terms rather than being treated as unfinished.
+ */
+export function isSettled(match: MatchState): boolean {
+  if (match.complete) return true;
+  return Boolean(match.innings[expectedInnings(match) - 1]?.done);
+}
+
+/** Runs a side scored across every innings it has batted. */
+export function teamRuns(match: MatchState, team: string): number {
+  return match.innings
+    .filter((innings) => innings.battingTeam === team)
+    .reduce((total, innings) => total + innings.runs, 0);
+}
+
+/**
+ * The scoreline for history rows and the share text. A Test is four parts, so
+ * this cannot name a first and second innings the way a chase does. An
+ * unlimited-over innings shows only the overs bowled.
+ */
+export function scoreline(
+  match: MatchState,
+  oversFor: (index: number) => number
+): string {
+  return match.innings
+    .map((innings, index) => {
+      const limit = oversFor(index);
+      const overs = oversString(innings.legalBalls);
+      return (
+        `${innings.battingTeam} ${innings.runs}/${innings.wickets}` +
+        `${innings.declared ? " d" : ""} (${Number.isFinite(limit) ? `${overs}/${limit}` : overs})`
+      );
+    })
+    .join(" · ");
 }
 
 /** Deep copy for undo stacks and optimistic updates on the client. */
@@ -324,17 +392,19 @@ export function cloneMatch(match: MatchState): MatchState {
 }
 
 export function resultText(match: MatchState): string {
-  const [first, second] = match.innings;
-  if (!second || !first) return "";
+  if (!isSettled(match)) return "";
+  if (match.recordedResult) return match.recordedResult;
+  const last = match.innings[match.innings.length - 1];
+  // A closed match whose final innings never finished was drawn, not won.
+  if (!last || !last.done || match.target === null) return "Drawn";
   const target = match.target;
-  if (target === null) return "";
-  if (second.runs >= target) {
-    const left = maxWickets(second.order.length) - second.wickets;
-    return `${second.battingTeam} won by ${left} wicket${left === 1 ? "" : "s"}`;
+  if (last.runs >= target) {
+    const left = maxWickets(last.order.length) - last.wickets;
+    return `${last.battingTeam} won by ${left} wicket${left === 1 ? "" : "s"}`;
   }
-  if (second.runs === target - 1) {
+  if (last.runs === target - 1) {
     return "Match tied";
   }
-  const margin = target - 1 - second.runs;
-  return `${first.battingTeam} won by ${margin} run${margin === 1 ? "" : "s"}`;
+  const margin = target - 1 - last.runs;
+  return `${last.bowlingTeam} won by ${margin} run${margin === 1 ? "" : "s"}`;
 }

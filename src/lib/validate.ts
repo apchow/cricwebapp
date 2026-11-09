@@ -1,3 +1,6 @@
+// Relative and extension-qualified: `node --test` loads this module too, and
+// it does not understand the "@/lib" alias for value imports.
+import { TEST_INNINGS } from "./scoring.ts";
 import type {
   BallEvent,
   Batter,
@@ -78,6 +81,9 @@ export interface CleanConfig {
   overs: number;
   /** Overs for the chase, when the sides agree on a revised limit. */
   oversB?: number;
+  /** Two innings per side, and an optional cap per innings. */
+  isTest?: boolean;
+  testOvers?: number;
   venue: string;
   ruleIds: string[];
 }
@@ -100,7 +106,22 @@ export function cleanConfig(value: unknown): CleanConfig | null {
     input.oversB === undefined || input.oversB === null
       ? undefined
       : whole(input.oversB, 1, 60) ?? undefined;
-  return { teamA, teamB, overs, ...(oversB ? { oversB } : {}), venue, ruleIds };
+  // A resumed Test has to know it is a Test: without these two the innings cap
+  // reappears and the format badge quietly changes under the scorer.
+  const testOvers =
+    input.testOvers === undefined || input.testOvers === null
+      ? undefined
+      : whole(input.testOvers, 0, 90) ?? undefined;
+  return {
+    teamA,
+    teamB,
+    overs,
+    ...(oversB ? { oversB } : {}),
+    ...(bool(input.isTest) ? { isTest: true } : {}),
+    ...(testOvers ? { testOvers } : {}),
+    venue,
+    ruleIds,
+  };
 }
 
 function cleanBatter(value: unknown): Batter | null {
@@ -183,7 +204,9 @@ function cleanInnings(value: unknown): Innings | null {
     .map((line) => text(line, 80))
     .filter((line): line is string => Boolean(line));
 
-  const legalBalls = whole(input.legalBalls, 0, 360) ?? 0;
+  // 60 overs used to be the ceiling, and a ball past it came back as zero —
+  // which is every innings of a Test played to time.
+  const legalBalls = whole(input.legalBalls, 0, 1200) ?? 0;
   const wickets = whole(input.wickets, 0, 10) ?? 0;
   const extras = record(input.extras);
   const striker = whole(input.striker, 0, order.length - 1) ?? 0;
@@ -217,6 +240,7 @@ function cleanInnings(value: unknown): Innings | null {
     events,
     fow,
     done: bool(input.done),
+    ...(bool(input.declared) ? { declared: true } : {}),
   };
 }
 
@@ -226,14 +250,26 @@ export function cleanMatch(value: unknown): MatchState | null {
     return null;
   }
   const innings = input.innings
-    .slice(0, 2)
+    .slice(0, TEST_INNINGS)
     .map(cleanInnings)
     .filter((item): item is Innings => Boolean(item));
   if (!innings.length) return null;
   const current = whole(input.current, 0, innings.length - 1) ?? 0;
   const target =
     input.target === null ? null : whole(input.target, 1, 3001);
-  return { innings, current, target };
+  // The Test flags have to survive the round trip: without `isTest` a resumed
+  // match is read back as a two-innings game, so innings three and four would
+  // look like a finished match, and a recorded result would vanish.
+  return {
+    innings,
+    current,
+    target,
+    ...(bool(input.isTest) ? { isTest: true } : {}),
+    ...(bool(input.complete) ? { complete: true } : {}),
+    ...(text(input.recordedResult, 120)
+      ? { recordedResult: text(input.recordedResult, 120) as string }
+      : {}),
+  };
 }
 
 export function cleanXIPlayers(value: unknown): number[] | null {
@@ -268,14 +304,17 @@ export function cleanMatchEntry(value: unknown): CleanMatchEntry | null {
   if (!input) return null;
   const format = text(input.format, 20);
   const venue = text(input.venue, 20);
-  const scoreline = text(input.scoreline, 200);
+  // Four innings of two 24-character team names overflows what a chase needs.
+  const scoreline = text(input.scoreline, 400);
   const result = text(input.result, 120);
   if (!format || !venue || !scoreline || !result) return null;
   if (!Array.isArray(input.innings)) return null;
   const innings = input.innings
-    .slice(0, 2)
+    .slice(0, TEST_INNINGS)
     .map(cleanInnings)
     .filter((item): item is Innings => Boolean(item));
-  if (innings.length !== 2) return null;
+  // A Test can be closed after three innings, or drawn inside the second, so
+  // this cannot demand the pair a limited match always has.
+  if (!innings.length) return null;
   return { format, venue, scoreline, result, innings };
 }

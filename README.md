@@ -12,13 +12,50 @@ wall. No database service, no third-party auth, no telemetry —
 | --- | --- |
 | `/retention` | Protect six players from the IPL auction pool under capped/uncapped and purse rules. |
 | `/xi-builder` | Name your eleven on a top-down pitch — drag to a slot, tap **Add**, or tap a player then a slot. Series mode is locked to the actual India tour of New Zealand squads; franchise mode keeps the four-overseas cap and purse-aware auto-pick. Signed-in XIs can be saved to your account. |
-| `/scorer` | Ball-by-ball scoring, 1–60 overs, custom gully rules, undo, scorecard, auto-saved to your account. **Sign-in required.** |
+| `/scorer` | Ball-by-ball scoring with custom gully rules, undo, scorecard, a **Test** format, and hour-long camera recording. Auto-saved to your account. **Sign-in required.** |
 | `/mini-game` | Street Strike — a top-down batting simulation with real delivery timings and timing-error outcomes. Personal best stays in your browser. |
 | `/players` | Search the whole player database; your own scored-match figures sit on top. |
 | `/series` | Points table and net run rate across your completed matches. |
 | `/history` | Match centre: every scored match with analytics. |
 | `/dashboard` | Streaks, aggregates and your saved XIs. |
 | `/banter` | A shared comment wall, hosted on the server. Reading is public; posting needs an account. Only the **latest 10 takes** are kept — older ones roll off. Links are rejected server-side, so the wall cannot be used to advertise. |
+
+## Scoring a match
+
+Ball entry works by keyboard as well as by tap, which is the point when one
+hand is holding a phone on a brick: `0`–`6` runs, `w` wide, `n` no-ball, `x` how
+he is out, `u` undo, `y` redo. Nothing typed into a name field, and nothing
+while a modal is open, is read as a shortcut.
+
+**Test** is a format choice, not an over count. Each side bats twice, an innings
+ends on all out, a declaration, or a cap you can set (0 means uncapped), and the
+match can be closed as a draw with time called. Two things about the arithmetic
+are worth knowing:
+
+- The fourth innings chases **the lead**, not a total. `chaseTargetFor` in
+  `src/app/scorer/scorer-client.tsx` computes it from `teamRuns`, so an innings-2
+  target in a limited match and a four-innings lead use the same code path.
+- A Test can be decided without the last side batting again — 100 and 100
+  against 400/6 is *won by 4 wickets*, and no arithmetic over the innings still
+  to come expresses that. The scorer records it explicitly
+  (`recordedResult`), and the engine returns that string verbatim.
+
+Follow-on needs no code: sides alternate A, B, A, B whichever way they got there.
+
+### Camera recording
+
+`Record` in the scorer's right column captures the camera (microphone optional)
+and keeps going for hours. On Chrome and Edge the chunks stream into a file you
+choose once, so memory stays flat across a full day; Firefox and Safari have no
+file-write API, so the film is rotated into 10-minute segments that download as
+they complete — **allow multiple downloads** or everything after segment one is
+blocked. Either way chunks flush every 5 seconds, so a crash loses at most that.
+Closing the tab while recording is intercepted with a confirmation, and nothing
+is uploaded: the film never leaves the device.
+
+`src/lib/record.ts` is the browser-free half (mime selection, byte and clock
+formatting, segment timing, the two chunk sinks), and
+`src/components/scorer-recorder.tsx` owns the `MediaRecorder` lifecycle.
 
 ## The live series
 

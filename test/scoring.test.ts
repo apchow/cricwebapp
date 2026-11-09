@@ -3,11 +3,16 @@ import assert from "node:assert/strict";
 
 import {
   applyBall,
+  expectedInnings,
   formatForOvers,
+  formatLabel,
+  isSettled,
   makeInnings,
   maxWickets,
   oversString,
   resultText,
+  scoreline,
+  teamRuns,
   type Innings,
   type MatchState,
 } from "../src/lib/scoring.ts";
@@ -283,7 +288,7 @@ test("resultText describes a successful chase", () => {
   const match: MatchState = {
     innings: [
       makeInnings("IND", "AUS", ORDER, BOWLERS),
-      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 161, wickets: 2 },
+      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 161, wickets: 2, done: true },
     ],
     current: 1,
     target: 161,
@@ -295,7 +300,7 @@ test("resultText describes a tie", () => {
   const match: MatchState = {
     innings: [
       makeInnings("IND", "AUS", ORDER, BOWLERS),
-      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 160, wickets: 8 },
+      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 160, wickets: 8, done: true },
     ],
     current: 1,
     target: 161,
@@ -307,10 +312,107 @@ test("resultText describes a win by runs", () => {
   const match: MatchState = {
     innings: [
       makeInnings("IND", "AUS", ORDER, BOWLERS),
-      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 140, wickets: 10 },
+      { ...makeInnings("AUS", "IND", ORDER, BOWLERS), runs: 140, wickets: 10, done: true },
     ],
     current: 1,
     target: 161,
   };
   assert.equal(resultText(match), "IND won by 20 runs");
+});
+
+/* ─── Test matches ──────────────────────────────────────── */
+
+const closed = (
+  battingTeam: string,
+  bowlingTeam: string,
+  runs: number,
+  wickets: number,
+  extra: Partial<Innings> = {}
+): Innings => ({
+  ...makeInnings(battingTeam, bowlingTeam, ORDER, BOWLERS),
+  runs,
+  wickets,
+  legalBalls: 240,
+  done: true,
+  ...extra,
+});
+
+/** IND 300 + 200, AUS 250 then chasing 251. */
+function fourInnings(chase: Partial<Innings>): MatchState {
+  return {
+    innings: [
+      closed("IND", "AUS", 300, 10),
+      closed("AUS", "IND", 250, 10),
+      closed("IND", "AUS", 200, 8),
+      { ...closed("AUS", "IND", 0, 0), done: false, ...chase },
+    ],
+    current: 3,
+    target: 251,
+    isTest: true,
+  };
+}
+
+test("a Test innings is not ended by an over count", () => {
+  const innings = closed("IND", "AUS", 0, 0, { done: false, legalBalls: 0 });
+  const after = applyBall(innings, { runs: 1 }, Number.POSITIVE_INFINITY, null);
+  assert.equal(after.done, false);
+  assert.equal(after.legalBalls, 1);
+});
+
+test("expectedInnings is four for a Test and two otherwise", () => {
+  assert.equal(expectedInnings({ innings: [], current: 0, target: null, isTest: true }), 4);
+  assert.equal(expectedInnings({ innings: [], current: 0, target: null }), 2);
+});
+
+test("a Test is undecided until the fourth innings is done", () => {
+  const partway = fourInnings({ done: false });
+  partway.innings = partway.innings.slice(0, 3);
+  partway.current = 2;
+  assert.equal(isSettled(partway), false);
+  assert.equal(resultText(partway), "");
+});
+
+test("teamRuns totals a side across its innings", () => {
+  assert.equal(teamRuns(fourInnings({ done: false }), "IND"), 500);
+  assert.equal(teamRuns(fourInnings({ done: false }), "AUS"), 250);
+});
+
+test("resultText reports a Test won by runs on the aggregate", () => {
+  // AUS 250 + 240 = 490 against IND's 500, chasing a further 251.
+  const match = fourInnings({ runs: 240, wickets: 10, done: true });
+  assert.equal(resultText(match), "IND won by 10 runs");
+});
+
+test("resultText reports a Test won by wickets", () => {
+  const match = fourInnings({ runs: 260, wickets: 4, done: true });
+  assert.equal(resultText(match), "AUS won by 6 wickets");
+});
+
+test("a Test still batting when time runs out is drawn", () => {
+  const match = fourInnings({ runs: 180, wickets: 6 });
+  match.complete = true;
+  assert.equal(resultText(match), "Drawn");
+});
+
+test("a tie needs the chase to land exactly one short", () => {
+  const match = fourInnings({ runs: 250, wickets: 10, done: true });
+  assert.equal(resultText(match), "Match tied");
+});
+
+test("formatLabel calls a Test a Test whatever the overs", () => {
+  assert.equal(formatLabel(6, true), "Test");
+  assert.equal(formatLabel(6, false), formatForOvers(6));
+});
+
+test("scoreline marks a declaration and drops an unlimited cap", () => {
+  const match = fourInnings({ runs: 240, wickets: 10, done: true });
+  match.innings[2] = { ...match.innings[2], declared: true };
+  const line = scoreline(match, () => Number.POSITIVE_INFINITY);
+  assert.match(line, /IND 200\/8 d \(40\.0\)/);
+  assert.doesNotMatch(line, /\(40\.0\/\d+\)/, "no overs cap shown when the innings is uncapped");
+  assert.equal(match.innings.length, 4);
+
+  const capped = scoreline(match, (index) => (index === 1 ? 20 : 50));
+  assert.match(capped, /\(40\.0\/50\)/);
+  assert.match(capped, /\(40\.0\/20\)/);
 });
