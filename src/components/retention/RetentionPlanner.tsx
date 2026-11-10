@@ -579,10 +579,20 @@ function PlayerCard({
         <span className="ml-auto text-[10px] font-bold text-slate-500">₹{player.retentionValue.toFixed(1)}cr</span>
       </div>
       <h4 className="text-sm font-bold text-white group-hover:text-orange-300 transition">{player.name}</h4>
-      <p className="text-[10px] text-slate-500 mb-2">
-        {player.iplMatches} IPL · {player.runs} runs · {player.strikeRate ? player.strikeRate.toFixed(1) + " SR" : "—"} ·
-        {player.wickets} wk · {player.economy ? player.economy.toFixed(2) + " Econ" : "—"}
-      </p>
+      <div className="mb-2">
+        <p className="text-[10px] text-slate-500">
+          {player.iplMatches} IPL · {player.runs} runs · {player.strikeRate ? player.strikeRate.toFixed(1) + " SR" : "—"} ·
+          {player.wickets} wk · {player.economy ? player.economy.toFixed(2) + " Econ" : "—"}
+        </p>
+        {player.seasonMatches > 0 && (
+          <p className="text-[10px] text-slate-500">
+            2026: {player.seasonMatches} g · {player.seasonRuns} runs
+            {player.seasonStrikeRate ? ` · ${player.seasonStrikeRate.toFixed(1)} SR` : ""}
+            {player.seasonWickets ? ` · ${player.seasonWickets} wk` : ""}
+            {player.seasonEconomy ? ` · ${player.seasonEconomy.toFixed(2)} Econ` : ""}
+          </p>
+        )}
+      </div>
       <div className="flex gap-1">
         {retained ? (
           <>

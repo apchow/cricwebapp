@@ -24,6 +24,13 @@ export type RetentionPlayer = {
   strikeRate: number | null;
   wickets: number;
   economy: number | null;
+  /** The most recent season on file, kept apart so the card never mixes
+   * career totals with one year's returns. */
+  seasonRuns: number;
+  seasonBalls: number;
+  seasonWickets: number;
+  seasonStrikeRate: number | null;
+  seasonEconomy: number | null;
   lastPlayed: string | null;
 };
 

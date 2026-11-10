@@ -99,27 +99,30 @@ Squads move with injuries — edit `fixtures.ts`; nothing else has to change.
 `public/data/players.json` is the single pool behind retention, the XI builder
 and the stats hub. Every Full Member has at least 15 active players.
 
-**Franchise labels are derived, not editorial.** Each player's `team` is where
-they actually played in IPL 2026, matched by the Cricsheet registry id rather
-than by spelling, plus the trades iplt20.com confirmed up to 10 Nov 2026 (Pant
-to DC, Kuldeep to LSG, Natarajan and Khaleel to SRH, Ansari to DC, Livingstone
-and Edwards to CSK, Ellis to SRH); Ajinkya Rahane is retired and now an inactive
-free agent. `src/data/ipl-squads.json` is rebuilt from the same 74 matches, so
-its `matches`, `runs`, `balls`, `strikeRate`, `wickets`, `economy` and
-`lastPlayed` are real IPL 2026 figures — and the five players who had been
-listed at two franchises at once are now listed once. Retention and release
-lists for 2027 are due 17 Nov 2026 and were not announced when this was built,
-so nothing beyond the confirmed trades is assumed.
+**Franchise labels and match figures are derived, not editorial.** Regenerate
+them with `node scripts/sync-ipl-squads.mjs <dir of Cricsheet IPL json files>`
+after downloading https://cricsheet.org/downloads/ipl_json.zip. The script joins
+on the registry id that `ipl-squads.json` already stores — never on spelling,
+because Cricsheet writes "RD Chahar" for Rahul Chahar and "DL Chahar" for his
+cousin Deepak, and a fuzzy initials match once put Pakistan's Shadab Khan into
+Chennai's pool. It refreshes career and last-season figures separately, applies
+only the trades iplt20.com has confirmed (Pant to DC, Kuldeep to LSG, Natarajan
+and Khaleel to SRH, Livingstone, Edwards, Ansari, Ellis), expands scorebook
+initials to the name a franchise's own squad page prints, drops the retired, and
+adds squad members the database was missing. Retention and release lists for
+2027 are due 17 Nov 2026 and were not announced, so nothing beyond that is
+assumed. `test/squad-data.test.ts` guards what a regeneration can break: no
+duplicated player, no zeroed wicket column, no Pakistan player on a franchise
+list, and the two files agreeing on every shared name.
 
-**The ratings are editorial, not measured.** `form`, `ppImpact`, `deathImpact`
-and `vfm` are judgement estimates for fantasy selection, as are the added tour
-players' attributes. This app has no statistics ingest for those columns, and the
-dataset says so in its own `sourcing` field.
-`scripts/add-internationals.mjs` is how players get added: it is idempotent
-(existing names are skipped), assigns `FREE AGENT` rather than guessing IPL
-contracts, and derives `punditTag` from form and value. If you want real numbers
-behind those columns, wire a Cricsheet ingest and regenerate — do not let
-editorial estimates pass for statistics in anything you sell.
+**The ratings are estimates.** `form`, `ppImpact`, `deathImpact` and `vfm` are
+banded from each player's real batting and bowling output by the documented
+formula in `estimate()` — closer to measured than the guesses they replaced,
+still not published ratings, and the dataset says so in its own `sourcing`
+field. `scripts/add-internationals.mjs` remains how non-IPL internationals get
+added: idempotent, `FREE AGENT` rather than a guessed contract, `punditTag`
+derived from form and value. Do not let these numbers pass for statistics in
+anything you sell.
 
 ## Live scores on the home page
 

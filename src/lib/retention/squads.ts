@@ -36,6 +36,11 @@ type RawPlayer = {
   strikeRate?: number | null;
   wickets?: number;
   economy?: number | null;
+  seasonRuns?: number;
+  seasonBalls?: number;
+  seasonWickets?: number;
+  seasonStrikeRate?: number | null;
+  seasonEconomy?: number | null;
   lastPlayed?: string | null;
 };
 
@@ -71,6 +76,11 @@ function toPlayer(p: RawPlayer): RetentionPlayer {
     strikeRate: p.strikeRate ?? null,
     wickets: Number(p.wickets ?? 0),
     economy: p.economy ?? null,
+    seasonRuns: Number(p.seasonRuns ?? 0),
+    seasonBalls: Number(p.seasonBalls ?? 0),
+    seasonWickets: Number(p.seasonWickets ?? 0),
+    seasonStrikeRate: p.seasonStrikeRate ?? null,
+    seasonEconomy: p.seasonEconomy ?? null,
     lastPlayed: p.lastPlayed ?? null,
   };
 }
