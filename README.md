@@ -14,7 +14,7 @@ wall. No database service, no third-party auth, no telemetry —
 | `/xi-builder` | Name your eleven on a top-down pitch — drag to a slot, tap **Add**, or tap a player then a slot. Series mode is locked to the actual India tour of New Zealand squads; franchise mode keeps the four-overseas cap and purse-aware auto-pick. Signed-in XIs can be saved to your account. |
 | `/scorer` | Ball-by-ball scoring with custom gully rules, undo, scorecard, a **Test** format, a **turf 1 v 1** preset with a chosen wicket count, and hour-long camera recording. Auto-saved to your account. **Sign-in required.** |
 | `/mini-game` | Street Strike — a top-down batting simulation with real delivery timings and timing-error outcomes. Personal best stays in your browser. |
-| `/players` | Search the whole player database; your own scored-match figures sit on top. |
+| `/players` | Search the whole player database; your own scored-match figures sit on top. Franchise filters are abbreviation chips in team colours, and Pakistan players carry **no price** — they have never been in the IPL, so `iplPriceOf` returns null and the UI says "Not in IPL". |
 | `/series` | Points table and net run rate across your completed matches. |
 | `/history` | Match centre: every scored match with analytics. |
 | `/dashboard` | Streaks, aggregates and your saved XIs. |

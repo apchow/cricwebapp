@@ -194,15 +194,10 @@ export default function RetentionClient() {
                     : "border-slate-800 bg-slate-900/60 hover:bg-slate-900"
                 }`}
               >
-                <TeamBadge
-                  team={meta.id}
-                  size={34}
-                  active={selected}
-                  glyph={meta.logo}
-                />
+                <TeamBadge team={meta.id} size={34} active={selected} />
                 <span className="text-left leading-tight">
                   <span className="block text-xs font-black text-slate-100">
-                    {meta.short}
+                    {meta.name}
                   </span>
                   <span className="block text-[10px] text-slate-500 whitespace-nowrap">
                     {meta.city}

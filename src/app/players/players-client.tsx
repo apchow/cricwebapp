@@ -7,7 +7,7 @@ import TeamBadge from "@/components/team-badge";
 import Toast from "@/components/toast";
 import ToolHeader from "@/components/tool-header";
 import { BattingTable, BowlingTable } from "@/components/stat-tables";
-import { crores, PLAYERS, PLAYER_UPDATED, PLAYER_VERSION } from "@/data/player-db";
+import { crores, iplPriceOf, PLAYERS, PLAYER_UPDATED, PLAYER_VERSION } from "@/data/player-db";
 import { TEAMS } from "@/data/teams";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import { flagOf } from "@/lib/flags";
@@ -143,9 +143,15 @@ function PlayerCard({
           {player.punditTag}
         </span>
         <div className="flex items-center gap-2.5">
-          <span className="font-mono font-black text-slate-100">
-            {crores(player.basePrice)}
-          </span>
+          {iplPriceOf(player) === null ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400 font-bold uppercase tracking-wider">
+              Not in IPL
+            </span>
+          ) : (
+            <span className="font-mono font-black text-slate-100">
+              {crores(player.basePrice)}
+            </span>
+          )}
           <Link
             href={`/players/${player.id}`}
             aria-label={`View ${player.name}'s profile`}
@@ -238,7 +244,7 @@ export default function PlayersClient() {
       return true;
     }).sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "price") return b.basePrice - a.basePrice;
+      if (sort === "price") return (iplPriceOf(b) ?? -1) - (iplPriceOf(a) ?? -1);
       if (sort === "vfm") return b.vfm - a.vfm || b.form - a.form;
       return b.form - a.form || b.vfm - a.vfm;
     });
@@ -337,14 +343,10 @@ export default function PlayersClient() {
                     onClick={() => setTeam(meta.id)}
                     aria-pressed={team === meta.id}
                     aria-label={meta.name}
+                    title={meta.name}
                     className="shrink-0 rounded-xl transition-transform hover:scale-105"
                   >
-                    <TeamBadge
-                      team={meta.id}
-                      size={38}
-                      active={team === meta.id}
-                      glyph={meta.logo}
-                    />
+                    <TeamBadge team={meta.id} size={38} active={team === meta.id} />
                   </button>
                 ))}
               </div>

@@ -28,6 +28,14 @@ export function crores(lakhs: number): string {
   return `₹${value.toFixed(value % 1 === 0 ? 0 : 2)} Cr`;
 }
 
+/**
+ * Pakistan players have never been part of the IPL, so a crore figure on them
+ * is fiction. Null means "show no money", not "free".
+ */
+export function iplPriceOf(player: Player): number | null {
+  return player.country === "PAK" ? null : player.basePrice;
+}
+
 export function lakhsToCrore(lakhs: number): number {
   return lakhs / 100;
 }

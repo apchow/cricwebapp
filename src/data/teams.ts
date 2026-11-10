@@ -5,13 +5,12 @@ export interface TeamMeta {
   short: string;
   name: string;
   city: string;
-  /** Hex used for the logo monogram and dots. */
+  /** Hex used for the abbreviation chip and dots. */
   primary: string;
   /** Tailwind gradient for active chips and cards. */
   gradient: string;
   /** Tailwind ring/border colour when the team is selected. */
   ring: string;
-  logo: string;
 }
 
 export const TEAMS: TeamMeta[] = [
@@ -23,7 +22,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#F9CD05",
     gradient: "from-yellow-400 to-amber-600",
     ring: "border-yellow-400/60",
-    logo: "🦁",
   },
   {
     id: "MI",
@@ -33,7 +31,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#1D6BE0",
     gradient: "from-blue-500 to-indigo-700",
     ring: "border-blue-400/60",
-    logo: "🌊",
   },
   {
     id: "RCB",
@@ -43,7 +40,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#E4232B",
     gradient: "from-red-500 to-rose-700",
     ring: "border-red-400/60",
-    logo: "🔥",
   },
   {
     id: "KKR",
@@ -53,7 +49,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#8B5CF6",
     gradient: "from-violet-500 to-purple-800",
     ring: "border-violet-400/60",
-    logo: "⚔️",
   },
   {
     id: "DC",
@@ -62,8 +57,7 @@ export const TEAMS: TeamMeta[] = [
     city: "Delhi",
     primary: "#2563EB",
     gradient: "from-sky-500 to-blue-700",
-    ring: "border-sky-400/60",
-    logo: "🏛️",
+    ring: "border-sky-500/60",
   },
   {
     id: "RR",
@@ -73,7 +67,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#EA1A85",
     gradient: "from-pink-500 to-fuchsia-700",
     ring: "border-pink-400/60",
-    logo: "👑",
   },
   {
     id: "SRH",
@@ -82,8 +75,7 @@ export const TEAMS: TeamMeta[] = [
     city: "Hyderabad",
     primary: "#F26522",
     gradient: "from-orange-500 to-red-600",
-    ring: "border-orange-400/60",
-    logo: "🌅",
+    ring: "border-orange-500/60",
   },
   {
     id: "PBKS",
@@ -93,7 +85,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#D71920",
     gradient: "from-rose-500 to-red-700",
     ring: "border-rose-400/60",
-    logo: "🦅",
   },
   {
     id: "GT",
@@ -103,7 +94,6 @@ export const TEAMS: TeamMeta[] = [
     primary: "#C9A227",
     gradient: "from-amber-500 to-slate-700",
     ring: "border-amber-400/60",
-    logo: "🛡️",
   },
   {
     id: "LSG",
@@ -112,8 +102,7 @@ export const TEAMS: TeamMeta[] = [
     city: "Lucknow",
     primary: "#00AEEF",
     gradient: "from-cyan-500 to-blue-700",
-    ring: "border-cyan-400/60",
-    logo: "🐉",
+    ring: "border-cyan-500/60",
   },
 ];
 

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import TeamBadge from "@/components/team-badge";
 import Toast from "@/components/toast";
-import { crores } from "@/data/player-db";
+import { crores, iplPriceOf } from "@/data/player-db";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import { flagOf } from "@/lib/flags";
 import { battingAverage, bowlingAverage, economy, strikeRate } from "@/lib/stats";
@@ -67,7 +67,7 @@ function Radar({ player }: { player: Player }) {
 
   return (
     <svg
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={`-46 -6 ${size + 92} ${size + 12}`}
       className="w-full max-w-[240px] mx-auto"
       role="img"
       aria-label={`Attribute profile: ${axes
@@ -260,9 +260,15 @@ export default function PlayerProfile({
             </div>
 
             <div className="flex flex-col items-end gap-2">
-              <span className="font-mono font-black text-lg text-slate-100">
-                {crores(player.basePrice)}
-              </span>
+              {iplPriceOf(player) === null ? (
+                <span className="text-[10px] px-2.5 py-1 rounded-full border border-slate-600/50 bg-slate-700/20 text-slate-400 font-bold uppercase tracking-wider">
+                  Not in IPL
+                </span>
+              ) : (
+                <span className="font-mono font-black text-lg text-slate-100">
+                  {crores(player.basePrice)}
+                </span>
+              )}
               <button
                 onClick={toggleFavourite}
                 aria-pressed={favourite}
