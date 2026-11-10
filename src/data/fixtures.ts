@@ -45,82 +45,99 @@ export interface InternationalSeries {
   windows: SquadWindow[];
 }
 
+/**
+ * BCCI and NZC announced two groups each on 16 Oct / 10-11 Oct 2026; these lists
+ * also carry every withdrawal and replacement since, so a player out of the series
+ * never appears in a pool the user can pick.
+ */
 const IND_1_3: Squad = {
   captain: "Shubman Gill",
   viceCaptain: "Shreyas Iyer",
-  keepers: ["Ishan Kishan", "KL Rahul", "Kumar Kushagra"],
+  keepers: ["KL Rahul", "Ishan Kishan"],
   players: [
     "Shubman Gill",
-    "Shreyas Iyer",
     "Rohit Sharma",
     "Virat Kohli",
-    "Ruturaj Gaikwad",
-    "Tilak Varma",
-    "Nitish Kumar Reddy",
-    "Ishan Kishan",
+    "Shreyas Iyer",
     "KL Rahul",
-    "Kumar Kushagra",
+    "Ishan Kishan",
+    "Ruturaj Gaikwad",
+    "Nitish Kumar Reddy",
+    "Axar Patel",
     "Naman Dhir",
     "Anshul Kamboj",
+    "Gurnoor Brar",
+    "Auqib Nabi",
     "Kuldeep Yadav",
     "Arshdeep Singh",
     "Mohammed Siraj",
-    "Prasidh Krishna",
-    "Yash Thakur",
-    "Gurnoor Brar",
   ],
 };
 
 const IND_4_5: Squad = {
-  captain: "Shubman Gill",
-  viceCaptain: "Shreyas Iyer",
-  keepers: ["Ishan Kishan", "KL Rahul", "Kumar Kushagra"],
+  captain: "Shreyas Iyer",
+  viceCaptain: "Ishan Kishan",
+  keepers: ["Ishan Kishan", "Kumar Kushagra"],
   players: [
-    "Shubman Gill",
     "Shreyas Iyer",
     "Rohit Sharma",
     "Virat Kohli",
-    "Ruturaj Gaikwad",
-    "Tilak Varma",
-    "Nitish Kumar Reddy",
     "Ishan Kishan",
-    "KL Rahul",
-    "Kumar Kushagra",
-    "Naman Dhir",
+    "Tilak Varma",
+    "Ruturaj Gaikwad",
+    "Nitish Kumar Reddy",
     "Axar Patel",
+    "Naman Dhir",
+    "Gurnoor Brar",
+    "Auqib Nabi",
+    "Kumar Kushagra",
     "Kuldeep Yadav",
     "Arshdeep Singh",
     "Mohammed Siraj",
     "Yash Thakur",
-    "Gurnoor Brar",
-    "Auqab Nabi",
   ],
 };
 
-const NZ_SQUAD: Squad = {
+const NZ_1_3: Squad = {
   captain: "Mitchell Santner",
-  viceCaptain: "Michael Bracewell",
-  keepers: ["Devon Conway", "Tim Seifert"],
+  viceCaptain: null,
+  keepers: ["Tom Latham", "Tim Seifert"],
   players: [
     "Mitchell Santner",
-    "Finn Allen",
-    "Devon Conway",
-    "Mark Chapman",
+    "Michael Bracewell",
+    "Tom Latham",
+    "Tim Seifert",
+    "Will Young",
     "Daryl Mitchell",
     "Glenn Phillips",
-    "Michael Bracewell",
-    "Josh Clarkson",
-    "Bevon Jacobs",
-    "Tim Seifert",
+    "Henry Nicholls",
+    "Dean Foxcroft",
+    "Nick Kelly",
     "Matt Henry",
     "Kyle Jamieson",
     "Jacob Duffy",
-    "Lockie Ferguson",
-    "Adam Milne",
-    "Matthew Fisher",
-    "Zak Foulkes",
     "Nathan Smith",
-    "Blair Tickner",
+    "Kristian Clarke",
+  ],
+};
+
+const NZ_4_5: Squad = {
+  captain: "Mitchell Santner",
+  viceCaptain: null,
+  keepers: ["Tim Seifert", "Mitch Hay"],
+  players: [
+    "Mitchell Santner",
+    "Finn Allen",
+    "Michael Bracewell",
+    "Mark Chapman",
+    "Tim Seifert",
+    "Mitch Hay",
+    "Will Young",
+    "Nick Kelly",
+    "Matt Henry",
+    "Jacob Duffy",
+    "Matthew Fisher",
+    "Kristian Clarke",
   ],
 };
 
@@ -142,8 +159,8 @@ export const SERIES: InternationalSeries[] = [
       { no: 5, day: "15 Nov 2026", venue: "Bay Oval", city: "Tauranga" },
     ],
     windows: [
-      { label: "ODIs 1-3", fixtures: [1, 2, 3], IND: IND_1_3, NZ: NZ_SQUAD },
-      { label: "ODIs 4-5", fixtures: [4, 5], IND: IND_4_5, NZ: NZ_SQUAD },
+      { label: "ODIs 1-3", fixtures: [1, 2, 3], IND: IND_1_3, NZ: NZ_1_3 },
+      { label: "ODIs 4-5", fixtures: [4, 5], IND: IND_4_5, NZ: NZ_4_5 },
     ],
   },
 ];

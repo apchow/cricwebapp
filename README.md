@@ -76,13 +76,22 @@ Stadium, 10 Nov Seddon Park (Hamilton), 13 and 15 Nov Bay Oval (Tauranga). Both
 boards named **split squads**, so ODIs 1-3 and ODIs 4-5 draw from different
 player lists and the builder's pool changes when you change the match.
 
+Each window is the squad as announced (BCCI 16 Oct, NZC/ICC 10-11 Oct) **with
+every in-series change already applied**: Prasidh Krishna withdrew on 30 Oct and
+Auqib Nabi was added to all five on 31 Oct; for New Zealand, Mark Chapman and
+Rachin Ravindra withdrew on 1 Nov (Tim Seifert, Dean Foxcroft and Henry Nicholls
+in), Devon Conway on 6 Nov (Nick Kelly in), and Lockie Ferguson and Blair
+Tickner on 9 Nov (Kristian Clarke in, Matt Henry cleared for the fourth ODI).
+Shreyas Iyer captains the India group for ODIs 4-5, with Ishan Kishan vice-captain.
+
 The XI builder only offers players named in that match's squad — you cannot pick
 someone who was not selected. The fixture bar states how many of each squad are
 on file, so a gap is visible instead of silent.
 
 Sources: [ESPNcricinfo schedule](https://www.cricinfo.com/series/india-in-new-zealand-2026-27-1539421/match-schedule-fixtures-and-results),
 [Wikipedia tour page](https://en.wikipedia.org/wiki/Indian_cricket_team_in_New_Zealand_in_2026%E2%80%9327),
-[BCCI squad update](https://www.bcci.tv/news/article/india-and-india-a-squad-updates-for-new-zealand-tour).
+[BCCI squad announcement](https://www.bcci.tv/news/article/indias-odi-and-test-squads-for-new-zealand-tour-announced),
+[NZC split squads](https://www.icc-cricket.com/news/new-zealand-confirm-split-odi-squads-for-india-series).
 Squads move with injuries — edit `fixtures.ts`; nothing else has to change.
 
 ## Player data and its honest limits
@@ -90,9 +99,22 @@ Squads move with injuries — edit `fixtures.ts`; nothing else has to change.
 `public/data/players.json` is the single pool behind retention, the XI builder
 and the stats hub. Every Full Member has at least 15 active players.
 
+**Franchise labels are derived, not editorial.** Each player's `team` is where
+they actually played in IPL 2026, matched by the Cricsheet registry id rather
+than by spelling, plus the trades iplt20.com confirmed up to 10 Nov 2026 (Pant
+to DC, Kuldeep to LSG, Natarajan and Khaleel to SRH, Ansari to DC, Livingstone
+and Edwards to CSK, Ellis to SRH); Ajinkya Rahane is retired and now an inactive
+free agent. `src/data/ipl-squads.json` is rebuilt from the same 74 matches, so
+its `matches`, `runs`, `balls`, `strikeRate`, `wickets`, `economy` and
+`lastPlayed` are real IPL 2026 figures — and the five players who had been
+listed at two franchises at once are now listed once. Retention and release
+lists for 2027 are due 17 Nov 2026 and were not announced when this was built,
+so nothing beyond the confirmed trades is assumed.
+
 **The ratings are editorial, not measured.** `form`, `ppImpact`, `deathImpact`
-and `vfm` are judgement estimates for fantasy selection. This app has no
-statistics ingest, and the dataset says so in its own `sourcing` field.
+and `vfm` are judgement estimates for fantasy selection, as are the added tour
+players' attributes. This app has no statistics ingest for those columns, and the
+dataset says so in its own `sourcing` field.
 `scripts/add-internationals.mjs` is how players get added: it is idempotent
 (existing names are skipped), assigns `FREE AGENT` rather than guessing IPL
 contracts, and derives `punditTag` from form and value. If you want real numbers
