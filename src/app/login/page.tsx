@@ -22,10 +22,10 @@ function safeNext(value?: string): string {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string }>;
 }) {
   const session = await currentSession();
-  const { next: nextParam } = await searchParams;
+  const { next: nextParam, mode: modeParam } = await searchParams;
   const next = safeNext(nextParam);
   if (session) redirect(next);
 
@@ -36,7 +36,7 @@ export default async function LoginPage({
         <div className="absolute bottom-0 right-1/4 w-[420px] h-[420px] bg-emerald-600/10 rounded-full blur-[120px]" />
       </div>
       <div className="max-w-md mx-auto px-4 sm:px-6 py-20">
-        <LoginForm next={next} />
+        <LoginForm next={next} initialMode={modeParam === "register" ? "register" : "login"} />
       </div>
     </div>
   );

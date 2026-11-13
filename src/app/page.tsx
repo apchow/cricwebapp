@@ -28,7 +28,7 @@ export default async function HomePage() {
             </span>
           </h1>
           <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            Your seat in the pundit arena.
+            Your seat in the pundit arena.{" "}
             <br className="hidden sm:block" />
             Retain your six. Build the XI. Score the game. Smash the sixes.
           </p>
@@ -93,10 +93,23 @@ export default async function HomePage() {
         </div>
 
         {/* Footer */}
-        <footer className="mt-32 text-center">
+        <footer className="mt-32 text-center space-y-4">
           <div className="inline-block px-4 py-1.5 rounded-full border border-slate-800/50 text-slate-600 text-xs font-medium uppercase tracking-widest">
             Pundit Arena
           </div>
+          <p className="text-[11px] text-slate-600 max-w-xl mx-auto leading-relaxed">
+            A fan-made cricket playground. Not affiliated with, endorsed by, or
+            connected to the BCCI, the IPL, or any franchise. Player names and
+            team marks belong to their respective owners.
+          </p>
+          <nav className="flex items-center justify-center gap-4 text-[11px] text-slate-500">
+            <Link href="/privacy" className="hover:text-slate-300 transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-slate-300 transition-colors">
+              Terms
+            </Link>
+          </nav>
         </footer>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { flagOf } from "@/lib/flags";
 import { battingStats, bowlingStats } from "@/lib/stats";
 import type { PublicMatch } from "@/lib/dto";
 import type { Player, PlayerRole, PunditTag } from "@/types/player";
+import { useArena, useArenaHydration } from "@/store/arena";
 
 const FAVOURITES_KEY = "pavilion.favourites.v1";
 
@@ -166,6 +167,10 @@ function PlayerCard({
 }
 
 export default function PlayersClient() {
+  useArenaHydration();
+  const user = useArena((state) => state.user);
+  const checked = useArena((state) => state.checked);
+
   const [tab, setTab] = useState<Tab>("squad");
   const [query, setQuery] = useState("");
   const [team, setTeam] = useState("ALL");
@@ -194,6 +199,12 @@ export default function PlayersClient() {
   }, []);
 
   useEffect(() => {
+    if (!checked) return;
+    if (!user) {
+      setNeedsAccount(true);
+      setMatches([]);
+      return;
+    }
     let cancelled = false;
     fetch("/api/matches")
       .then(async (response) => {
@@ -212,7 +223,7 @@ export default function PlayersClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [checked, user]);
 
   function toggleFavourite(id: number) {
     setFavourites((prev) => {

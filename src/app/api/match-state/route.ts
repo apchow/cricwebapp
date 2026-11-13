@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { jsonBody, sessionGate } from "@/lib/api";
+import { jsonBody, sessionGate, writeGate } from "@/lib/api";
 import { mutate, query } from "@/lib/store";
 import { cleanConfig, cleanMatch } from "@/lib/validate";
 
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const body = await jsonBody(request);
@@ -48,7 +48,7 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE() {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
   await mutate((db) => {
     const index = db.states.findIndex((item) => item.userId === gate.session.id);

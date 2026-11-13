@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sessionGate } from "@/lib/api";
+import { writeGate } from "@/lib/api";
 import { displayPosts } from "@/lib/banter";
 import { mutate, query } from "@/lib/store";
 
@@ -10,7 +10,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const { id } = await params;

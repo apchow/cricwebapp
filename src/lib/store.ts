@@ -55,6 +55,8 @@ export interface StoredBanter {
   createdAt: string;
   /** User ids who liked it, so counts are shared rather than per-browser. */
   likes: string[];
+  /** User ids who reported it for review; one report per person. */
+  reports?: string[];
 }
 
 export interface DailyUsage {

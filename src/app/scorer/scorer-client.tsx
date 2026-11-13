@@ -138,6 +138,8 @@ export default function ScorerClient() {
   const [formatFilter, setFormatFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  /** The shared demo account can score locally but the server refuses writes. */
+  const [readOnly, setReadOnly] = useState(false);
 
   const { message: toast, notify } = useToast();
   const savedRef = useRef(false);
@@ -172,14 +174,19 @@ export default function ScorerClient() {
     async function load() {
       let restoredFromServer = false;
       try {
-        const [stateResponse, matchesResponse] = await Promise.all([
+        const [stateResponse, matchesResponse, meResponse] = await Promise.all([
           fetch("/api/match-state"),
           fetch("/api/matches"),
+          fetch("/api/auth/me"),
         ]);
         if (stateResponse.status === 401 || matchesResponse.status === 401) {
           window.location.assign("/login?next=/scorer");
           return;
         }
+        const me = (await meResponse.json().catch(() => null)) as {
+          user?: { demo?: boolean } | null;
+        } | null;
+        if (!cancelled && me?.user?.demo) setReadOnly(true);
         const state = (await stateResponse.json()) as {
           state?: { config: Config; match: MatchState } | null;
         };
@@ -247,7 +254,7 @@ export default function ScorerClient() {
   }, [match, config]);
 
   useEffect(() => {
-    if (!match || loading || view === "done") return;
+    if (!match || loading || view === "done" || readOnly) return;
     let cancelled = false;
     // Save on every delivery: a lost ball is worse than an extra request.
     fetch("/api/match-state", {
@@ -256,7 +263,13 @@ export default function ScorerClient() {
       body: JSON.stringify({ match, config }),
     })
       .then((response) => {
-        if (!cancelled) setOffline(!response.ok);
+        if (cancelled) return;
+        if (response.status === 403) {
+          setReadOnly(true);
+          setOffline(false);
+          return;
+        }
+        setOffline(!response.ok);
       })
       .catch(() => {
         if (!cancelled) setOffline(true);
@@ -264,7 +277,7 @@ export default function ScorerClient() {
     return () => {
       cancelled = true;
     };
-  }, [match, config, loading, view]);
+  }, [match, config, loading, view, readOnly]);
 
   useEffect(() => {
     if (match && view === "live" && isSettled(match)) setView("done");
@@ -274,6 +287,12 @@ export default function ScorerClient() {
     if (!match || view !== "done" || !isSettled(match)) return;
     if (savedRef.current) return;
     savedRef.current = true;
+
+    // The demo account finishes matches locally; the server will not keep them.
+    if (readOnly) {
+      clearStoredMatch();
+      return;
+    }
 
     const entry = {
       format: formatLabel(config.overs, isTest),
@@ -290,6 +309,13 @@ export default function ScorerClient() {
         body: JSON.stringify(entry),
       }).catch(() => null);
 
+      if (response?.status === 403) {
+        setReadOnly(true);
+        setOffline(false);
+        clearStoredMatch();
+        return;
+      }
+
       if (!response?.ok) {
         savedRef.current = false;
         setOffline(true);
@@ -305,7 +331,7 @@ export default function ScorerClient() {
       await fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
       clearStoredMatch();
     })();
-  }, [match, view, config, isTest, oversFor]);
+  }, [match, view, config, isTest, oversFor, readOnly]);
 
   const innings = match ? match.innings[match.current] : null;
 
@@ -539,8 +565,10 @@ export default function ScorerClient() {
     storedRef.current = null;
     setResumePrompt(false);
     clearStoredMatch();
-    fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
-  }, []);
+    if (!readOnly) {
+      fetch("/api/match-state", { method: "DELETE" }).catch(() => null);
+    }
+  }, [readOnly]);
 
   const resumeStoredMatch = useCallback(() => {
     const stored = storedRef.current;
@@ -568,8 +596,10 @@ export default function ScorerClient() {
 
   const deleteMatch = useCallback((id: string) => {
     setHistory((prev) => prev.filter((entry) => entry.id !== id));
-    fetch(`/api/matches/${id}`, { method: "DELETE" }).catch(() => null);
-  }, []);
+    if (!readOnly) {
+      fetch(`/api/matches/${id}`, { method: "DELETE" }).catch(() => null);
+    }
+  }, [readOnly]);
 
   const abandonMatch = useCallback(() => {
     if (!window.confirm("Abandon this match? It will not be saved.")) return;
@@ -777,7 +807,24 @@ export default function ScorerClient() {
           </div>
         )}
 
-        {offline && !loading && (
+        {readOnly && !loading && (
+          <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <span className="font-black uppercase tracking-wide text-xs mr-2">
+              Demo · read-only
+            </span>
+            Score freely — this match stays on your device and is not saved to the
+            shared demo account.{" "}
+            <a
+              href="/login?next=/scorer&mode=register"
+              className="font-bold underline hover:text-amber-100"
+            >
+              Create a free account
+            </a>{" "}
+            to keep your matches.
+          </div>
+        )}
+
+        {offline && !loading && !readOnly && (
           <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
             Not saving to your account — the server could not be reached.
           </div>

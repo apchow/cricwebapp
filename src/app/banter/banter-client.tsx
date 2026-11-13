@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Flame, Heart, Lock, Send, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
+import { Flame, Flag, Heart, Lock, Send, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
 
 import ToolHeader from "@/components/tool-header";
 import { flaggedHit } from "@/lib/banter";
@@ -24,6 +24,7 @@ export interface Post {
   likes: number;
   liked: boolean;
   own: boolean;
+  reported: boolean;
 }
 
 function initials(name: string): string {
@@ -108,10 +109,11 @@ export default function BanterWall() {
   }, [posts, sort]);
 
   const silenced = user?.silenced ?? false;
+  const readOnly = user?.demo ?? false;
   const remaining = MAX_LEN - draft.length;
 
   async function toggleLike(id: string) {
-    if (!user) {
+    if (!user || user.demo) {
       openAuth();
       return;
     }
@@ -151,8 +153,33 @@ export default function BanterWall() {
     }
   }
 
+  async function report(id: string) {
+    if (!user || user.demo) {
+      openAuth();
+      return;
+    }
+    try {
+      const response = await fetch("/api/banter/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string; posts?: Post[] }
+        | null;
+      if (!response.ok || !data?.posts) {
+        notify(data?.error ?? "Could not report that take");
+        return;
+      }
+      setPosts(data.posts);
+      notify("Reported — the umpires will take a look");
+    } catch {
+      notify("Could not reach the wall");
+    }
+  }
+
   async function post() {
-    if (!user) {
+    if (!user || user.demo) {
       openAuth();
       return;
     }
@@ -217,6 +244,23 @@ export default function BanterWall() {
                 >
                   <Sparkles className="w-4 h-4" />
                   Sign in to post
+                </button>
+              </div>
+            ) : readOnly ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="font-bold mb-0.5">Browsing the demo</div>
+                  <p className="text-sm text-slate-400">
+                    The demo wall is read-only. Create a free account to post your own takes.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openAuth}
+                  className="shrink-0 inline-flex items-center gap-2 rounded-xl px-5 py-3 font-bold bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-fuchsia-500/20"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Create free account
                 </button>
               </div>
             ) : silenced ? (
@@ -370,7 +414,7 @@ export default function BanterWall() {
                         />
                         {entry.likes}
                       </button>
-                      {entry.own && (
+                      {entry.own && !readOnly && (
                         <button
                           type="button"
                           onClick={() => remove(entry.id)}
@@ -378,6 +422,29 @@ export default function BanterWall() {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete
+                        </button>
+                      )}
+                      {!entry.own && (
+                        <button
+                          type="button"
+                          onClick={() => report(entry.id)}
+                          aria-pressed={entry.reported}
+                          title={
+                            entry.reported
+                              ? "You reported this take"
+                              : "Report this take to the umpires"
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all ${
+                            entry.reported
+                              ? "bg-amber-500/15 text-amber-300 border border-amber-500/40"
+                              : "text-slate-500 hover:text-amber-300 hover:bg-amber-500/10 border border-transparent"
+                          }`}
+                        >
+                          <Flag
+                            className="w-3.5 h-3.5"
+                            fill={entry.reported ? "currentColor" : "none"}
+                          />
+                          {entry.reported ? "Reported" : "Report"}
                         </button>
                       )}
                     </div>

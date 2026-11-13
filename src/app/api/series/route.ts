@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { jsonBody, sessionGate } from "@/lib/api";
+import { jsonBody, sessionGate, writeGate } from "@/lib/api";
 import { toPublicSeries } from "@/lib/dto";
 import { mutate, query } from "@/lib/store";
 import { cleanStringIds, text } from "@/lib/validate";
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const body = await jsonBody(request);

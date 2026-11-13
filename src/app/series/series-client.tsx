@@ -10,8 +10,14 @@ import { useToast } from "@/lib/client";
 import { matchDate } from "@/lib/dates";
 import type { PublicMatch, PublicSeries } from "@/lib/dto";
 import { formatNetRunRate, matchOutcome, standings } from "@/lib/series";
+import { useArena, useArenaHydration } from "@/store/arena";
 
 export default function SeriesClient() {
+  useArenaHydration();
+  const user = useArena((state) => state.user);
+  const checked = useArena((state) => state.checked);
+  const readOnly = user?.demo ?? false;
+
   const [series, setSeries] = useState<PublicSeries[] | null>(null);
   const [matches, setMatches] = useState<PublicMatch[] | null>(null);
   const [needsAccount, setNeedsAccount] = useState(false);
@@ -21,6 +27,13 @@ export default function SeriesClient() {
   const { message: toast, notify } = useToast();
 
   useEffect(() => {
+    if (!checked) return;
+    if (!user) {
+      setNeedsAccount(true);
+      setSeries([]);
+      setMatches([]);
+      return;
+    }
     let cancelled = false;
     Promise.all([fetch("/api/series"), fetch("/api/matches")])
       .then(async ([seriesResponse, matchesResponse]) => {
@@ -51,7 +64,7 @@ export default function SeriesClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [checked, user]);
 
   const selected = useMemo(
     () => (series ?? []).find((item) => item.id === selectedId) ?? null,
@@ -80,6 +93,10 @@ export default function SeriesClient() {
   async function createSeries() {
     const name = newName.trim();
     if (!name || busy) return;
+    if (readOnly) {
+      notify("The demo account is read-only. Create a free account to run your own series.");
+      return;
+    }
     setBusy(true);
     const response = await fetch("/api/series", {
       method: "POST",
@@ -88,7 +105,10 @@ export default function SeriesClient() {
     }).catch(() => null);
     setBusy(false);
     if (!response || !response.ok) {
-      notify("Could not create that series");
+      const data = response
+        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        : null;
+      notify(data?.error ?? "Could not create that series");
       return;
     }
     const data = (await response.json()) as { series: PublicSeries };
@@ -99,13 +119,20 @@ export default function SeriesClient() {
   }
 
   async function updateMatchIds(seriesId: string, nextIds: string[]) {
+    if (readOnly) {
+      notify("The demo account is read-only. Create a free account to run your own series.");
+      return;
+    }
     const response = await fetch(`/api/series/${seriesId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ matchIds: nextIds }),
     }).catch(() => null);
     if (!response || !response.ok) {
-      notify("Could not update the series");
+      const data = response
+        ? ((await response.json().catch(() => null)) as { error?: string } | null)
+        : null;
+      notify(data?.error ?? "Could not update the series");
       return;
     }
     const data = (await response.json()) as { series: PublicSeries };
@@ -116,6 +143,10 @@ export default function SeriesClient() {
   }
 
   async function removeSeries(seriesId: string) {
+    if (readOnly) {
+      notify("The demo account is read-only. Create a free account to run your own series.");
+      return;
+    }
     setSeries((prev) => (prev ?? []).filter((item) => item.id !== seriesId));
     if (selectedId === seriesId) setSelectedId(null);
     const response = await fetch(`/api/series/${seriesId}`, {
@@ -166,6 +197,23 @@ export default function SeriesClient() {
 
         {series !== null && !needsAccount && (
           <>
+            {readOnly && (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 mb-6 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-xs font-black uppercase tracking-wide text-amber-200">
+                  Demo · read-only
+                </span>
+                <span className="text-[11px] text-amber-100/70">
+                  You can browse the demo, but series are not saved.{" "}
+                  <Link
+                    href="/login?next=/series&mode=register"
+                    className="font-bold text-amber-200 underline hover:text-amber-100"
+                  >
+                    Create a free account
+                  </Link>{" "}
+                  to run your own.
+                </span>
+              </div>
+            )}
             <div className="glass rounded-2xl p-4 mb-6 flex flex-wrap gap-2">
               <input
                 value={newName}
@@ -173,12 +221,13 @@ export default function SeriesClient() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void createSeries();
                 }}
+                disabled={readOnly}
                 placeholder="Name a new series, e.g. Sunday Sixes Cup"
-                className="flex-1 min-w-[220px] bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                className="flex-1 min-w-[220px] bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/40 disabled:opacity-40 disabled:cursor-not-allowed"
               />
               <button
                 onClick={() => void createSeries()}
-                disabled={!newName.trim() || busy}
+                disabled={!newName.trim() || busy || readOnly}
                 className="flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] transition-all"
               >
                 <Plus className="w-4 h-4" />

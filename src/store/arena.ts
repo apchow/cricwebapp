@@ -12,6 +12,8 @@ export interface ArenaUser {
   gradient: string;
   /** Silenced users can read the wall but not post. */
   silenced: boolean;
+  /** The shared look-around account: reads everything, writes nothing. */
+  demo: boolean;
 }
 
 interface ArenaState {
@@ -30,6 +32,7 @@ interface ArenaState {
 interface ServerUser {
   id: string;
   email: string;
+  demo?: boolean;
 }
 
 const SILENCED_KEY = "pundit.silenced.v1";
@@ -95,6 +98,7 @@ export const useArena = create<ArenaState>()((set, get) => ({
           handle: handleFor(serverUser.id),
           gradient: gradientFor(serverUser.id),
           silenced: silencedIds().includes(serverUser.id),
+          demo: serverUser.demo ?? false,
         },
         checked: true,
       });

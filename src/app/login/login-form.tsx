@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export default function LoginForm({ next }: { next: string }) {
-  const [mode, setMode] = useState<"login" | "register">("login");
+export default function LoginForm({
+  next,
+  initialMode = "login",
+}: {
+  next: string;
+  initialMode?: "login" | "register";
+}) {
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +68,7 @@ export default function LoginForm({ next }: { next: string }) {
       <p className="text-sm text-slate-400 mb-6">
         {mode === "login"
           ? "Your saved XIs and match history live on your account."
-          : "One email and password, stored on this machine only."}
+          : "One email and password. Your XIs, matches and takes are stored on our servers, so they follow you between devices."}
       </p>
 
       <div className="grid grid-cols-2 gap-2 mb-6">
@@ -167,8 +173,9 @@ export default function LoginForm({ next }: { next: string }) {
         ⚡ Look around the demo account
       </button>
       <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-        The demo is one account shared by every visitor — anything saved there
-        is visible to the next person. Create an account to keep your own.
+        The demo is one read-only account shared by every visitor — you can look
+        around, but nothing you do there is saved. Create a free account to keep
+        your own XIs, matches and takes.
       </p>
 
       <p className="text-xs text-slate-500 mt-5">
@@ -176,6 +183,17 @@ export default function LoginForm({ next }: { next: string }) {
         <Link href="/" className="text-slate-400 hover:text-white underline">
           Back to hub
         </Link>
+      </p>
+      <p className="text-[11px] text-slate-600 mt-3 leading-relaxed">
+        By continuing you agree to our{" "}
+        <Link href="/terms" className="text-slate-500 hover:text-slate-300 underline">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="text-slate-500 hover:text-slate-300 underline">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </div>
   );

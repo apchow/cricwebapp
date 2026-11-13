@@ -5,10 +5,14 @@ import type { LiveFeed, LiveMatch } from "@/lib/live";
 
 const REFRESH_MS = 60_000;
 
-function countdown(iso: string): string {
-  const seconds = Math.max(0, Math.round((Date.parse(iso) - Date.now()) / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.round(seconds / 60)}m`;
+function ago(iso: string): string {
+  const seconds = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
 }
 
 function MatchRow({
@@ -95,19 +99,23 @@ export default function LiveBoard({ initial }: { initial?: LiveFeed }) {
         <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">
           From the ground
         </h2>
-        <span className="text-[11px] text-slate-600 font-mono">
-          {failed
-            ? "feed unreachable"
-            : feed && feed.enabled
-            ? `${feed.cached ? "cached" : "live fetch"} · ${feed.usedToday}/${
-                feed.budget
-              } today${
-                feed.nextRefreshAt
-                  ? ` · next ${countdown(feed.nextRefreshAt)}`
-                  : ""
-              }`
-            : "add a key to switch on"}
-        </span>
+        {failed ? (
+          <span className="text-[11px] text-amber-400/80 font-medium">
+            Feed unreachable
+          </span>
+        ) : feed?.enabled && feed.error ? (
+          <span className="text-[11px] text-amber-400/80 font-medium">
+            Live feed paused
+          </span>
+        ) : feed?.enabled ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            </span>
+            Updated {ago(feed.fetchedAt)}
+          </span>
+        ) : null}
       </div>
 
       {empty ? (

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { jsonBody } from "@/lib/api";
 import {
   hashPassword,
+  isDemoEmail,
   normalizeEmail,
   startSession,
   validEmail,
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
       { error: "Password must be at least 8 characters" },
       { status: 400 }
     );
+  }
+  if (isDemoEmail(email)) {
+    return NextResponse.json({ error: "That email is reserved" }, { status: 409 });
   }
 
   const result = await mutate(async (db) => {

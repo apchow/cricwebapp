@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
-import { sessionGate } from "@/lib/api";
+import { writeGate } from "@/lib/api";
 import { mutate } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -11,7 +11,7 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const { id } = await params;

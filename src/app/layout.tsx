@@ -26,13 +26,21 @@ export const metadata: Metadata = {
   description:
     "Retain your six, build the perfect XI, score ball by ball and take on the Street Strike timing challenge.",
   applicationName: "Pundit Arena",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Pundit Arena",
     description: "Retain. Build. Score. Smash.",
     siteName: "Pundit Arena",
     type: "website",
   },
-  twitter: { card: "summary" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

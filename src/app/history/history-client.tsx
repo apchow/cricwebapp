@@ -20,6 +20,7 @@ import { useToast } from "@/lib/client";
 import { matchDate } from "@/lib/dates";
 import type { PublicMatch } from "@/lib/dto";
 import { battingStats, bowlingStats } from "@/lib/stats";
+import { useArena, useArenaHydration } from "@/store/arena";
 
 type AnalyticsTab = "batting" | "bowling";
 
@@ -46,6 +47,11 @@ function Stat({
 }
 
 export default function HistoryClient() {
+  useArenaHydration();
+  const user = useArena((state) => state.user);
+  const checked = useArena((state) => state.checked);
+  const readOnly = user?.demo ?? false;
+
   const [matches, setMatches] = useState<PublicMatch[] | null>(null);
   const [needsAccount, setNeedsAccount] = useState(false);
   const [query, setQuery] = useState("");
@@ -57,6 +63,12 @@ export default function HistoryClient() {
   const { message: toast, notify } = useToast();
 
   useEffect(() => {
+    if (!checked) return;
+    if (!user) {
+      setNeedsAccount(true);
+      setMatches([]);
+      return;
+    }
     let cancelled = false;
     fetch("/api/matches")
       .then(async (response) => {
@@ -75,9 +87,13 @@ export default function HistoryClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [checked, user]);
 
   async function remove(id: string) {
+    if (readOnly) {
+      notify("The demo account is read-only. Create a free account to keep your own matches.");
+      return;
+    }
     setMatches((prev) => (prev ? prev.filter((match) => match.id !== id) : prev));
     const response = await fetch(`/api/matches/${id}`, { method: "DELETE" }).catch(
       () => null
@@ -86,6 +102,10 @@ export default function HistoryClient() {
   }
 
   async function share(match: PublicMatch) {
+    if (readOnly) {
+      notify("The demo account is read-only. Create a free account to share your own matches.");
+      return;
+    }
     const response = await fetch(`/api/matches/${match.id}/share`, {
       method: "POST",
     }).catch(() => null);

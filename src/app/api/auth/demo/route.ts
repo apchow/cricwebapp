@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { hashPassword, normalizeEmail, startSession } from "@/lib/auth";
+import { DEMO_EMAIL, hashPassword, normalizeEmail, startSession } from "@/lib/auth";
 import { mutate } from "@/lib/store";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DEMO_EMAIL = "demo@punditarena.app";
-
 /**
- * One-tap access for anyone who wants to look before signing up. The account
- * lives on this machine with a random password, so it is reachable only
- * through this endpoint — and it is the *same* account for every visitor, so
- * anything a demo user saves is visible to the next one.
+ * One-tap access for anyone who wants to look before signing up. It is the
+ * *same* read-only account for every visitor: writeGate rejects every mutating
+ * request it makes, so nobody can post to the wall or save matches the next
+ * visitor would inherit. A random password means it is reachable only here.
  */
 export async function POST(request: Request) {
   const limit = await rateLimit(request, {

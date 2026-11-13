@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentSession } from "@/lib/auth";
+import { currentSession, isDemoEmail } from "@/lib/auth";
 import type { SessionUser } from "@/lib/auth";
 
 export type SessionGate =
@@ -20,6 +20,26 @@ export async function sessionGate(): Promise<SessionGate> {
     };
   }
   return { ok: true, session };
+}
+
+/**
+ * Like sessionGate, but for handlers that change stored data. The shared demo
+ * account may read everything and write nothing, so a visitor cannot post to
+ * the wall or save matches that the next visitor would inherit.
+ */
+export async function writeGate(): Promise<SessionGate> {
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
+  if (isDemoEmail(gate.session.email)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "The demo account is read-only. Create a free account to save your own." },
+        { status: 403 }
+      ),
+    };
+  }
+  return gate;
 }
 
 /** Parse a JSON object body, treating malformed or non-object bodies as absent. */

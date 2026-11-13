@@ -6,8 +6,11 @@ import { appUrl } from "@/lib/app-url";
 
 const BASE_URL = appUrl();
 
-/** These redirect a signed-out visitor to /login, so a crawler never lands on them. */
-const SESSION_GATED = new Set(["/scorer", "/dashboard"]);
+/**
+ * Account-specific pages: a signed-out crawler only ever sees a sign-in prompt
+ * (or is redirected to /login), so there is nothing worth indexing here.
+ */
+const SESSION_GATED = new Set(["/scorer", "/dashboard", "/history", "/series"]);
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -30,6 +33,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
   ];
 

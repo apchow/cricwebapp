@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { jsonBody, sessionGate } from "@/lib/api";
+import { jsonBody, writeGate } from "@/lib/api";
 import { toPublicSeries } from "@/lib/dto";
 import { mutate } from "@/lib/store";
 import { cleanStringIds, text } from "@/lib/validate";
@@ -11,7 +11,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const { id } = await params;
@@ -53,7 +53,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const { id } = await params;

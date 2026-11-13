@@ -64,6 +64,14 @@ export default function AccountMenu({ email }: { email: string | null }) {
           </span>
         </span>
       )}
+      {user?.demo && (
+        <span
+          className="inline-flex items-center px-2 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold uppercase tracking-wide text-amber-300 whitespace-nowrap"
+          title="The demo account is read-only. Create a free account to save your own XIs, matches and takes."
+        >
+          Demo · read-only
+        </span>
+      )}
       {!user && email && (
         <span className="hidden lg:inline text-xs text-slate-500 font-mono max-w-[160px] truncate">
           {email}

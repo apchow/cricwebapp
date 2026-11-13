@@ -16,6 +16,7 @@ export interface BanterPost {
   likes: number;
   liked: boolean;
   own: boolean;
+  reported: boolean;
 }
 
 /**
@@ -122,5 +123,6 @@ export function displayPosts(
       likes: post.likes.length,
       liked: viewer ? post.likes.includes(viewer.id) : false,
       own: viewer ? post.userId === viewer.id : false,
+      reported: viewer ? (post.reports ?? []).includes(viewer.id) : false,
     }));
 }

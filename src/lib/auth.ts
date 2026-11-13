@@ -12,6 +12,9 @@ import type { StoredUser } from "@/lib/store";
 export const SESSION_COOKIE = "crichub_session";
 const SESSION_DAYS = 30;
 
+/** The shared, read-only look-around account. Reserved from registration. */
+export const DEMO_EMAIL = "demo@punditarena.app";
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -140,6 +143,10 @@ export async function endSession(): Promise<void> {
 
 export function normalizeEmail(input: string): string {
   return input.trim().toLowerCase();
+}
+
+export function isDemoEmail(email: string): boolean {
+  return normalizeEmail(email) === DEMO_EMAIL;
 }
 
 export function validEmail(email: string): boolean {

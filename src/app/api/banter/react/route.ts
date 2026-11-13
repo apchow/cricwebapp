@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { jsonBody, sessionGate } from "@/lib/api";
+import { jsonBody, writeGate } from "@/lib/api";
 import { displayPosts } from "@/lib/banter";
 import { mutate, query } from "@/lib/store";
 import { text } from "@/lib/validate";
@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const gate = await sessionGate();
+  const gate = await writeGate();
   if (!gate.ok) return gate.response;
 
   const body = await jsonBody(request);
