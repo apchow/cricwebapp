@@ -72,3 +72,28 @@ test("season figures are stored apart from career figures", () => {
   }
   assert.equal(pool.season, "2026");
 });
+
+test("the CSK all-rounder is Jamie Overton, not Craig", () => {
+  assert.equal(squad.find((p) => p.id === "59559bc2")?.name, "Jamie Overton");
+  const row = db.players.find((p) => p.name === "Jamie Overton");
+  assert.ok(row, "Jamie Overton is in the database");
+  assert.equal(row?.team, "CSK");
+  assert.ok(!names().includes("Craig Overton"), "Craig Overton has no IPL deliveries");
+  assert.ok(!db.players.some((p) => p.name === "Craig Overton"));
+});
+
+test("the display-name map cannot flip a name back on the next run", () => {
+  const source = readFileSync(
+    new URL("../scripts/sync-ipl-squads.mjs", import.meta.url),
+    "utf8"
+  );
+  const block = source.match(/const DISPLAY = \{([\s\S]*?)\n\};/);
+  assert.ok(block, "the DISPLAY map is present in the sync script");
+  const display = new Function(`return {${block![1]}};`)() as Record<string, string>;
+  const keys = new Set(Object.keys(display));
+  const cycles = Object.values(display).filter((value) => keys.has(value));
+  assert.deepEqual(cycles, [], "no display name is itself a scorebook key");
+  assert.equal(display["J Overton"], "Jamie Overton");
+  assert.equal(display["Thangarasu Natarajan"], "T Natarajan");
+  assert.ok(!keys.has("T Natarajan"), "T Natarajan is canonical, not a key");
+});

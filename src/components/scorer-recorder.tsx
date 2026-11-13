@@ -75,9 +75,10 @@ export default function ScorerRecorder() {
   }, []);
 
   /**
-   * Starts one recorder on the live stream. In memory mode a fresh sink per
-   * segment is what keeps the tab from holding hours of video; in file mode
-   * the single open sink is reused, which is how one recording spans a day.
+   * Starts one recorder on the live stream. The sink outlives each rotation:
+   * closing it flushes a numbered segment and clears the buffer, so reusing it
+   * keeps memory bounded while the segment index keeps climbing. A file sink is
+   * opened once in start(); a memory sink is opened here on the first segment.
    */
   const openSegment = useCallback(() => {
     const stream = streamRef.current;
@@ -94,7 +95,7 @@ export default function ScorerRecorder() {
         : {}
     );
 
-    if (!sinkRef.current?.continuous) {
+    if (!sinkRef.current) {
       sinkRef.current = createSegmentSink((blob, index) => {
         download(blob, segmentName(baseRef.current, index));
         segmentsRef.current = index + 1;
@@ -131,6 +132,7 @@ export default function ScorerRecorder() {
     setFiles(0);
     setElapsed(0);
     segmentsRef.current = 0;
+    sinkRef.current = null;
     accumulatedRef.current = 0;
     baseRef.current = baseName();
     setPhase("requesting");

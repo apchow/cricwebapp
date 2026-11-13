@@ -77,6 +77,8 @@ const DISPLAY = {
   "PP Hinge": "Praful Hinge",
   "R Smaran": "Smaran Ravichandran",
   "DA Payne": "David Payne",
+  // The CSK scorebook "J Overton" is Jamie Overton; Craig has no IPL deliveries.
+  "J Overton": "Jamie Overton",
   "N Thushara": "Nuwan Thushara",
   "SR Dubey": "Saurabh Dubey",
   "K Nithish Kumar Reddy": "Nitish Kumar Reddy",
@@ -92,7 +94,6 @@ const DISPLAY = {
   "V Chakravarthy": "Varun Chakravarthy",
   "R Powell": "Rovman Powell",
   "K L Rahul": "KL Rahul",
-  "T Natarajan": "Thangarasu Natarajan",
 };
 
 const norm = (s) => s.toLowerCase().replace(/[^a-z]/g, "");

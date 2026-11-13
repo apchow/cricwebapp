@@ -3,7 +3,7 @@
 import {
   RETENTION_RULES,
   DEFAULT_RTM_COUNT,
-} from "./constants";
+} from "./constants.ts";
 
 export type RetentionPlayer = {
   id: string;
@@ -162,59 +162,56 @@ export function autoPlan(
   players: RetentionPlayer[],
   rules = RETENTION_RULES,
 ): RetentionSelection {
-  const byRole: Record<string, RetentionPlayer[]> = {};
-  for (const p of players) {
-    const rolePlayers = byRole[p.role] ?? [];
-    rolePlayers.push(p);
-    byRole[p.role] = rolePlayers;
-  }
-
-  const pickByRole = (role: string, count: number, exclude = new Set<string>()) => {
-    return (byRole[role] ?? [])
-      .sort((a, b) => b.retentionValue - a.retentionValue)
-      .filter((p) => !exclude.has(p.id))
-      .slice(0, count);
-  };
-
   const exclude = new Set<string>();
   const picked: { playerId: string; priceCr: number }[] = [];
+  let uncappedPicked = 0;
 
-  // Two uncapped slots first.
-  const uncapped = players
-    .filter((p) => p.uncapped && !exclude.has(p.id))
-    .sort((a, b) => b.retentionValue - a.retentionValue)
-    .slice(0, rules.minUncapped);
-  for (const p of uncapped) {
+  const byValue = (list: RetentionPlayer[]) =>
+    [...list].sort((a, b) => b.retentionValue - a.retentionValue);
+
+  // Fill the uncapped quota first, priced gently so they leave purse room.
+  for (const p of byValue(players.filter((player) => player.uncapped))) {
+    if (uncappedPicked >= rules.minUncapped) break;
     exclude.add(p.id);
+    uncappedPicked += 1;
     picked.push({ playerId: p.id, priceCr: clampPrice(Math.min(p.retentionValue, 8)) });
   }
 
-  // Fill remaining retentions by value across roles, preferring capped players.
-  const remaining = rules.maxRetained - picked.length;
-  const fill = players
-    .filter((p) => !exclude.has(p.id))
-    .sort((a, b) => b.retentionValue - a.retentionValue)
-    .slice(0, remaining);
-  for (const p of fill) {
-    picked.push({ playerId: p.id, priceCr: clampPrice(p.retentionValue) });
+  // Fill the rest by value, never exceeding the uncapped ceiling.
+  for (const p of byValue(players.filter((player) => !exclude.has(player.id)))) {
+    if (picked.length >= rules.maxRetained) break;
+    if (p.uncapped && uncappedPicked >= rules.maxUncapped) continue;
     exclude.add(p.id);
+    if (p.uncapped) uncappedPicked += 1;
+    picked.push({
+      playerId: p.id,
+      priceCr: clampPrice(p.uncapped ? Math.min(p.retentionValue, 8) : p.retentionValue),
+    });
   }
 
-  // If over cap, reduce prices proportionally, keeping >= min.
-  let spend = picked.reduce((sum, s) => sum + s.priceCr, 0);
-  if (spend > rules.retentionCapCr) {
-    const scale = rules.retentionCapCr / spend;
-    for (const s of picked) {
-      s.priceCr = clampPrice(s.priceCr * scale);
+  // Bring the spend under the cap: scale proportionally, then shave the dearest
+  // prices until rounding and the min-price floor stop pushing it back over.
+  const spend = () => picked.reduce((sum, s) => sum + s.priceCr, 0);
+  if (spend() > rules.retentionCapCr) {
+    const scale = rules.retentionCapCr / spend();
+    for (const s of picked) s.priceCr = clampPrice(s.priceCr * scale);
+  }
+  while (spend() > rules.retentionCapCr) {
+    let dearest = -1;
+    for (let i = 0; i < picked.length; i += 1) {
+      const price = picked[i].priceCr;
+      if (price > rules.minPriceCr && (dearest === -1 || price > picked[dearest].priceCr)) {
+        dearest = i;
+      }
     }
+    if (dearest === -1) break;
+    picked[dearest].priceCr = clampPrice(picked[dearest].priceCr - 0.1);
   }
 
-  // RTM: top 4 high-value players not retained, max price each.
-  const rtm = players
-    .filter((p) => !exclude.has(p.id))
-    .sort((a, b) => b.retentionValue - a.retentionValue)
-    .slice(0, 4)
-    .map((p) => ({ playerId: p.id, priceCr: Math.min(rules.maxRtmPerPlayerCr, Math.max(4, p.retentionValue)) }));
+  // RTM: the best players not retained, at their value up to the RTM ceiling.
+  const rtm = byValue(players.filter((p) => !exclude.has(p.id)))
+    .slice(0, DEFAULT_RTM_COUNT)
+    .map((p) => ({ playerId: p.id, priceCr: clampRtmPrice(Math.max(4, p.retentionValue)) }));
 
   return { retained: picked, rtm };
 }
