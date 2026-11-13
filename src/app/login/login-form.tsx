@@ -107,12 +107,19 @@ export default function LoginForm({
           />
         </div>
         <div>
-          <label
-            className="text-xs text-slate-500 mb-1.5 block"
-            htmlFor="password"
-          >
-            Password {mode === "register" && "(min 8 characters)"}
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs text-slate-500" htmlFor="password">
+              Password {mode === "register" && "(min 8 characters)"}
+            </label>
+            {mode === "login" && (
+              <Link
+                href="/forgot-password"
+                className="text-xs text-indigo-300/80 hover:text-indigo-200 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <div className="relative">
             <input
               id="password"

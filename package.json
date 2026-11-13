@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/scoring.test.ts test/validate.test.ts test/stats.test.ts test/insights.test.ts test/series.test.ts test/autopick.test.ts test/live.test.ts test/banter.test.ts test/squad-data.test.ts test/retention.test.ts test/record.test.ts"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/scoring.test.ts test/validate.test.ts test/stats.test.ts test/insights.test.ts test/series.test.ts test/autopick.test.ts test/live.test.ts test/banter.test.ts test/squad-data.test.ts test/retention.test.ts test/record.test.ts test/reset-token.test.ts"
   },
   "dependencies": {
     "framer-motion": "^14.9.0",

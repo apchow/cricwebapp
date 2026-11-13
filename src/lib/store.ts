@@ -59,6 +59,14 @@ export interface StoredBanter {
   reports?: string[];
 }
 
+export interface StoredReset {
+  /** SHA-256 of the emailed token; the raw token is never stored. */
+  tokenHash: string;
+  userId: string;
+  /** Epoch ms after which the link is dead. */
+  expiresAt: number;
+}
+
 export interface DailyUsage {
   /** ISO day the counter belongs to. */
   day: string;
@@ -80,6 +88,8 @@ export interface Database {
   series: StoredSeries[];
   states: StoredState[];
   banter: StoredBanter[];
+  /** Pending password-reset links, hashed and time-limited. */
+  passwordResets: StoredReset[];
   /** Upstream live-score calls spent today, shared across instances. */
   liveUsage: DailyUsage;
 }
@@ -91,6 +101,7 @@ const EMPTY_DOC: Database = {
   series: [],
   states: [],
   banter: [],
+  passwordResets: [],
   liveUsage: { day: "", count: 0 },
 };
 
@@ -114,6 +125,7 @@ function normalize(value: unknown): Database {
     series: list<StoredSeries>(doc.series),
     states: list<StoredState>(doc.states),
     banter: list<StoredBanter>(doc.banter),
+    passwordResets: list<StoredReset>(doc.passwordResets),
     liveUsage: {
       day: typeof usage.day === "string" ? usage.day : "",
       count: typeof usage.count === "number" && usage.count > 0 ? usage.count : 0,
