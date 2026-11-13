@@ -140,6 +140,70 @@ test("splitFeed keeps in-play matches and international results only", () => {
   );
 });
 
+test("age-group matches are kept off the board even though they are ODIs", () => {
+  const u19Live = {
+    id: "u19-live",
+    name: "India U19 vs Australia U19, 1st Youth ODI",
+    matchType: "odi",
+    teams: ["India U19", "Australia U19"],
+    teamInfo: [
+      { name: "India U19", shortname: "INDU19" },
+      { name: "Australia U19", shortname: "AUSU19" },
+    ],
+    status: "India U19 need 30 runs off 24 balls",
+    matchStarted: true,
+    matchEnded: false,
+  };
+  const u19Finished = {
+    id: "u19-done",
+    name: "England Under-19s vs South Africa Under-19s, 2nd Youth ODI",
+    matchType: "odi",
+    teams: ["England Under-19s", "South Africa Under-19s"],
+    dateTimeGMT: "2026-11-05T09:00:00Z",
+    status: "England Under-19s won by 4 wkts",
+    matchStarted: true,
+    matchEnded: true,
+  };
+  const seniorOdi = {
+    id: "senior-odi",
+    name: "India vs Australia, 1st ODI",
+    matchType: "odi",
+    teams: ["India", "Australia"],
+    dateTimeGMT: "2026-11-06T09:00:00Z",
+    status: "India won by 5 wkts",
+    matchStarted: true,
+    matchEnded: true,
+  };
+  const { live, recent } = splitFeed(
+    normaliseCricApi({ data: [u19Live, u19Finished, seniorOdi] })
+  );
+  assert.deepEqual(live.map((m) => m.id), [], "U19 in-play match is excluded");
+  assert.deepEqual(
+    recent.map((m) => m.id),
+    ["senior-odi"],
+    "U19 results are excluded, senior ODI survives"
+  );
+});
+
+test("the age-group marker is read from a team name when the title hides it", () => {
+  const hidden = {
+    id: "hidden-u19",
+    name: "1st ODI, Youth Series",
+    matchType: "odi",
+    teams: ["India U19", "Sri Lanka U19"],
+    teamInfo: [
+      { name: "India U19", shortname: "IND" },
+      { name: "Sri Lanka U19", shortname: "SL" },
+    ],
+    status: "Match drawn",
+    matchStarted: true,
+    matchEnded: true,
+    dateTimeGMT: "2026-11-05T09:00:00Z",
+  };
+  const { recent } = splitFeed(normaliseCricApi({ data: [hidden] }));
+  assert.deepEqual(recent.map((m) => m.id), []);
+});
+
 test("recent results are newest first and capped at six", () => {
   const rows = Array.from({ length: 10 }, (_, index) => ({
     id: `t${index}`,

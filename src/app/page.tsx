@@ -1,11 +1,21 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import LiveBoard from "@/components/live-board";
+import { LiveBoardSkeleton } from "@/components/live-board-skeleton";
 import { TOOLS } from "@/data/tools";
 import { fetchLiveFeed } from "@/lib/live";
 
-export default async function HomePage() {
+/**
+ * The only part of the home page that waits on the network. Kept in its own
+ * async component so the hero, tool cards and footer render in the static shell
+ * and the scores stream in behind a skeleton instead of blocking the whole page.
+ */
+async function LiveScores() {
   const live = await fetchLiveFeed();
+  return <LiveBoard initial={live} />;
+}
 
+export default function HomePage() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background orbs */}
@@ -34,7 +44,9 @@ export default async function HomePage() {
           </p>
         </header>
 
-        <LiveBoard initial={live} />
+        <Suspense fallback={<LiveBoardSkeleton />}>
+          <LiveScores />
+        </Suspense>
 
         {/* Tool Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

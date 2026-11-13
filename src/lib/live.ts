@@ -165,13 +165,29 @@ export function normaliseCricApi(payload: unknown): LiveMatch[] {
     .filter((match): match is LiveMatch => match !== null);
 }
 
+/**
+ * Age-group sides wear the senior `matchType` — an U19 ODI is still "odi" — so
+ * the international filter alone lets them onto the board. The age marker lives
+ * in the title or a team name ("India U19", "Australia Under-19s"), never in the
+ * type, so it has to be read from the text.
+ */
+const AGE_GROUP = /\b(?:u|under)[\s-]?(?:1[5-9]|2[0-3])s?\b|\byouth\b/i;
+
+function isAgeGroup(match: LiveMatch): boolean {
+  return (
+    AGE_GROUP.test(match.title) ||
+    match.teams.some((team) => AGE_GROUP.test(team.name))
+  );
+}
+
 /** What is in play now, and the most recent international results. */
 export function splitFeed(matches: LiveMatch[]) {
   const time = (match: LiveMatch, fallback: number) =>
     match.startsAt ? Date.parse(match.startsAt) : fallback;
 
-  const live = matches.filter((match) => match.live);
-  const recent = matches
+  const senior = matches.filter((match) => !isAgeGroup(match));
+  const live = senior.filter((match) => match.live);
+  const recent = senior
     .filter((match) => match.finished && match.international)
     .sort((a, b) => time(b, 0) - time(a, 0))
     .slice(0, 6);
