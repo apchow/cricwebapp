@@ -1,15 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import {
+  Home,
+  Pause,
+  Play,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { readLocal, writeLocal } from "@/lib/client";
 import { oversString } from "@/lib/scoring";
+import { isMuted, setMuted, sfx, unlockAudio } from "@/lib/game-sound";
 
 /* ------------------------------------------------------------------ *
  * Constants
  * ------------------------------------------------------------------ */
 
 const BEST_KEY = "pavilion.streetsrike.best";
+const SCORES_KEY = "pavilion.streetsrike.scores";
+const MODE_KEY = "pavilion.streetsrike.mode";
 const TOTAL_BALLS = 12;
 const MAX_WICKETS = 2;
 const BALLS_PER_OVER = 6;
@@ -26,8 +36,34 @@ const KEEPER = { x: 210, y: 436 };
 const STUMPS = { x: 210, y: 380 };
 const GAUGE = { x0: 46, x1: 374, y: 456, h: 12 };
 
+const STRIKER = { x: 191, y: 398, hands: { x: 197, y: 384 } };
+const FIELDERS = [
+  { x: 150, y: 300 },
+  { x: 272, y: 300 },
+  { x: 210, y: 176 },
+  { x: 120, y: 226 },
+  { x: 300, y: 226 },
+];
+
 const BATTERS = ["A. Tharaka", "J. Pembroke", "M. Dane", "K. Osei"];
 const BOWLERS = ["R. Vardhan", "S. Menon"];
+
+type Mode = "casual" | "street" | "pro";
+const MODES: {
+  id: Mode;
+  label: string;
+  blurb: string;
+  sweetScale: number;
+  flightScale: number;
+}[] = [
+  { id: "casual", label: "Casual", blurb: "Wide window, easy to time", sweetScale: 1.4, flightScale: 1.25 },
+  { id: "street", label: "Street", blurb: "The proper test", sweetScale: 1, flightScale: 1 },
+  { id: "pro", label: "Pro", blurb: "Razor-thin, no mercy", sweetScale: 0.7, flightScale: 0.82 },
+];
+
+function modeScale(mode: Mode) {
+  return MODES.find((m) => m.id === mode) ?? MODES[1];
+}
 
 /* ------------------------------------------------------------------ *
  * Types
@@ -51,6 +87,7 @@ type Innings = {
   score: number;
   wickets: number;
   balls: number;
+  streak: number;
   batters: BatterRow[];
   striker: number;
   nonStriker: number;
@@ -93,6 +130,18 @@ type Particle = {
   size: number;
   color: string;
 };
+
+type Floater = {
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  born: number;
+  life: number;
+  size: number;
+};
+
+type Flash = { start: number; ms: number; color: string };
 
 /* ------------------------------------------------------------------ *
  * Maths helpers
@@ -139,12 +188,13 @@ function needleAt(elapsed: number, half: number): number {
   return u / half - 4;
 }
 
-/** Difficulty for the nth ball of an over (0-indexed): wide early, razor thin late. */
-function difficultyAt(ballInOver: number) {
-  const t = clamp(ballInOver / (BALLS_PER_OVER - 1), 0, 1);
+/** Difficulty ramps across the whole innings, then the mode scales the window. */
+function difficultyAt(balls: number, mode: Mode) {
+  const t = clamp(balls / (TOTAL_BALLS - 1), 0, 1);
+  const scale = modeScale(mode);
   return {
-    sweetHalf: 0.17 - 0.12 * t,
-    flightMs: 1050 - 300 * t,
+    sweetHalf: (0.17 - 0.12 * t) * scale.sweetScale,
+    flightMs: (1050 - 300 * t) * scale.flightScale,
   };
 }
 
@@ -164,6 +214,31 @@ function roundRect(
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+/** A small stylised person: head + body capsule + two legs. */
+function drawPerson(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: string,
+  scale = 1
+) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y - 12 * scale, 4.2 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  roundRect(ctx, x - 3.4 * scale, y - 8 * scale, 6.8 * scale, 13 * scale, 3 * scale);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2 * scale;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x - 1.6 * scale, y + 5 * scale);
+  ctx.lineTo(x - 3 * scale, y + 12 * scale);
+  ctx.moveTo(x + 1.6 * scale, y + 5 * scale);
+  ctx.lineTo(x + 3 * scale, y + 12 * scale);
+  ctx.stroke();
 }
 
 /* ------------------------------------------------------------------ *
@@ -356,6 +431,7 @@ function freshInnings(): Innings {
     score: 0,
     wickets: 0,
     balls: 0,
+    streak: 0,
     batters: [
       { name: BATTERS[0], runs: 0, balls: 0 },
       { name: BATTERS[1], runs: 0, balls: 0 },
@@ -424,10 +500,16 @@ export default function StreetStrike() {
   const [game, setGame] = useState<Innings>(initialInnings);
   const [aim, setAimState] = useState<Aim>(0);
   const [best, setBest] = useState(0);
+  const [scores, setScores] = useState<number[]>([]);
+  const [mode, setModeState] = useState<Mode>("street");
+  const [paused, setPaused] = useState(false);
+  const [muted, setMutedState] = useState(false);
 
   const stateRef = useRef<Innings>(game);
   const aimRef = useRef<Aim>(0);
   const bestRef = useRef(0);
+  const modeRef = useRef<Mode>("street");
+  const pausedRef = useRef(false);
   const idRef = useRef(0);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -445,6 +527,8 @@ export default function StreetStrike() {
   const committedRef = useRef(true);
   const lastNRef = useRef<number | null>(null);
   const particlesRef = useRef<Particle[]>([]);
+  const floatersRef = useRef<Floater[]>([]);
+  const flashRef = useRef<Flash | null>(null);
   const shakeRef = useRef<{ start: number; mag: number; ms: number } | null>(null);
   const vignetteRef = useRef<{ start: number; ms: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -493,12 +577,25 @@ export default function StreetStrike() {
     particlesRef.current = [...particlesRef.current.slice(-90), ...next];
   }, []);
 
+  const pushFloater = useCallback((x: number, y: number, text: string, color: string, size = 26) => {
+    floatersRef.current = [
+      ...floatersRef.current.slice(-6),
+      { x, y, text, color, born: performance.now(), life: 900, size },
+    ];
+  }, []);
+
   const closeInnings = useCallback((final: Innings) => {
+    sfx.gameover();
     const nextBest = Math.max(bestRef.current, final.score);
     bestRef.current = nextBest;
     setBest(nextBest);
     writeLocal(BEST_KEY, String(nextBest));
-  }, []);
+    if (final.score > 0) {
+      const board = [...scores, final.score].sort((a, b) => b - a).slice(0, 5);
+      setScores(board);
+      writeLocal(SCORES_KEY, JSON.stringify(board));
+    }
+  }, [scores]);
 
   /* -------------------------- game actions -------------------------- */
 
@@ -526,22 +623,34 @@ export default function StreetStrike() {
       animRef.current = { kind: "shot", start: now, ms, from, to: outcome.target, loft: outcome.loft };
       pendingRef.current = outcome;
 
+      // Sound + juice tied to the contact and the result.
+      if (n !== null) sfx.bat();
       if (outcome.tone === "six") {
-        shakeRef.current = { start: now, mag: 13, ms: 460 };
-        spawnParticles(from.x, from.y, 26, "#34d399");
+        sfx.six();
+        shakeRef.current = { start: now, mag: 15, ms: 480 };
+        flashRef.current = { start: now, ms: 300, color: "52,211,153" };
+        spawnParticles(from.x, from.y, 30, "#34d399");
+        pushFloater(CONTACT.x, CONTACT.y - 26, "+6", "#6ee7b7", 30);
       } else if (outcome.tone === "four") {
-        shakeRef.current = { start: now, mag: 7, ms: 300 };
-        spawnParticles(from.x, from.y, 16, "#22d3ee");
+        sfx.four();
+        shakeRef.current = { start: now, mag: 8, ms: 320 };
+        flashRef.current = { start: now, ms: 220, color: "34,211,238" };
+        spawnParticles(from.x, from.y, 18, "#22d3ee");
+        pushFloater(CONTACT.x, CONTACT.y - 26, "+4", "#67e8f9", 28);
       } else if (outcome.tone === "wicket") {
+        sfx.wicket();
         vignetteRef.current = { start: now, ms: 1100 };
         spawnParticles(from.x, from.y, 18, "#f87171");
       } else if (outcome.tone === "run") {
+        sfx.run();
         spawnParticles(from.x, from.y, 8, "#a5b4fc");
+      } else {
+        sfx.dot();
       }
 
       patch({ phase: "shot" });
     },
-    [patch, spawnParticles]
+    [patch, spawnParticles, pushFloater]
   );
 
   const finishShot = useCallback(() => {
@@ -552,7 +661,13 @@ export default function StreetStrike() {
 
     const g = stateRef.current;
     const balls = g.balls + 1;
-    const score = g.score + res.runs;
+
+    // Consecutive boundaries build a combo worth bonus "momentum" runs.
+    const boundary = res.tone === "four" || res.tone === "six";
+    const streak = boundary ? g.streak + 1 : 0;
+    const comboBonus = boundary && streak >= 2 ? Math.min(streak - 1, 4) : 0;
+    const gained = res.runs + comboBonus;
+    const score = g.score + gained;
     const wickets = g.wickets + (res.wicket ? 1 : 0);
     const batters = g.batters.map((b, i) =>
       i === g.striker ? { ...b, runs: b.runs + res.runs, balls: b.balls + 1 } : b
@@ -561,6 +676,14 @@ export default function StreetStrike() {
     let striker = g.striker;
     let nonStriker = g.nonStriker;
     const extra: string[] = [];
+
+    if (comboBonus > 0) {
+      extra.push(`Momentum! Combo x${streak} adds ${comboBonus} bonus run${comboBonus > 1 ? "s" : ""}.`);
+      pushFloater(CONTACT.x, CONTACT.y - 52, `COMBO x${streak}`, "#fbbf24", 22);
+    }
+    if (res.runs > 0) {
+      pushFloater(CONTACT.x + (res.runs >= 4 ? 0 : 0), CONTACT.y - 26, `+${res.runs}`, res.tone === "six" ? "#6ee7b7" : res.tone === "four" ? "#67e8f9" : "#c7d2fe", res.runs >= 4 ? 0 : 20);
+    }
 
     if (res.wicket) {
       if (balls < TOTAL_BALLS && wickets < MAX_WICKETS) {
@@ -608,6 +731,7 @@ export default function StreetStrike() {
       score,
       wickets,
       balls,
+      streak,
       batters,
       striker,
       nonStriker,
@@ -638,22 +762,23 @@ export default function StreetStrike() {
         res.wicket ? 1500 : 1000
       );
     }
-  }, [clearTimer, closeInnings, nextId, patch]);
+  }, [clearTimer, closeInnings, nextId, patch, pushFloater]);
 
   const bowlNext = useCallback(() => {
     const st = stateRef.current;
+    if (pausedRef.current) return;
     if (st.phase !== "ready" && st.phase !== "result") return;
     clearTimer();
 
-    const ballInOver = st.balls % BALLS_PER_OVER;
-    const flightMs = Math.round(difficultyAt(ballInOver).flightMs * rand(0.95, 1.06));
+    const diff = difficultyAt(st.balls, modeRef.current);
+    const flightMs = Math.round(diff.flightMs * rand(0.95, 1.06));
     const start = performance.now();
 
     deliveryRef.current = {
       start,
       flightMs,
       contactAt: start + flightMs,
-      sweetHalf: difficultyAt(ballInOver).sweetHalf,
+      sweetHalf: diff.sweetHalf,
     };
     committedRef.current = false;
     pendingRef.current = null;
@@ -661,10 +786,13 @@ export default function StreetStrike() {
     trailRef.current = [];
     ballRef.current = { x: RELEASE.x, y: RELEASE.y, size: 3.2 };
     animRef.current = { kind: "delivery", start, ms: flightMs };
+    sfx.release();
     patch({ phase: "delivery", banner: null });
   }, [clearTimer, patch]);
 
   const startInnings = useCallback(() => {
+    unlockAudio();
+    sfx.start();
     clearTimer();
     animRef.current = null;
     committedRef.current = true;
@@ -673,22 +801,81 @@ export default function StreetStrike() {
     lastNRef.current = null;
     trailRef.current = [];
     particlesRef.current = [];
+    floatersRef.current = [];
+    flashRef.current = null;
     shakeRef.current = null;
     vignetteRef.current = null;
     ballRef.current = { x: RELEASE.x, y: RELEASE.y - 8, size: 3.4 };
+    pausedRef.current = false;
+    setPaused(false);
     patch(freshInnings());
   }, [clearTimer, patch]);
 
+  const toMenu = useCallback(() => {
+    sfx.ui();
+    clearTimer();
+    animRef.current = null;
+    committedRef.current = true;
+    pendingRef.current = null;
+    deliveryRef.current = null;
+    particlesRef.current = [];
+    floatersRef.current = [];
+    flashRef.current = null;
+    shakeRef.current = null;
+    vignetteRef.current = null;
+    ballRef.current = { x: RELEASE.x, y: RELEASE.y - 8, size: 3.4 };
+    pausedRef.current = false;
+    setPaused(false);
+    patch(initialInnings());
+  }, [clearTimer, patch]);
+
   const mainAction = useCallback(() => {
+    if (pausedRef.current) return;
     const p = stateRef.current.phase;
     if (p === "idle" || p === "end") startInnings();
     else if (p === "ready" || p === "result") bowlNext();
     else if (p === "delivery") swing(true);
   }, [bowlNext, startInnings, swing]);
 
+  const canPause = game.phase === "ready" || game.phase === "result";
+
+  const togglePause = useCallback(() => {
+    const p = stateRef.current.phase;
+    if (p !== "ready" && p !== "result") return;
+    unlockAudio();
+    sfx.ui();
+    setPaused((current) => {
+      pausedRef.current = !current;
+      return !current;
+    });
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    const next = !isMuted();
+    setMuted(next);
+    setMutedState(next);
+    if (!next) sfx.ui();
+  }, []);
+
+  const chooseMode = useCallback((next: Mode) => {
+    unlockAudio();
+    sfx.ui();
+    modeRef.current = next;
+    setModeState(next);
+    writeLocal(MODE_KEY, next);
+  }, []);
+
+  const pickAim = useCallback(
+    (next: Aim) => {
+      sfx.ui();
+      setAim(next);
+    },
+    [setAim]
+  );
+
   /* --------------------------- effects --------------------------- */
 
-  // Best score from storage.
+  // Persisted prefs: best, leaderboard, mode, mute.
   useEffect(() => {
     const raw = readLocal(BEST_KEY);
     const saved = raw === null ? 0 : Number(raw);
@@ -696,6 +883,18 @@ export default function StreetStrike() {
       bestRef.current = saved;
       setBest(saved);
     }
+    try {
+      const board = JSON.parse(readLocal(SCORES_KEY) ?? "[]");
+      if (Array.isArray(board)) setScores(board.filter((n) => Number.isFinite(n)).slice(0, 5));
+    } catch {
+      /* ignore a corrupt leaderboard */
+    }
+    const savedMode = readLocal(MODE_KEY);
+    if (savedMode === "casual" || savedMode === "street" || savedMode === "pro") {
+      modeRef.current = savedMode;
+      setModeState(savedMode);
+    }
+    setMutedState(isMuted());
   }, []);
 
   // Respect reduced-motion for the shake.
@@ -810,17 +1009,30 @@ export default function StreetStrike() {
       if (event.code === "ArrowUp" || event.code === "ArrowDown") {
         event.preventDefault();
         setAim(0);
+        return;
+      }
+      if (event.code === "KeyP" || event.code === "Escape") {
+        event.preventDefault();
+        togglePause();
+        return;
+      }
+      if (event.code === "KeyM") {
+        event.preventDefault();
+        toggleMute();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mainAction, setAim]);
+  }, [mainAction, setAim, togglePause, toggleMute]);
 
   /* --------------------------- simulation --------------------------- */
 
   const step = (now: number) => {
     if (particlesRef.current.length > 0) {
       particlesRef.current = particlesRef.current.filter((p) => now - p.born < p.life);
+    }
+    if (floatersRef.current.length > 0) {
+      floatersRef.current = floatersRef.current.filter((f) => now - f.born < f.life);
     }
 
     const anim = animRef.current;
@@ -933,7 +1145,6 @@ export default function StreetStrike() {
     ctx.strokeRect(178, 120, 64, 260);
     ctx.shadowBlur = 0;
 
-    // creases
     ctx.strokeStyle = "rgba(52,211,153,0.5)";
     ctx.lineWidth = 1.2;
     for (const y of [136, 364]) {
@@ -943,7 +1154,6 @@ export default function StreetStrike() {
       ctx.stroke();
     }
 
-    // stumps
     ctx.shadowColor = "#a7f3d0";
     ctx.shadowBlur = 12;
     ctx.fillStyle = "#e6fff5";
@@ -952,7 +1162,6 @@ export default function StreetStrike() {
     }
     ctx.shadowBlur = 0;
 
-    // bowler release marker (pulses between balls)
     const pulse = 0.6 + 0.4 * Math.sin(now / 320);
     ctx.beginPath();
     ctx.arc(RELEASE.x, RELEASE.y, 4.5, 0, Math.PI * 2);
@@ -961,6 +1170,47 @@ export default function StreetStrike() {
     ctx.shadowBlur = 16;
     ctx.fill();
     ctx.shadowBlur = 0;
+    ctx.restore();
+  };
+
+  // Bowler, striker with a swinging bat, keeper and a few fielders — so it
+  // reads as people playing, not dots on a diagram.
+  const drawPlayers = (ctx: CanvasRenderingContext2D, now: number) => {
+    const st = stateRef.current;
+    const anim = animRef.current;
+    ctx.save();
+
+    for (const f of FIELDERS) drawPerson(ctx, f.x, f.y, "rgba(148,163,184,0.5)", 0.8);
+
+    // Bowler runs in during the delivery.
+    let bowlerY = RELEASE.y - 18;
+    if (anim?.kind === "delivery") {
+      const f = clamp((now - anim.start) / anim.ms, 0, 1);
+      bowlerY = RELEASE.y - 22 + f * 14;
+    }
+    drawPerson(ctx, RELEASE.x, bowlerY, "#38bdf8", 0.95);
+
+    drawPerson(ctx, KEEPER.x + 16, KEEPER.y - 6, "rgba(203,213,225,0.7)", 0.85);
+
+    // Striker body + head.
+    drawPerson(ctx, STRIKER.x, STRIKER.y, "#e2e8f0", 1.05);
+
+    // Bat pivots at the hands; sweeps from backlift to follow-through on a shot.
+    let swingP = 0;
+    if (anim?.kind === "shot") swingP = clamp((now - anim.start) / 150, 0, 1);
+    else if (st.phase === "result" || st.phase === "end") swingP = 1;
+    const angle = (-0.9 + (2.5 - -0.9) * swingP) * Math.PI * 0.42;
+    ctx.translate(STRIKER.hands.x, STRIKER.hands.y);
+    ctx.rotate(angle);
+    ctx.strokeStyle = "#f8fafc";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -22);
+    ctx.stroke();
+    ctx.fillStyle = "#d6b48a";
+    roundRect(ctx, -3, -40, 6, 20, 2.5);
+    ctx.fill();
     ctx.restore();
   };
 
@@ -1047,6 +1297,24 @@ export default function StreetStrike() {
     ctx.restore();
   };
 
+  const drawFloaters = (ctx: CanvasRenderingContext2D, now: number) => {
+    if (floatersRef.current.length === 0) return;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const f of floatersRef.current) {
+      const t = (now - f.born) / f.life;
+      if (t < 0 || t > 1) continue;
+      ctx.globalAlpha = 1 - t * t;
+      ctx.fillStyle = f.color;
+      ctx.shadowColor = f.color;
+      ctx.shadowBlur = 16;
+      ctx.font = `900 ${Math.round(f.size * (1 + (1 - t) * 0.15))}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.fillText(f.text, f.x, f.y - 40 * t);
+    }
+    ctx.restore();
+  };
+
   const drawGauge = (ctx: CanvasRenderingContext2D, now: number) => {
     const { x0, x1, y, h } = GAUGE;
     const midX = (x0 + x1) / 2;
@@ -1054,7 +1322,7 @@ export default function StreetStrike() {
 
     const d = deliveryRef.current;
     const live = d !== null && stateRef.current.phase === "delivery";
-    const sweetHalf = live && d ? d.sweetHalf : difficultyAt(stateRef.current.balls % BALLS_PER_OVER).sweetHalf;
+    const sweetHalf = live && d ? d.sweetHalf : difficultyAt(stateRef.current.balls, modeRef.current).sweetHalf;
 
     ctx.save();
     roundRect(ctx, x0, y, x1 - x0, h, 6);
@@ -1088,6 +1356,21 @@ export default function StreetStrike() {
     ctx.shadowBlur = 16;
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(nx - 1.7, y - 7, 3.4, h + 14);
+    ctx.restore();
+  };
+
+  const drawFlash = (ctx: CanvasRenderingContext2D, now: number) => {
+    const f = flashRef.current;
+    if (!f) return;
+    const t = (now - f.start) / f.ms;
+    if (t >= 1) {
+      flashRef.current = null;
+      return;
+    }
+    ctx.save();
+    ctx.globalAlpha = Math.sin(Math.PI * t) * 0.22;
+    ctx.fillStyle = `rgba(${f.color},1)`;
+    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     ctx.restore();
   };
 
@@ -1132,7 +1415,6 @@ export default function StreetStrike() {
     ctx.fillStyle = "#05070d";
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-    // Decaying screen shake on six/four.
     let sx = 0;
     let sy = 0;
     const sh = shakeRef.current;
@@ -1152,11 +1434,14 @@ export default function StreetStrike() {
     drawGround(ctx);
     drawPitch(ctx, now);
     drawAim(ctx);
+    drawPlayers(ctx, now);
     drawBall(ctx);
     drawParticles(ctx, now);
+    drawFloaters(ctx, now);
     drawGauge(ctx, now);
     ctx.restore();
 
+    drawFlash(ctx, now);
     drawVignette(ctx, now);
   };
 
@@ -1181,13 +1466,14 @@ export default function StreetStrike() {
   const live = game.phase === "delivery" || game.phase === "shot";
   const banner = game.banner;
   const showEnd = game.phase === "end";
-  const ballInOver = game.balls % BALLS_PER_OVER;
-  const upcoming = difficultyAt(ballInOver);
+  const showMenu = game.phase === "idle";
+  const upcoming = difficultyAt(game.balls, mode);
   const liveDelivery = deliveryRef.current;
-  const shownSweet =
-    live && liveDelivery ? liveDelivery.sweetHalf : upcoming.sweetHalf;
+  const shownSweet = live && liveDelivery ? liveDelivery.sweetHalf : upcoming.sweetHalf;
   const shownFlight = live && liveDelivery ? liveDelivery.flightMs : upcoming.flightMs;
-  const tightness = (1 - shownSweet / 0.17) * 100;
+  const maxSweet = 0.17 * modeScale(mode).sweetScale;
+  const tightness = clamp((1 - shownSweet / maxSweet) * 100, 0, 100);
+  const canPlay = !showMenu && !showEnd;
 
   const buttonLabel =
     game.phase === "idle" || game.phase === "end"
@@ -1224,14 +1510,39 @@ export default function StreetStrike() {
             <div className="text-xs text-slate-400 mt-0.5">
               {live
                 ? "Sweep the needle into the green zone and swing."
-                : "Press Space or the button to bowl the next ball."}
+                : "Tap the pitch, press Space or use the button."}
             </div>
           </div>
-          <div className="shrink-0 text-right">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
-              Personal best
-            </div>
-            <div className="font-mono text-lg font-black text-emerald-300">{best}</div>
+          <div className="flex items-center gap-2 shrink-0">
+            {canPlay && (
+              <>
+                <button
+                  type="button"
+                  onClick={togglePause}
+                  disabled={!canPause}
+                  aria-label={paused ? "Resume" : "Pause"}
+                  className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/60 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toMenu}
+                  aria-label="Back to menu"
+                  className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/60 transition-all"
+                >
+                  <Home className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute" : "Mute"}
+              className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-white/5 border border-slate-700/60 transition-all"
+            >
+              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
@@ -1242,16 +1553,87 @@ export default function StreetStrike() {
           <canvas
             ref={canvasRef}
             role="img"
-            aria-label="Top-down neon cricket pitch with a timing gauge and aim lanes"
+            aria-label="Street Strike: a neon cricket pitch with a timing gauge and aim lanes"
             className="block w-full touch-none select-none"
             onPointerDown={(event) => {
               event.preventDefault();
+              unlockAudio();
               mainAction();
             }}
           />
+
+          {showMenu && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/85 backdrop-blur-sm px-5 text-center">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent">
+                STREET STRIKE
+              </div>
+              <ul className="text-[11px] sm:text-xs text-slate-400 space-y-1 max-w-[340px]">
+                <li>Time the sweeping needle into the green band, then swing.</li>
+                <li>Pick a gap with the arrows (or the aim buttons), Space to play.</li>
+                <li>Back-to-back boundaries build a combo for bonus runs.</li>
+              </ul>
+              <div className="flex gap-2">
+                {MODES.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => chooseMode(m.id)}
+                    className={`rounded-xl px-3 py-2 text-xs font-bold border transition-all ${
+                      mode === m.id
+                        ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-200"
+                        : "border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500">{modeScale(mode).blurb}</p>
+              <div className="flex items-center gap-4 text-xs text-slate-400">
+                <span>
+                  Best <span className="font-mono font-bold text-emerald-300">{best}</span>
+                </span>
+                {scores.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="text-slate-500">Top:</span>
+                    <span className="font-mono">{scores.slice(0, 3).join(" · ")}</span>
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={startInnings}
+                className="mt-1 rounded-xl px-8 py-3 font-black uppercase tracking-widest bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.03] active:scale-[0.97] transition-all shadow-lg shadow-emerald-500/25"
+              >
+                Take strike
+              </button>
+            </div>
+          )}
+
+          {paused && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/85 backdrop-blur-sm text-center">
+              <div className="text-2xl font-black uppercase tracking-widest text-slate-200">
+                Paused
+              </div>
+              <button
+                type="button"
+                onClick={togglePause}
+                className="rounded-xl px-8 py-3 font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                Resume
+              </button>
+              <button
+                type="button"
+                onClick={toMenu}
+                className="text-xs text-slate-400 hover:text-white underline"
+              >
+                Quit to menu
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="h-[80px] sm:h-[86px] flex flex-col items-center justify-center text-center mt-3">
+        <div className="h-[80px] sm:h-[86px] flex flex-col items-center justify-center text-center mt-3" aria-live="polite" role="status">
           {banner ? (
             <div key={banner.id} className="animate-slide-up">
               <div className={`text-3xl sm:text-4xl font-black tracking-tight ${TONE_HEADLINE[banner.tone]}`}>
@@ -1273,10 +1655,20 @@ export default function StreetStrike() {
                 ? "watch the release"
                 : game.phase === "shot"
                   ? "shot away"
-                  : `Ball ${Math.min(game.balls + 1, TOTAL_BALLS)} of ${TOTAL_BALLS}`}
+                  : showMenu
+                    ? "press take strike"
+                    : `Ball ${Math.min(game.balls + 1, TOTAL_BALLS)} of ${TOTAL_BALLS}`}
             </p>
           )}
         </div>
+
+        {game.streak >= 2 && !showMenu && (
+          <div className="text-center mb-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-500/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-amber-300">
+              Combo x{game.streak}
+            </span>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           {AIM_OPTIONS.map((option) => {
@@ -1285,7 +1677,7 @@ export default function StreetStrike() {
               <button
                 key={option.label}
                 type="button"
-                onClick={() => setAim(option.aim)}
+                onClick={() => pickAim(option.aim)}
                 aria-pressed={selected}
                 className={`rounded-xl border px-3 py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
                   selected
@@ -1316,25 +1708,68 @@ export default function StreetStrike() {
             <div className="text-sm text-slate-400 mb-1">
               {game.batters.map((b) => `${b.name} ${b.runs}(${b.balls})`).join(" • ")}
             </div>
-            <div className="text-xs text-slate-500 mb-5">
+            <div className="text-xs text-slate-500 mb-4">
               Personal best {best}
               {game.score >= best && game.score > 0 ? " — new record!" : ""}
             </div>
-            <button
-              type="button"
-              onClick={startInnings}
-              className="inline-flex items-center gap-2 rounded-xl px-8 py-4 min-h-[56px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.03] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/25"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Bat again
-            </button>
+            {scores.length > 0 && (
+              <div className="mb-4 text-xs">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold mb-1">
+                  Your best five
+                </div>
+                <div className="flex items-center justify-center gap-2 font-mono text-slate-300">
+                  {scores.map((s, i) => (
+                    <span
+                      key={i}
+                      className={s === game.score ? "text-emerald-300 font-bold" : ""}
+                    >
+                      {s}
+                      {i < scores.length - 1 ? " · " : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={startInnings}
+                className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 min-h-[56px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:scale-[1.03] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/25"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Bat again
+              </button>
+              <button
+                type="button"
+                onClick={toMenu}
+                className="rounded-xl px-5 py-3.5 min-h-[56px] font-bold bg-slate-800/70 border border-slate-700/60 hover:bg-slate-800 transition-all"
+              >
+                Menu
+              </button>
+            </div>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => chooseMode(m.id)}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-bold border transition-all ${
+                    mode === m.id
+                      ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-200"
+                      : "border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 border-t border-slate-700/50 pt-4">
             <button
               type="button"
               onClick={mainAction}
-              disabled={buttonDisabled}
+              disabled={buttonDisabled || paused}
               className={`w-full sm:w-80 rounded-2xl py-5 min-h-[56px] text-lg sm:text-xl font-black uppercase tracking-widest transition-all ${
                 buttonDisabled
                   ? "bg-slate-800 text-slate-600 cursor-not-allowed"
@@ -1350,6 +1785,8 @@ export default function StreetStrike() {
               <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono">
                 Space
               </kbd>
+              {"  "}
+              <span className="text-slate-600">· P pause · M mute</span>
             </p>
           </div>
         )}
@@ -1430,18 +1867,16 @@ export default function StreetStrike() {
             <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-bold">
               Timing bands
             </span>
-            <span className="text-[10px] font-mono text-slate-500">
-              ball {Math.min(game.balls + 1, TOTAL_BALLS)}
-            </span>
+            <span className="text-[10px] font-mono text-slate-500">{mode} · ball {Math.min(game.balls + 1, TOTAL_BALLS)}</span>
           </div>
           <p className="text-[11px] text-slate-500 mb-2">
-            Balls 1-2 wide, balls 5-6 razor thin. Sweet spot now {Math.round(tightness)}% tighter than ball 1.
+            Wide at the start, razor thin by the last over. Sweet spot now {Math.round(tightness)}% tighter than ball 1.
           </p>
           <div className="mb-3">
             <div className="h-2 w-full rounded-full bg-slate-800/70 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all"
-                style={{ width: `${clamp((shownSweet / 0.17) * 100, 6, 100)}%` }}
+                style={{ width: `${clamp((shownSweet / maxSweet) * 100, 6, 100)}%` }}
               />
             </div>
           </div>
