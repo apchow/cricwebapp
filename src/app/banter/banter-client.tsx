@@ -249,9 +249,9 @@ export default function BanterWall() {
             ) : readOnly ? (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="font-bold mb-0.5">Browsing the demo</div>
+                  <div className="font-bold mb-0.5">Browsing as Guest</div>
                   <p className="text-sm text-slate-400">
-                    The demo wall is read-only. Create a free account to post your own takes.
+                    This guest view of the wall is read-only. Sign in with Google to post your own takes.
                   </p>
                 </div>
                 <button
@@ -260,7 +260,7 @@ export default function BanterWall() {
                   className="shrink-0 inline-flex items-center gap-2 rounded-xl px-5 py-3 font-bold bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-fuchsia-500/20"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Create free account
+                  Sign in with Google
                 </button>
               </div>
             ) : silenced ? (

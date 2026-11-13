@@ -94,7 +94,7 @@ export default function SeriesClient() {
     const name = newName.trim();
     if (!name || busy) return;
     if (readOnly) {
-      notify("The demo account is read-only. Create a free account to run your own series.");
+      notify("Guest is read-only. Sign in with Google to run your own series.");
       return;
     }
     setBusy(true);
@@ -120,7 +120,7 @@ export default function SeriesClient() {
 
   async function updateMatchIds(seriesId: string, nextIds: string[]) {
     if (readOnly) {
-      notify("The demo account is read-only. Create a free account to run your own series.");
+      notify("Guest is read-only. Sign in with Google to run your own series.");
       return;
     }
     const response = await fetch(`/api/series/${seriesId}`, {
@@ -144,7 +144,7 @@ export default function SeriesClient() {
 
   async function removeSeries(seriesId: string) {
     if (readOnly) {
-      notify("The demo account is read-only. Create a free account to run your own series.");
+      notify("Guest is read-only. Sign in with Google to run your own series.");
       return;
     }
     setSeries((prev) => (prev ?? []).filter((item) => item.id !== seriesId));
@@ -200,15 +200,15 @@ export default function SeriesClient() {
             {readOnly && (
               <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 mb-6 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-xs font-black uppercase tracking-wide text-amber-200">
-                  Demo · read-only
+                  Guest · read-only
                 </span>
                 <span className="text-[11px] text-amber-100/70">
-                  You can browse the demo, but series are not saved.{" "}
+                  You can browse as Guest, but series are not saved.{" "}
                   <Link
-                    href="/login?next=/series&mode=register"
+                    href="/login?next=/series"
                     className="font-bold text-amber-200 underline hover:text-amber-100"
                   >
-                    Create a free account
+                    Sign in with Google
                   </Link>{" "}
                   to run your own.
                 </span>

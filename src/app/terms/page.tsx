@@ -72,10 +72,11 @@ export default function TermsPage() {
 
         <Section title="Your account">
           <p>
-            You are responsible for keeping your password safe and for activity
-            under your account. Sign up with an email you control. The demo
-            account is a shared, read-only login for looking around — do not rely
-            on it to keep anything, and do not attempt to write to it.
+            You sign in with Google, so you are responsible for keeping your
+            Google account secure and for activity under your Pundit Arena
+            account. The guest view is a shared, read-only login for looking
+            around — do not rely on it to keep anything, and do not attempt to
+            write to it.
           </p>
           <p>
             You can delete your saved XIs, matches, series and posts yourself, and

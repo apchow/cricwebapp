@@ -67,9 +67,9 @@ export default function AccountMenu({ email }: { email: string | null }) {
       {user?.demo && (
         <span
           className="inline-flex items-center px-2 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-[10px] font-bold uppercase tracking-wide text-amber-300 whitespace-nowrap"
-          title="The demo account is read-only. Create a free account to save your own XIs, matches and takes."
+          title="This guest view is read-only. Sign in with Google to save your own XIs, matches and takes."
         >
-          Demo · read-only
+          Guest · read-only
         </span>
       )}
       {!user && email && (

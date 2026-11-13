@@ -4,7 +4,7 @@ import { ShieldCheck } from "lucide-react";
 export const metadata = {
   title: "Privacy Policy — Pundit Arena",
   description:
-    "What Pundit Arena stores, why, and how to remove it. Email and password for accounts, your saved cricket content, and an essential session cookie — no ads or tracking.",
+    "What Pundit Arena stores, why, and how to remove it. Your email and name from Google sign-in, your saved cricket content, and an essential session cookie — no ads or tracking.",
 };
 
 const UPDATED = "13 November 2026";
@@ -49,18 +49,20 @@ export default function PrivacyPage() {
           <p className="text-sm leading-relaxed text-slate-400">
             Pundit Arena is a fan-made cricket playground. This page explains
             exactly what we store and why. The short version: we keep the email
-            and password you sign up with, the cricket content you choose to
-            save, and one essential cookie to keep you signed in. We do not run
-            ads, sell data, or track you across other sites.
+            and name Google shares when you sign in, the cricket content you
+            choose to save, and one essential cookie to keep you signed in. We do
+            not run ads, sell data, or track you across other sites.
           </p>
         </header>
 
         <Section title="What we collect">
           <p>
-            <strong className="text-slate-200">Account details.</strong> When you
-            register we store your email address and a password. The password is
-            hashed with scrypt before it is saved — we never keep it in plain
-            text and cannot read it.
+            <strong className="text-slate-200">Account details.</strong> You sign
+            in with Google, and we store the email address and name Google shares
+            so we can create and recognise your account. We never see or store
+            your Google password — Google handles authentication. If you created
+            an account before Google sign-in existed, a password hashed with
+            scrypt may still be on file; it is never kept in plain text.
           </p>
           <p>
             <strong className="text-slate-200">Content you create.</strong> If
@@ -98,8 +100,8 @@ export default function PrivacyPage() {
             In production your account and saved content live in a hosted
             Postgres database (provided by Neon) accessed through our hosting
             provider, Vercel. Data is stored on their infrastructure, not on your
-            machine. The demo account is a single shared, read-only login used to
-            let visitors look around; nothing you do in the demo is saved.
+            machine. The guest view is a single shared, read-only login used to
+            let visitors look around; nothing you do as Guest is saved.
           </p>
         </Section>
 
@@ -110,7 +112,10 @@ export default function PrivacyPage() {
             production, and expires after 30 days. There are no advertising,
             analytics, or third-party tracking cookies, and no embedded trackers.
             Fonts are self-hosted, so loading the site does not call a third-party
-            font service.
+            font service. Signing in with Google takes you to google.com to
+            authenticate; Google may set its own cookies on its domain, governed
+            by Google&rsquo;s privacy policy, and hands us back only your email
+            and name once you approve.
           </p>
         </Section>
 
@@ -118,7 +123,7 @@ export default function PrivacyPage() {
           <p>
             International live scores are fetched on our server from a third-party
             cricket data provider (CricAPI). This happens server-to-server: your
-            email, password, or saved content is never sent to them, and they do
+            email, name, or saved content is never sent to them, and they do
             not receive your IP address through this feed.
           </p>
         </Section>
@@ -150,7 +155,8 @@ export default function PrivacyPage() {
             >
               github.com/apchow/cricwebapp
             </a>
-            . Please do not include your password in any message.
+            . Please do not include your Google password or any other secret in
+            any message.
           </p>
           <p className="text-xs text-slate-500">
             Pundit Arena is not affiliated with, endorsed by, or connected to the

@@ -480,7 +480,7 @@ export default function XiBuilderClient() {
       return;
     }
     if (user.demo) {
-      notify("The demo account is read-only. Create a free account to save your own.");
+      notify("Guest is read-only. Sign in with Google to save your own.");
       return;
     }
     if (!placedIds.length) {
@@ -1138,16 +1138,16 @@ export default function XiBuilderClient() {
           {user?.demo ? (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
               <p className="text-[11px] font-bold text-amber-200">
-                Demo · read-only
+                Guest · read-only
               </p>
               <p className="text-[10px] leading-relaxed text-amber-100/70 mt-1">
                 You can build and load XIs here, but nothing is saved to the
-                shared demo account.{" "}
+                shared guest view.{" "}
                 <Link
-                  href="/login?next=%2Fxi-builder&mode=register"
+                  href="/login?next=%2Fxi-builder"
                   className="font-bold text-amber-200 underline hover:text-amber-100"
                 >
-                  Create a free account
+                  Sign in with Google
                 </Link>{" "}
                 to keep your own.
               </p>

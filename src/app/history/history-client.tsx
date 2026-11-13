@@ -91,7 +91,7 @@ export default function HistoryClient() {
 
   async function remove(id: string) {
     if (readOnly) {
-      notify("The demo account is read-only. Create a free account to keep your own matches.");
+      notify("Guest is read-only. Sign in with Google to keep your own matches.");
       return;
     }
     setMatches((prev) => (prev ? prev.filter((match) => match.id !== id) : prev));
@@ -103,7 +103,7 @@ export default function HistoryClient() {
 
   async function share(match: PublicMatch) {
     if (readOnly) {
-      notify("The demo account is read-only. Create a free account to share your own matches.");
+      notify("Guest is read-only. Sign in with Google to share your own matches.");
       return;
     }
     const response = await fetch(`/api/matches/${match.id}/share`, {

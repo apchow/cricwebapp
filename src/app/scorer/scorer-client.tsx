@@ -810,15 +810,15 @@ export default function ScorerClient() {
         {readOnly && !loading && (
           <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
             <span className="font-black uppercase tracking-wide text-xs mr-2">
-              Demo · read-only
+              Guest · read-only
             </span>
             Score freely — this match stays on your device and is not saved to the
-            shared demo account.{" "}
+            shared guest view.{" "}
             <a
-              href="/login?next=/scorer&mode=register"
+              href="/login?next=/scorer"
               className="font-bold underline hover:text-amber-100"
             >
-              Create a free account
+              Sign in with Google
             </a>{" "}
             to keep your matches.
           </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogIn, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ShieldCheck, Sparkles, X } from "lucide-react";
 
 import { useArena } from "@/store/arena";
 
@@ -31,10 +31,10 @@ export default function AuthModal() {
     }
   }, [open]);
 
-  /** Real accounts live on the server, so the form is a page, not a modal. */
-  function goToLogin() {
+  /** Google is the only account sign-in; the start route hands off to it. */
+  function goToGoogle() {
     const next = encodeURIComponent(pathname || "/");
-    window.location.assign(`/login?next=${next}`);
+    window.location.assign(`/api/auth/google?next=${next}`);
   }
 
   async function useDemo() {
@@ -95,18 +95,23 @@ export default function AuthModal() {
               Join the arena
             </h2>
             <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-              An account keeps your saved XIs, scored matches and takes on the
-              wall — they belong to you, not to this browser.
+              Sign in with Google to keep your saved XIs, scored matches and
+              takes on the wall — they belong to you, not to this browser.
             </p>
 
             <div className="space-y-3">
               <button
                 type="button"
-                onClick={goToLogin}
-                className="w-full flex items-center justify-center gap-3 rounded-xl px-5 py-3.5 font-semibold bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-[1.01] active:scale-[0.98] transition-all"
+                onClick={goToGoogle}
+                className="w-full flex items-center justify-center gap-3 rounded-xl px-5 py-3.5 font-semibold bg-white text-slate-800 hover:bg-slate-100 active:scale-[0.98] transition-all"
               >
-                <LogIn className="w-5 h-5" />
-                Sign in or create an account
+                <svg viewBox="0 0 48 48" className="w-5 h-5" aria-hidden="true">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.24 17.76 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.46-4.81 7.14l7.43 5.78C43.39 37.44 46.98 31.36 46.98 24.55z" />
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.35-.76-2.77-.76-4.28s.28-2.93.76-4.28l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.81l-7.43-5.78c-2.18 1.45-5.02 2.31-8.47 2.31-6.24 0-11.57-3.74-13.47-8.84l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                </svg>
+                Continue with Google
               </button>
 
               <button
@@ -115,23 +120,25 @@ export default function AuthModal() {
                 disabled={demoBusy}
                 className="w-full rounded-xl px-5 py-3 text-sm font-semibold bg-slate-800/70 border border-slate-700/60 text-slate-300 hover:bg-slate-800 disabled:opacity-60 transition-all"
               >
-                {demoBusy ? "Opening the demo…" : "Just looking — demo account"}
+                {demoBusy
+                  ? "Starting your guest view…"
+                  : "Just looking — continue as Guest"}
               </button>
             </div>
 
             {demoFailed && (
               <p className="mt-3 text-xs text-red-300">
-                The demo could not be opened right now. Sign in instead, or try
-                again in a minute.
+                The guest view couldn&apos;t be opened right now. Sign in with
+                Google, or try again in a minute.
               </p>
             )}
 
             <div className="mt-6 flex items-start gap-2 text-[11px] text-slate-500 leading-relaxed">
               <ShieldCheck className="w-4 h-4 shrink-0 mt-px text-emerald-500/70" />
               <span>
-                The demo is <strong className="text-slate-400">one account shared
-                by every visitor</strong> — anything saved there is visible to the
-                next person who taps it. Create an account to keep your own.
+                Guest is <strong className="text-slate-400">one read-only view
+                shared by every visitor</strong> — anything saved there is visible
+                to the next person who taps it. Sign in with Google to keep your own.
               </span>
             </div>
           </motion.div>

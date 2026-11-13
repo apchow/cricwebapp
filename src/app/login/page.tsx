@@ -6,7 +6,7 @@ import LoginForm from "./login-form";
 export const metadata = {
   title: "Sign in — Pundit Arena",
   description:
-    "Sign in or create a free account to keep your saved XIs, scored matches and banter.",
+    "Sign in with Google to keep your saved XIs, scored matches and banter — one tap, no password.",
 };
 export const dynamic = "force-dynamic";
 
@@ -22,23 +22,23 @@ function safeNext(value?: string): string {
 
 /** The callback only ever sends known slugs; anything else stays silent. */
 const SIGN_IN_NOTICES: Record<string, string> = {
-  cancelled: "Google sign-in was cancelled. Try again, or use your email.",
+  cancelled: "Google sign-in was cancelled. Try again, or continue as Guest.",
   nocode: "Google sign-in didn't finish. Please try again.",
   state: "That sign-in attempt expired. Please try again.",
   exchange: "Google didn't accept the sign-in. Please try again.",
   profile: "We couldn't read your Google profile. Please try again.",
   unverified:
-    "That Google account's email isn't verified, so it can't be linked to an existing account. Sign in with your password instead.",
+    "Google says that email isn't verified, so it can't be matched to an existing account. Verify it with Google, or sign in with a different account.",
   notready: "Google sign-in isn't configured on this deployment yet.",
 };
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string; reason?: string }>;
+  searchParams: Promise<{ next?: string; reason?: string }>;
 }) {
   const session = await currentSession();
-  const { next: nextParam, mode: modeParam, reason } = await searchParams;
+  const { next: nextParam, reason } = await searchParams;
   const next = safeNext(nextParam);
   if (session) redirect(next);
 
@@ -51,7 +51,6 @@ export default async function LoginPage({
       <div className="max-w-md mx-auto px-4 sm:px-6 py-20">
         <LoginForm
           next={next}
-          initialMode={modeParam === "register" ? "register" : "login"}
           googleEnabled={googleConfigured()}
           notice={reason ? SIGN_IN_NOTICES[reason] ?? null : null}
         />
