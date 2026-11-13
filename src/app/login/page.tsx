@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { currentSession } from "@/lib/auth";
+import { googleConfigured } from "@/lib/oauth";
 import LoginForm from "./login-form";
 
 export const metadata = {
@@ -19,13 +20,25 @@ function safeNext(value?: string): string {
   return value;
 }
 
+/** The callback only ever sends known slugs; anything else stays silent. */
+const SIGN_IN_NOTICES: Record<string, string> = {
+  cancelled: "Google sign-in was cancelled. Try again, or use your email.",
+  nocode: "Google sign-in didn't finish. Please try again.",
+  state: "That sign-in attempt expired. Please try again.",
+  exchange: "Google didn't accept the sign-in. Please try again.",
+  profile: "We couldn't read your Google profile. Please try again.",
+  unverified:
+    "That Google account's email isn't verified, so it can't be linked to an existing account. Sign in with your password instead.",
+  notready: "Google sign-in isn't configured on this deployment yet.",
+};
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string; reason?: string }>;
 }) {
   const session = await currentSession();
-  const { next: nextParam, mode: modeParam } = await searchParams;
+  const { next: nextParam, mode: modeParam, reason } = await searchParams;
   const next = safeNext(nextParam);
   if (session) redirect(next);
 
@@ -36,7 +49,12 @@ export default async function LoginPage({
         <div className="absolute bottom-0 right-1/4 w-[420px] h-[420px] bg-emerald-600/10 rounded-full blur-[120px]" />
       </div>
       <div className="max-w-md mx-auto px-4 sm:px-6 py-20">
-        <LoginForm next={next} initialMode={modeParam === "register" ? "register" : "login"} />
+        <LoginForm
+          next={next}
+          initialMode={modeParam === "register" ? "register" : "login"}
+          googleEnabled={googleConfigured()}
+          notice={reason ? SIGN_IN_NOTICES[reason] ?? null : null}
+        />
       </div>
     </div>
   );

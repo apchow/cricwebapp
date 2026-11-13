@@ -67,6 +67,20 @@ export interface StoredReset {
   expiresAt: number;
 }
 
+/**
+ * A third-party sign-in (Google) linked to an account. The provider's stable
+ * subject id is the authority, so a user can return without any password.
+ */
+export interface StoredIdentity {
+  id: string;
+  userId: string;
+  provider: string;
+  /** The provider's immutable user id (Google `sub`). */
+  subject: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface DailyUsage {
   /** ISO day the counter belongs to. */
   day: string;
@@ -90,6 +104,8 @@ export interface Database {
   banter: StoredBanter[];
   /** Pending password-reset links, hashed and time-limited. */
   passwordResets: StoredReset[];
+  /** Linked third-party sign-ins (Google), keyed by provider subject. */
+  identities: StoredIdentity[];
   /** Upstream live-score calls spent today, shared across instances. */
   liveUsage: DailyUsage;
 }
@@ -102,6 +118,7 @@ const EMPTY_DOC: Database = {
   states: [],
   banter: [],
   passwordResets: [],
+  identities: [],
   liveUsage: { day: "", count: 0 },
 };
 
@@ -126,6 +143,7 @@ function normalize(value: unknown): Database {
     states: list<StoredState>(doc.states),
     banter: list<StoredBanter>(doc.banter),
     passwordResets: list<StoredReset>(doc.passwordResets),
+    identities: list<StoredIdentity>(doc.identities),
     liveUsage: {
       day: typeof usage.day === "string" ? usage.day : "",
       count: typeof usage.count === "number" && usage.count > 0 ? usage.count : 0,

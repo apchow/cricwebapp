@@ -6,9 +6,13 @@ import { useState } from "react";
 export default function LoginForm({
   next,
   initialMode = "login",
+  googleEnabled = false,
+  notice = null,
 }: {
   next: string;
   initialMode?: "login" | "register";
+  googleEnabled?: boolean;
+  notice?: string | null;
 }) {
   const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [email, setEmail] = useState("");
@@ -70,6 +74,36 @@ export default function LoginForm({
           ? "Your saved XIs and match history live on your account."
           : "One email and password. Your XIs, matches and takes are stored on our servers, so they follow you between devices."}
       </p>
+
+      {notice && (
+        <p className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mb-4">
+          {notice}
+        </p>
+      )}
+
+      {googleEnabled && (
+        <>
+          <a
+            href={`/api/auth/google?next=${encodeURIComponent(next)}`}
+            className="w-full flex items-center justify-center gap-3 rounded-xl py-3 font-bold bg-white text-slate-800 hover:bg-slate-100 active:scale-[0.99] transition-all mb-5"
+          >
+            <svg viewBox="0 0 48 48" className="w-5 h-5" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.24 17.76 9.5 24 9.5z" />
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.46-4.81 7.14l7.43 5.78C43.39 37.44 46.98 31.36 46.98 24.55z" />
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.35-.76-2.77-.76-4.28s.28-2.93.76-4.28l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.81l-7.43-5.78c-2.18 1.45-5.02 2.31-8.47 2.31-6.24 0-11.57-3.74-13.47-8.84l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+            </svg>
+            Continue with Google
+          </a>
+          <div className="flex items-center gap-3 mb-5">
+            <span className="flex-1 h-px bg-slate-800" />
+            <span className="text-[10px] uppercase tracking-widest text-slate-600 font-bold">
+              or
+            </span>
+            <span className="flex-1 h-px bg-slate-800" />
+          </div>
+        </>
+      )}
 
       <div className="grid grid-cols-2 gap-2 mb-6">
         {(["login", "register"] as const).map((item) => (
