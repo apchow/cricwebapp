@@ -17,9 +17,9 @@ export type RecorderPhase =
   | "error";
 
 /**
- * How long an in-memory segment runs before it is flushed to a download.
- * Ten minutes at a typical 250 kbps is roughly 75 MB, which is well inside
- * what a tab will tolerate; longer and the browser starts dropping frames.
+ * How long an in-memory segment runs before it is flushed to a download. Ten
+ * minutes at ~1.6 Mbps is roughly 120 MB, which is well inside what a tab will
+ * tolerate; longer and the browser starts dropping frames.
  */
 export const SEGMENT_MS = 10 * 60_000;
 

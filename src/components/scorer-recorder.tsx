@@ -18,12 +18,27 @@ import {
 
 /** Chunks land every 5s, so a crash or a closed tab loses at most that much. */
 const TIMESLICE_MS = 5_000;
+/** 720p at the old 250 kbps was blocky beyond watching; hours still stream to disk. */
+const VIDEO_BITS_PER_SECOND = 1_500_000;
+const AUDIO_BITS_PER_SECOND = 128_000;
 
-function baseName(): string {
+function pickSupportedMime(): string {
+  return typeof MediaRecorder !== "undefined" &&
+    typeof MediaRecorder.isTypeSupported === "function"
+    ? pickMimeType((type) => MediaRecorder.isTypeSupported(type))
+    : "";
+}
+
+function extensionFor(mimeType: string): string {
+  return mimeType.includes("mp4") ? ".mp4" : ".webm";
+}
+
+function baseName(mimeType: string): string {
   // Seconds, not minutes: stopping and starting again inside one minute must
-  // not overwrite the film that was just saved.
+  // not overwrite the film that was just saved. The extension follows the
+  // container the browser chose, so a Safari mp4 is not written as ".webm".
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-  return `pundit-arena-${stamp}.webm`;
+  return `pundit-arena-${stamp}${extensionFor(mimeType)}`;
 }
 
 function download(blob: Blob, name: string): void {
@@ -31,7 +46,10 @@ function download(blob: Blob, name: string): void {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = name;
+  // Firefox ignores a click on an anchor that was never in the document.
+  document.body.appendChild(anchor);
   anchor.click();
+  anchor.remove();
   // Revoking too soon truncates the file in some browsers.
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
@@ -52,11 +70,13 @@ export default function ScorerRecorder() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const sinkRef = useRef<ChunkSink | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mimeRef = useRef("");
   const baseRef = useRef("");
   const segmentsRef = useRef(0);
   const legStartRef = useRef(0);
   const segmentStartRef = useRef(0);
   const accumulatedRef = useRef(0);
+  const pauseStartRef = useRef(0);
   const restartRef = useRef(false);
   const audioRef = useRef(audio);
   audioRef.current = audio;
@@ -69,10 +89,28 @@ export default function ScorerRecorder() {
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
-  const fail = useCallback((message: string) => {
-    setError(message);
-    setPhase("error");
-  }, []);
+  /** Ends everything after a fault: the camera light must not stay on. */
+  const fail = useCallback(
+    (message: string) => {
+      restartRef.current = false;
+      const recorder = recorderRef.current;
+      recorderRef.current = null;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {
+          /* already inactive */
+        }
+      }
+      const sink = sinkRef.current;
+      sinkRef.current = null;
+      if (sink) void sink.close().catch(() => undefined);
+      stopTracks();
+      setError(message);
+      setPhase("error");
+    },
+    [stopTracks]
+  );
 
   /**
    * Starts one recorder on the live stream. The sink outlives each rotation:
@@ -80,20 +118,29 @@ export default function ScorerRecorder() {
    * keeps memory bounded while the segment index keeps climbing. A file sink is
    * opened once in start(); a memory sink is opened here on the first segment.
    */
-  const openSegment = useCallback(() => {
+  const openSegment = useCallback((): boolean => {
     const stream = streamRef.current;
-    if (!stream) return;
+    if (!stream) return false;
 
-    const mimeType =
-      typeof MediaRecorder.isTypeSupported === "function"
-        ? pickMimeType((type) => MediaRecorder.isTypeSupported(type))
-        : "";
-    const recorder = new MediaRecorder(
-      stream,
-      mimeType
-        ? { mimeType, videoBitsPerSecond: 250_000, audioBitsPerSecond: 64_000 }
-        : {}
-    );
+    const mimeType = mimeRef.current;
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(
+        stream,
+        mimeType
+          ? {
+              mimeType,
+              videoBitsPerSecond: VIDEO_BITS_PER_SECOND,
+              audioBitsPerSecond: AUDIO_BITS_PER_SECOND,
+            }
+          : {}
+      );
+    } catch {
+      // iOS < 14.3 and some shells throw on construction; without this the
+      // camera track stays live and the button never leaves "requesting".
+      fail("This browser can't start the recorder.");
+      return false;
+    }
 
     if (!sinkRef.current) {
       sinkRef.current = createSegmentSink((blob, index) => {
@@ -114,7 +161,7 @@ export default function ScorerRecorder() {
     };
     recorder.onerror = () => fail("The recording stopped on its own.");
     recorder.onstop = () => {
-      void sink.close().catch(() => fail("The recording file could not be closed."));
+      void sink.close().catch(() => setError("The recording file could not be closed."));
       if (restartRef.current) {
         restartRef.current = false;
         openSegment();
@@ -124,6 +171,7 @@ export default function ScorerRecorder() {
     recorder.start(TIMESLICE_MS);
     recorderRef.current = recorder;
     segmentStartRef.current = Date.now();
+    return true;
   }, [fail]);
 
   const start = useCallback(async () => {
@@ -132,17 +180,51 @@ export default function ScorerRecorder() {
     setFiles(0);
     setElapsed(0);
     segmentsRef.current = 0;
-    sinkRef.current = null;
     accumulatedRef.current = 0;
-    baseRef.current = baseName();
-    setPhase("requesting");
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError("This browser will not share the camera. Open the app over https.");
+    // Never orphan a previous sink if start is reached again mid-stream.
+    const stale = sinkRef.current;
+    sinkRef.current = null;
+    if (stale) void stale.close().catch(() => undefined);
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setError("The camera only works over https. Open the app at its https address.");
+      setPhase("error");
+      return;
+    }
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
+      setError("This browser can't record video. Try Chrome, Edge, Safari or Firefox.");
       setPhase("error");
       return;
     }
 
+    const mimeType = pickSupportedMime();
+    mimeRef.current = mimeType;
+    baseRef.current = baseName(mimeType);
+
+    // The save-file picker must open while this click is still a user gesture,
+    // so it runs before any await that would spend that activation. Choosing the
+    // file first also means cancelling never turns the camera on.
+    if (streaming) {
+      try {
+        sinkRef.current = await createFileSink(baseRef.current);
+      } catch (cause) {
+        const name = (cause as { name?: string })?.name;
+        setError(
+          name === "AbortError"
+            ? "No destination file was chosen."
+            : "Could not open the recording file."
+        );
+        setPhase("idle");
+        return;
+      }
+    }
+
+    setPhase("requesting");
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -150,6 +232,9 @@ export default function ScorerRecorder() {
         audio: audioRef.current,
       });
     } catch (cause) {
+      const sink = sinkRef.current;
+      sinkRef.current = null;
+      if (sink) void sink.close().catch(() => undefined);
       const name = (cause as { name?: string })?.name;
       setError(
         name === "NotFoundError" || name === "OverconstrainedError"
@@ -163,33 +248,24 @@ export default function ScorerRecorder() {
     }
     streamRef.current = stream;
 
-    if (streaming) {
-      try {
-        sinkRef.current = await createFileSink(baseRef.current);
-      } catch (cause) {
-        stopTracks();
-        const name = (cause as { name?: string })?.name;
-        setError(
-          name === "AbortError"
-            ? "No destination file was chosen."
-            : "Could not open the recording file."
-        );
-        setPhase("idle");
-        return;
-      }
-    }
-
-    openSegment();
+    // fail() inside openSegment already stopped the camera and closed the file.
+    if (!openSegment()) return;
     legStartRef.current = Date.now();
     setPhase("recording");
-  }, [openSegment, stopTracks, streaming]);
+  }, [openSegment, streaming]);
 
   const stopAll = useCallback(() => {
     restartRef.current = false;
     const recorder = recorderRef.current;
-    if (recorder && recorder.state !== "inactive") recorder.stop();
     recorderRef.current = null;
-    sinkRef.current = null;
+    if (recorder && recorder.state !== "inactive") {
+      try {
+        recorder.stop();
+      } catch {
+        /* already inactive */
+      }
+    }
+    // onstop flushes and closes the open sink, so Stop saves the whole file.
     stopTracks();
     setPhase("stopped");
   }, [stopTracks]);
@@ -199,9 +275,13 @@ export default function ScorerRecorder() {
     if (!recorder) return;
     if (recorder.state === "recording") {
       recorder.pause();
+      pauseStartRef.current = Date.now();
       accumulatedRef.current += Date.now() - legStartRef.current;
       setPhase("paused");
     } else if (recorder.state === "paused") {
+      // Paused time must not age the segment, or resuming after a long break
+      // forces an instant, near-empty rotation.
+      segmentStartRef.current += Date.now() - pauseStartRef.current;
       legStartRef.current = Date.now();
       recorder.resume();
       setPhase("recording");
@@ -256,7 +336,23 @@ export default function ScorerRecorder() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [live]);
 
-  useEffect(() => () => stopTracks(), [stopTracks]);
+  // Navigating away mid-recording: stop cleanly so onstop flushes the last
+  // segment and the file is closed whole, then release the camera.
+  useEffect(
+    () => () => {
+      restartRef.current = false;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {
+          /* already inactive */
+        }
+      }
+      stopTracks();
+    },
+    [stopTracks]
+  );
 
   const status = live
     ? `${formatClock(elapsed)} · ${formatBytes(written)}${

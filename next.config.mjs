@@ -24,7 +24,10 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // Empty allowlists (camera=()) disable the feature even for THIS document, so
+  // getUserMedia rejects with no prompt. "(self)" lets the app use its own
+  // camera and mic (the scorer's match recorder); geolocation stays blocked.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
   { key: "Content-Security-Policy", value: csp },
 ];
 
