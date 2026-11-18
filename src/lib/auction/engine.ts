@@ -10,7 +10,8 @@ import type { RetentionPlan } from "./plan.ts";
 
 const MIN_BASE_CR = 0.2;
 const RESERVE_PER_SLOT_CR = 0.3;
-const STARTER_IMPACT = 65;
+/** Impact scales differ by role — a 64-rated bowler is elite, a 64 bat is not. */
+const STARTER_IMPACT: Record<string, number> = { BAT: 75, WK: 75, AR: 62, BOWL: 55 };
 
 /** How freely rival franchises open their purses. */
 export type RivalMindset = "free" | "realistic" | "stingy";
@@ -317,7 +318,8 @@ export class AuctionEngine {
   }
 
   private startersInRole(t: EngineTeam, role: string): number {
-    return [...t.retained, ...t.buys.map((b) => b.player)].filter((s) => s.role === role && s.impact >= STARTER_IMPACT).length;
+    const bar = STARTER_IMPACT[role] ?? 65;
+    return [...t.retained, ...t.buys.map((b) => b.player)].filter((s) => s.role === role && s.impact >= bar).length;
   }
 
   /** Team-specific max bid: spendable guardrail × tiered valuation, under the hard cap. */
@@ -338,7 +340,9 @@ export class AuctionEngine {
 
     const starters = this.startersInRole(t, p.role);
     const critical = starters === 0;
-    const mNeed = critical ? 1.4 : starters === 1 ? 1 : 0.45;
+    let mNeed = critical ? 1.4 : starters === 1 ? 1 : 0.45;
+    // Marquee headliners draw upgrade wars even from saturated squads.
+    if (p.valueCr >= 6) mNeed = Math.max(mNeed, 0.9);
     const arch = archetypeFor(p);
     const formFactor = formValueCr(p) / Math.max(0.01, p.valueCr);
     const vBase = Math.min(arch.hi, Math.max(arch.lo, p.valueCr)) * formFactor;
@@ -350,6 +354,8 @@ export class AuctionEngine {
     const tune = MINDSET_TUNING[this.mindset];
     let value = vBase * arch.mRole * mNeed * mScarcity * eps * tune.value;
     if (arch.ceiling != null) value = Math.min(value, arch.ceiling);
+    // Only marquee headliners may cross 6cr — nobodies never out-earn stars.
+    if (p.valueCr < 6) value = Math.min(value, 6);
     // Hoarding reserve: rich teams with room won't blow half the purse on one name
     // unless it plugs a critical starting-XI gap.
     if (t.slots >= 4 && t.purseCr > 25 && !critical) value = Math.min(value, 0.55 * t.purseCr);

@@ -38,6 +38,39 @@ const ALIASES = {
 };
 
 /**
+ * Editorial mini-auction market anchors (cr) for notable released names.
+ * The squad pool's retentionValue field wildly overrates fringe players
+ * (Madushanka 12.5, Markande 13), which made nobodies out-earn marquee stars.
+ * Curated values keep real headliners on top; everyone else falls back to a
+ * steep impact curve below.
+ */
+const MARKET = {
+  "Travis Head": 14, "Mitchell Starc": 12, "Matheesha Pathirana": 10,
+  "Shimron Hetmyer": 10, "Cameron Green": 10, "Mitchell Marsh": 9,
+  "Jacob Bethell": 9, "Trent Boult": 8, "Marcus Stoinis": 8,
+  "Anrich Nortje": 7, "Pathum Nissanka": 7, "Lockie Ferguson": 6,
+  "Sam Curran": 5, "Matt Henry": 4, "Spencer Johnson": 4,
+  "Wanindu Hasaranga": 4.5, "Rachin Ravindra": 4, "Matt Short": 4,
+  "Shahrukh Khan": 4, "Ben Duckett": 3.5, "Karun Nair": 3.5,
+  "Nitish Rana": 3.5, "Nehal Wadhera": 3.5, "Mayank Agarwal": 3,
+  "Abishek Porel": 3, "Avesh Khan": 3, "Gerald Coetzee": 3,
+  "Brydon Carse": 3, "Tushar Deshpande": 2.5, "Keshav Maharaj": 2.5,
+  "Mustafizur Rahman": 2.5, "Dilshan Madushanka": 2.5, "Jaydev Unadkat": 2,
+  "Navdeep Saini": 2, "Akash Deep": 2, "Prithvi Shaw": 2,
+  "Blessing Muzarabani": 2, "Umran Malik": 1.5, "Adam Milne": 1.5,
+  "David Payne": 1.5, "George Linde": 1.5, "Dushmantha Chameera": 1.5,
+  "Mayank Markande": 1.5, "Rahul Tripathi": 1.5, "Rehan Ahmed": 1.5,
+  "Shivam Mavi": 1, "Ishant Sharma": 1, "Luke Wood": 1,
+  "Kuldeep Sen": 0.5, "Richard Gleeson": 0.5,
+};
+
+function marketValue(rec) {
+  if (MARKET[rec.name] != null) return MARKET[rec.name];
+  const v = 0.3 + Math.pow(rec.impact / 100, 3) * 5;
+  return Math.round(Math.min(rec.uncapped ? 1 : 5, v) * 100) / 100;
+}
+
+/**
  * Players in the official lists who never appeared in a Cricsheet IPL 2026
  * scorecard, so the squad pool has no record of them. Metadata is editorial:
  * role and country are factual, impact/value are estimates for the sim.
@@ -378,6 +411,7 @@ function resolve(name, teamId) {
   }
   if (usedIds.has(rec.id)) throw new Error(`player listed twice: ${name}`);
   usedIds.add(rec.id);
+  rec.valueCr = marketValue(rec);
   rec.basePriceCr = basePriceFor(rec.impact, rec.valueCr, rec.uncapped);
   return rec;
 }

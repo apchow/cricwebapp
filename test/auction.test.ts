@@ -101,7 +101,7 @@ test("sets partition the pool sensibly", () => {
   assert.equal(pool.length, 90);
   const marquee = pool.filter((p) => setFor(p) === "Marquee");
   assert.ok(marquee.length >= 8, "enough marquee names");
-  assert.ok(marquee.every((p) => !p.uncapped && p.valueCr >= 5));
+  assert.ok(marquee.every((p) => !p.uncapped && p.valueCr >= 6));
   assert.ok(pool.filter((p) => setFor(p) === "Uncapped").every((p) => p.uncapped));
 });
 
@@ -341,9 +341,24 @@ test("tiered valuation: flexible per-bot caps, cheap backups, marquee inflation"
     }
   }
   assert.ok(e.unsoldCount > 0, "some low-impact names must go unsold");
-  const stars = buys.filter((b) => b.player.valueCr >= 5);
+  const stars = buys.filter((b) => b.player.valueCr >= 6);
   assert.ok(stars.length > 0, "marquee names still sell");
-  assert.ok(buys.some((b) => b.priceCr > 5), "scarce marquee names inflate past 5cr");
+  assert.ok(buys.some((b) => b.priceCr > 6), "scarce marquee names inflate past 6cr");
   const backupSales = buys.filter((b) => archetypeFor(b.player).name === "Squad backup");
   assert.ok(backupSales.every((b) => b.priceCr <= 1.5 + 1e-9), "backups stay near base");
+});
+
+test("the biggest sale is always a marquee headliner, for every franchise", () => {
+  for (const t of teams) {
+    const plan = officialPlan(t);
+    const e = new AuctionEngine({ userTeamId: t.id, plan, teams, pool: poolFor(t.id, new Set(plan.retained.map((p) => p.id))), seed: 42 });
+    runToEnd(e);
+    assert.ok(e.biggestSale, `${t.id} has a biggest sale`);
+    assert.ok(
+      e.biggestSale!.player.valueCr >= 6,
+      `${t.id}: biggest sale ${e.biggestSale!.player.name} (${e.biggestSale!.player.valueCr}) is not marquee`
+    );
+    const nonMarquee = e.teams.flatMap((x) => x.buys).filter((b) => b.player.valueCr < 6);
+    assert.ok(nonMarquee.every((b) => b.priceCr <= 6 + 1e-9), `${t.id}: non-marquee crossed 6cr`);
+  }
 });

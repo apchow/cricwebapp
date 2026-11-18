@@ -38,7 +38,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 89.3,
-     "valueCr": 19,
+     "valueCr": 3.86,
      "iplMatches": 85,
      "runs": 2839,
      "wickets": 0,
@@ -51,7 +51,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "a4cc73aa",
@@ -61,7 +61,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 79,
-     "valueCr": 18.5,
+     "valueCr": 2.77,
      "iplMatches": 162,
      "runs": 4504,
      "wickets": 0,
@@ -74,7 +74,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "7b679de5",
@@ -84,7 +84,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 66.2,
-     "valueCr": 15.5,
+     "valueCr": 1,
      "iplMatches": 11,
      "runs": 295,
      "wickets": 0,
@@ -107,7 +107,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 56.1,
-     "valueCr": 14.5,
+     "valueCr": 1,
      "iplMatches": 10,
      "runs": 197,
      "wickets": 0,
@@ -130,7 +130,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 82,
-     "valueCr": 18,
+     "valueCr": 3.06,
      "iplMatches": 58,
      "runs": 746,
      "wickets": 0,
@@ -143,7 +143,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 8,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "b2b4f545",
@@ -153,7 +153,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 72,
-     "valueCr": 16,
+     "valueCr": 1,
      "iplMatches": 13,
      "runs": 441,
      "wickets": 0,
@@ -176,7 +176,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 94.1,
-     "valueCr": 20,
+     "valueCr": 4.47,
      "iplMatches": 27,
      "runs": 606,
      "wickets": 1,
@@ -189,7 +189,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 11,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "efc04be7",
@@ -199,7 +199,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 59.7,
-     "valueCr": 14.5,
+     "valueCr": 1.36,
      "iplMatches": 51,
      "runs": 31,
      "wickets": 61,
@@ -212,7 +212,7 @@
      "seasonEconomy": 8.46,
      "latestSeasonMatches": 14,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "4d7f517e",
@@ -222,7 +222,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 42.5,
-     "valueCr": 12,
+     "valueCr": 0.68,
      "iplMatches": 8,
      "runs": 21,
      "wickets": 9,
@@ -235,7 +235,7 @@
      "seasonEconomy": 7.87,
      "latestSeasonMatches": 7,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "765a4731",
@@ -245,7 +245,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.6,
-     "valueCr": 13,
+     "valueCr": 0.99,
      "iplMatches": 24,
      "runs": 8,
      "wickets": 25,
@@ -268,7 +268,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 67.9,
-     "valueCr": 16,
+     "valueCr": 1.87,
      "iplMatches": 13,
      "runs": 151,
      "wickets": 14,
@@ -281,7 +281,7 @@
      "seasonEconomy": 8.66,
      "latestSeasonMatches": 10,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "a4e37e47",
@@ -291,7 +291,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 59.3,
-     "valueCr": 14.5,
+     "valueCr": 1.34,
      "iplMatches": 92,
      "runs": 2129,
      "wickets": 6,
@@ -304,7 +304,7 @@
      "seasonEconomy": 12,
      "latestSeasonMatches": 13,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "dee07622",
@@ -314,7 +314,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50,
-     "valueCr": 13,
+     "valueCr": 0.93,
      "iplMatches": 1,
      "runs": 0,
      "wickets": 1,
@@ -337,7 +337,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 43.2,
-     "valueCr": 11.5,
+     "valueCr": 0.7,
      "iplMatches": 8,
      "runs": 0,
      "wickets": 4,
@@ -360,7 +360,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 54.7,
-     "valueCr": 13.5,
+     "valueCr": 1.12,
      "iplMatches": 25,
      "runs": 74,
      "wickets": 31,
@@ -373,7 +373,7 @@
      "seasonEconomy": 10.19,
      "latestSeasonMatches": 14,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-shreyas-gopal",
@@ -383,7 +383,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 52,
-     "valueCr": 0.8,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -406,7 +406,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 55.6,
-     "valueCr": 14,
+     "valueCr": 1.16,
      "iplMatches": 77,
      "runs": 126,
      "wickets": 73,
@@ -419,7 +419,7 @@
      "seasonEconomy": 11.04,
      "latestSeasonMatches": 1,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "50c6bc2b",
@@ -429,7 +429,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 64.1,
-     "valueCr": 15.5,
+     "valueCr": 1.62,
      "iplMatches": 51,
      "runs": 1066,
      "wickets": 13,
@@ -442,7 +442,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-jack-edwards",
@@ -452,7 +452,7 @@
      "overseas": true,
      "uncapped": true,
      "impact": 55,
-     "valueCr": 1.5,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -477,7 +477,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.6,
-     "valueCr": 15,
+     "valueCr": 4,
      "iplMatches": 9,
      "runs": 7,
      "wickets": 4,
@@ -490,7 +490,7 @@
      "seasonEconomy": 12.89,
      "latestSeasonMatches": 3,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "a90e53ec",
@@ -500,7 +500,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 68.5,
-     "valueCr": 16,
+     "valueCr": 4,
      "iplMatches": 9,
      "runs": 177,
      "wickets": 0,
@@ -513,7 +513,7 @@
      "seasonEconomy": 11.7,
      "latestSeasonMatches": 3,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-zak-foulkes",
@@ -523,7 +523,7 @@
      "overseas": true,
      "uncapped": true,
      "impact": 40,
-     "valueCr": 0.5,
+     "valueCr": 0.62,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -546,7 +546,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.3,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -569,7 +569,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 53.9,
-     "valueCr": 13,
+     "valueCr": 1,
      "iplMatches": 6,
      "runs": 90,
      "wickets": 0,
@@ -592,7 +592,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.3,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -615,7 +615,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 42,
-     "valueCr": 0.4,
+     "valueCr": 0.67,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -638,7 +638,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.6,
-     "valueCr": 14.5,
+     "valueCr": 4,
      "iplMatches": 12,
      "runs": 8,
      "wickets": 7,
@@ -651,7 +651,7 @@
      "seasonEconomy": 9.63,
      "latestSeasonMatches": 3,
      "formerTeam": "csk",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-akash-madhwal",
@@ -661,7 +661,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 55,
-     "valueCr": 0.8,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -684,7 +684,7 @@
      "overseas": true,
      "uncapped": true,
      "impact": 40,
-     "valueCr": 0.5,
+     "valueCr": 0.62,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -729,7 +729,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 77.8,
-     "valueCr": 17,
+     "valueCr": 1,
      "iplMatches": 32,
      "runs": 564,
      "wickets": 0,
@@ -752,7 +752,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 47.2,
-     "valueCr": 12.5,
+     "valueCr": 0.83,
      "iplMatches": 5,
      "runs": 14,
      "wickets": 0,
@@ -765,7 +765,7 @@
      "seasonEconomy": 10.79,
      "latestSeasonMatches": 5,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "2e171977",
@@ -775,7 +775,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 57.8,
-     "valueCr": 14.5,
+     "valueCr": 1.27,
      "iplMatches": 177,
      "runs": 2089,
      "wickets": 121,
@@ -788,7 +788,7 @@
      "seasonEconomy": 8.17,
      "latestSeasonMatches": 14,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "d67d5f00",
@@ -798,7 +798,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 88.4,
-     "valueCr": 19,
+     "valueCr": 3.75,
      "iplMatches": 152,
      "runs": 3288,
      "wickets": 0,
@@ -811,7 +811,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 11,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "b17e2f24",
@@ -821,7 +821,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 74.6,
-     "valueCr": 17.5,
+     "valueCr": 2.38,
      "iplMatches": 160,
      "runs": 5828,
      "wickets": 0,
@@ -834,7 +834,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "68c56d09",
@@ -844,7 +844,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 44.4,
-     "valueCr": 12,
+     "valueCr": 0.74,
      "iplMatches": 15,
      "runs": 77,
      "wickets": 16,
@@ -857,7 +857,7 @@
      "seasonEconomy": 12.86,
      "latestSeasonMatches": 2,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f834dcfc",
@@ -867,7 +867,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 58.2,
-     "valueCr": 14.5,
+     "valueCr": 1.29,
      "iplMatches": 28,
      "runs": 4,
      "wickets": 39,
@@ -880,7 +880,7 @@
      "seasonEconomy": 8.05,
      "latestSeasonMatches": 12,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "fb5f69e4",
@@ -890,7 +890,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51,
-     "valueCr": 13,
+     "valueCr": 0.96,
      "iplMatches": 5,
      "runs": 21,
      "wickets": 4,
@@ -913,7 +913,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 47.1,
-     "valueCr": 12.5,
+     "valueCr": 0.82,
      "iplMatches": 42,
      "runs": 10,
      "wickets": 42,
@@ -926,7 +926,7 @@
      "seasonEconomy": 10.5,
      "latestSeasonMatches": 10,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-prithvi-shaw",
@@ -959,7 +959,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 83.4,
-     "valueCr": 19,
+     "valueCr": 3.2,
      "iplMatches": 101,
      "runs": 2631,
      "wickets": 0,
@@ -972,7 +972,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "f89d3b11",
@@ -982,7 +982,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 74.7,
-     "valueCr": 16.5,
+     "valueCr": 1,
      "iplMatches": 25,
      "runs": 424,
      "wickets": 0,
@@ -1005,7 +1005,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.8,
-     "valueCr": 13,
+     "valueCr": 0.92,
      "iplMatches": 1,
      "runs": 0,
      "wickets": 0,
@@ -1028,7 +1028,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 77.6,
-     "valueCr": 18,
+     "valueCr": 2.64,
      "iplMatches": 47,
      "runs": 986,
      "wickets": 4,
@@ -1041,7 +1041,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "5ffc0565",
@@ -1051,7 +1051,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 41.5,
-     "valueCr": 11.5,
+     "valueCr": 0.66,
      "iplMatches": 19,
      "runs": 157,
      "wickets": 13,
@@ -1074,7 +1074,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 48,
-     "valueCr": 0.5,
+     "valueCr": 0.85,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1099,7 +1099,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 63.8,
-     "valueCr": 15,
+     "valueCr": 12,
      "iplMatches": 58,
      "runs": 111,
      "wickets": 70,
@@ -1122,7 +1122,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 87.9,
-     "valueCr": 19,
+     "valueCr": 3.5,
      "iplMatches": 127,
      "runs": 3078,
      "wickets": 10,
@@ -1135,7 +1135,7 @@
      "seasonEconomy": 12.69,
      "latestSeasonMatches": 9,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "ad3b6e95",
@@ -1145,7 +1145,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 69.8,
-     "valueCr": 17,
+     "valueCr": 3,
      "iplMatches": 36,
      "runs": 769,
      "wickets": 0,
@@ -1168,7 +1168,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 83.4,
-     "valueCr": 18,
+     "valueCr": 7,
      "iplMatches": 10,
      "runs": 278,
      "wickets": 0,
@@ -1181,7 +1181,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 10,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "944533a5",
@@ -1191,7 +1191,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 88,
-     "valueCr": 19,
+     "valueCr": 3.5,
      "iplMatches": 58,
      "runs": 1074,
      "wickets": 0,
@@ -1204,7 +1204,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 2,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "926c7443",
@@ -1214,7 +1214,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.6,
-     "valueCr": 13,
+     "valueCr": 0.99,
      "iplMatches": 4,
      "runs": 46,
      "wickets": 0,
@@ -1237,7 +1237,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 30.6,
-     "valueCr": 10,
+     "valueCr": 1.5,
      "iplMatches": 21,
      "runs": 53,
      "wickets": 13,
@@ -1250,7 +1250,7 @@
      "seasonEconomy": 9,
      "latestSeasonMatches": 1,
      "formerTeam": "dc",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-rehan-ahmed",
@@ -1283,7 +1283,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.2,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1306,7 +1306,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 74,
-     "valueCr": 4,
+     "valueCr": 3.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1345,7 +1345,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 88.6,
-     "valueCr": 19,
+     "valueCr": 3.78,
      "iplMatches": 134,
      "runs": 4598,
      "wickets": 0,
@@ -1358,7 +1358,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "d5130a30",
@@ -1368,7 +1368,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 88.6,
-     "valueCr": 19,
+     "valueCr": 3.78,
      "iplMatches": 57,
      "runs": 2515,
      "wickets": 0,
@@ -1381,7 +1381,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "99b75528",
@@ -1391,7 +1391,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 84.4,
-     "valueCr": 19.5,
+     "valueCr": 3.31,
      "iplMatches": 138,
      "runs": 4647,
      "wickets": 0,
@@ -1404,7 +1404,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-gurnoor-brar",
@@ -1414,7 +1414,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38,
-     "valueCr": 0.3,
+     "valueCr": 0.57,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1437,7 +1437,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 71.8,
-     "valueCr": 16.5,
+     "valueCr": 2.15,
      "iplMatches": 28,
      "runs": 18,
      "wickets": 33,
@@ -1450,7 +1450,7 @@
      "seasonEconomy": 11.5,
      "latestSeasonMatches": 3,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "2f49c897",
@@ -1460,7 +1460,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 53.4,
-     "valueCr": 13.5,
+     "valueCr": 1.06,
      "iplMatches": 125,
      "runs": 117,
      "wickets": 119,
@@ -1473,7 +1473,7 @@
      "seasonEconomy": 8.86,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f19ccfad",
@@ -1483,7 +1483,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 52.7,
-     "valueCr": 13.5,
+     "valueCr": 1.03,
      "iplMatches": 72,
      "runs": 879,
      "wickets": 31,
@@ -1496,7 +1496,7 @@
      "seasonEconomy": 9.16,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "5f547c8b",
@@ -1506,7 +1506,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 70.7,
-     "valueCr": 16.5,
+     "valueCr": 2.07,
      "iplMatches": 153,
      "runs": 635,
      "wickets": 169,
@@ -1519,7 +1519,7 @@
      "seasonEconomy": 9.09,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "57ca01b3",
@@ -1529,7 +1529,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50.1,
-     "valueCr": 12.5,
+     "valueCr": 0.93,
      "iplMatches": 5,
      "runs": 21,
      "wickets": 0,
@@ -1552,7 +1552,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50,
-     "valueCr": 0.6,
+     "valueCr": 0.93,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1575,7 +1575,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38.9,
-     "valueCr": 11,
+     "valueCr": 0.59,
      "iplMatches": 27,
      "runs": 147,
      "wickets": 18,
@@ -1598,7 +1598,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 44.4,
-     "valueCr": 12,
+     "valueCr": 0.74,
      "iplMatches": 95,
      "runs": 207,
      "wickets": 145,
@@ -1611,7 +1611,7 @@
      "seasonEconomy": 9.46,
      "latestSeasonMatches": 17,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "85e0cf10",
@@ -1621,7 +1621,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 48,
-     "valueCr": 12.5,
+     "valueCr": 0.85,
      "iplMatches": 78,
      "runs": 15,
      "wickets": 91,
@@ -1634,7 +1634,7 @@
      "seasonEconomy": 10.12,
      "latestSeasonMatches": 12,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "0f721006",
@@ -1644,7 +1644,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 64.3,
-     "valueCr": 15.5,
+     "valueCr": 1.63,
      "iplMatches": 57,
      "runs": 324,
      "wickets": 70,
@@ -1657,7 +1657,7 @@
      "seasonEconomy": 7.42,
      "latestSeasonMatches": 11,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "3cea23da",
@@ -1667,7 +1667,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 53.1,
-     "valueCr": 13,
+     "valueCr": 1,
      "iplMatches": 8,
      "runs": 63,
      "wickets": 0,
@@ -1690,7 +1690,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 33.1,
-     "valueCr": 10,
+     "valueCr": 0.48,
      "iplMatches": 5,
      "runs": 1,
      "wickets": 2,
@@ -1703,7 +1703,7 @@
      "seasonEconomy": 10.74,
      "latestSeasonMatches": 4,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "39a2dfa8",
@@ -1713,7 +1713,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 58.8,
-     "valueCr": 14.5,
+     "valueCr": 1,
      "iplMatches": 116,
      "runs": 1252,
      "wickets": 26,
@@ -1736,7 +1736,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 48,
-     "valueCr": 0.5,
+     "valueCr": 0.85,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1759,7 +1759,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 79.2,
-     "valueCr": 18.5,
+     "valueCr": 2.78,
      "iplMatches": 14,
      "runs": 132,
      "wickets": 2,
@@ -1772,7 +1772,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 6,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "50c09020",
@@ -1782,7 +1782,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 45.3,
-     "valueCr": 12,
+     "valueCr": 0.76,
      "iplMatches": 6,
      "runs": 1,
      "wickets": 6,
@@ -1795,7 +1795,7 @@
      "seasonEconomy": 10.28,
      "latestSeasonMatches": 6,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f986ca1a",
@@ -1805,7 +1805,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 61.2,
-     "valueCr": 15,
+     "valueCr": 1.45,
      "iplMatches": 118,
      "runs": 220,
      "wickets": 135,
@@ -1818,7 +1818,7 @@
      "seasonEconomy": 10.86,
      "latestSeasonMatches": 5,
      "formerTeam": "gt",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-tom-banton",
@@ -1828,7 +1828,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 62,
-     "valueCr": 1.5,
+     "valueCr": 1.49,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1841,7 +1841,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "gt",
-     "basePriceCr": 0.75
+     "basePriceCr": 0.5
     }
    ],
    "released": [
@@ -1853,7 +1853,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 86.3,
-     "valueCr": 18.5,
+     "valueCr": 4,
      "iplMatches": 64,
      "runs": 775,
      "wickets": 1,
@@ -1899,7 +1899,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60,
-     "valueCr": 1.2,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1922,7 +1922,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.8,
-     "valueCr": 13,
+     "valueCr": 0.92,
      "iplMatches": 9,
      "runs": 0,
      "wickets": 6,
@@ -1945,7 +1945,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -1968,7 +1968,7 @@
      "overseas": true,
      "uncapped": true,
      "impact": 40,
-     "valueCr": 0.4,
+     "valueCr": 0.62,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2007,7 +2007,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 88,
-     "valueCr": 19,
+     "valueCr": 1,
      "iplMatches": 35,
      "runs": 885,
      "wickets": 0,
@@ -2030,7 +2030,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49,
-     "valueCr": 12.5,
+     "valueCr": 0.89,
      "iplMatches": 25,
      "runs": 78,
      "wickets": 15,
@@ -2053,7 +2053,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 61,
-     "valueCr": 15,
+     "valueCr": 10,
      "iplMatches": 43,
      "runs": 1029,
      "wickets": 23,
@@ -2076,7 +2076,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 92.8,
-     "valueCr": 20,
+     "valueCr": 4.3,
      "iplMatches": 11,
      "runs": 349,
      "wickets": 0,
@@ -2089,7 +2089,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 11,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-harshit-rana",
@@ -2099,7 +2099,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 74,
-     "valueCr": 5,
+     "valueCr": 2.33,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2112,7 +2112,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "kkr",
-     "basePriceCr": 1
+     "basePriceCr": 0.75
     },
     {
      "id": "5d2eea49",
@@ -2122,7 +2122,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 39.3,
-     "valueCr": 11,
+     "valueCr": 0.6,
      "iplMatches": 34,
      "runs": 24,
      "wickets": 33,
@@ -2145,7 +2145,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 82,
-     "valueCr": 18,
+     "valueCr": 3.06,
      "iplMatches": 153,
      "runs": 3496,
      "wickets": 0,
@@ -2158,7 +2158,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 6,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-prashant-solanki",
@@ -2168,7 +2168,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38,
-     "valueCr": 0.3,
+     "valueCr": 0.57,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2191,7 +2191,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 66.4,
-     "valueCr": 15.5,
+     "valueCr": 1.76,
      "iplMatches": 38,
      "runs": 299,
      "wickets": 7,
@@ -2204,7 +2204,7 @@
      "seasonEconomy": 8.86,
      "latestSeasonMatches": 8,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "0a509d6b",
@@ -2214,7 +2214,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 94.7,
-     "valueCr": 20,
+     "valueCr": 4.55,
      "iplMatches": 72,
      "runs": 1398,
      "wickets": 0,
@@ -2227,7 +2227,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "650d5e49",
@@ -2237,7 +2237,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 89.6,
-     "valueCr": 19,
+     "valueCr": 3.9,
      "iplMatches": 39,
      "runs": 555,
      "wickets": 1,
@@ -2250,7 +2250,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 11,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-sarthak-ranjan",
@@ -2260,7 +2260,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2283,7 +2283,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 52.1,
-     "valueCr": 13.5,
+     "valueCr": 1,
      "iplMatches": 4,
      "runs": 4,
      "wickets": 5,
@@ -2306,7 +2306,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 65.2,
-     "valueCr": 15.5,
+     "valueCr": 1.69,
      "iplMatches": 201,
      "runs": 1820,
      "wickets": 182,
@@ -2319,7 +2319,7 @@
      "seasonEconomy": 6.8,
      "latestSeasonMatches": 13,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "4663bd23",
@@ -2329,7 +2329,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 80.8,
-     "valueCr": 18.5,
+     "valueCr": 2.94,
      "iplMatches": 6,
      "runs": 45,
      "wickets": 0,
@@ -2342,7 +2342,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 3,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "7c3b3b78",
@@ -2352,7 +2352,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.1,
-     "valueCr": 13,
+     "valueCr": 0.97,
      "iplMatches": 43,
      "runs": 10,
      "wickets": 47,
@@ -2375,7 +2375,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 60.2,
-     "valueCr": 14.5,
+     "valueCr": 1.39,
      "iplMatches": 94,
      "runs": 31,
      "wickets": 111,
@@ -2388,7 +2388,7 @@
      "seasonEconomy": 8.54,
      "latestSeasonMatches": 11,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     }
    ],
    "released": [
@@ -2400,7 +2400,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 63.7,
-     "valueCr": 15,
+     "valueCr": 10,
      "iplMatches": 33,
      "runs": 0,
      "wickets": 47,
@@ -2423,7 +2423,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 74,
-     "valueCr": 3,
+     "valueCr": 2.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2436,7 +2436,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "kkr",
-     "basePriceCr": 1
+     "basePriceCr": 0.75
     },
     {
      "id": "f12fe2a1",
@@ -2446,7 +2446,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50,
-     "valueCr": 12.5,
+     "valueCr": 0.93,
      "iplMatches": 2,
      "runs": 12,
      "wickets": 0,
@@ -2469,7 +2469,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 76,
-     "valueCr": 5,
+     "valueCr": 4,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2515,7 +2515,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 61.7,
-     "valueCr": 15,
+     "valueCr": 2,
      "iplMatches": 2,
      "runs": 0,
      "wickets": 4,
@@ -2528,7 +2528,7 @@
      "seasonEconomy": 10.77,
      "latestSeasonMatches": 2,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "21d4e29b",
@@ -2538,7 +2538,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 48.9,
-     "valueCr": 12.5,
+     "valueCr": 2,
      "iplMatches": 34,
      "runs": 33,
      "wickets": 24,
@@ -2551,7 +2551,7 @@
      "seasonEconomy": 12,
      "latestSeasonMatches": 2,
      "formerTeam": "kkr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-rahul-tripathi",
@@ -2561,7 +2561,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 55,
-     "valueCr": 0.9,
+     "valueCr": 1.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2607,7 +2607,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2630,7 +2630,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2676,7 +2676,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 87.2,
-     "valueCr": 19,
+     "valueCr": 1,
      "iplMatches": 71,
      "runs": 859,
      "wickets": 2,
@@ -2699,7 +2699,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 36.7,
-     "valueCr": 10.5,
+     "valueCr": 0.55,
      "iplMatches": 23,
      "runs": 3,
      "wickets": 19,
@@ -2722,7 +2722,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 80.8,
-     "valueCr": 18.5,
+     "valueCr": 2.94,
      "iplMatches": 104,
      "runs": 2527,
      "wickets": 0,
@@ -2735,7 +2735,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "6a26221c",
@@ -2745,7 +2745,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 57.4,
-     "valueCr": 14.5,
+     "valueCr": 1.25,
      "iplMatches": 69,
      "runs": 1671,
      "wickets": 6,
@@ -2758,7 +2758,7 @@
      "seasonEconomy": 12.77,
      "latestSeasonMatches": 12,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "989889ff",
@@ -2768,7 +2768,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 86.7,
-     "valueCr": 19.5,
+     "valueCr": 3.56,
      "iplMatches": 17,
      "runs": 544,
      "wickets": 0,
@@ -2781,7 +2781,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 5,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "80b2fb19",
@@ -2791,7 +2791,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 46.9,
-     "valueCr": 12.5,
+     "valueCr": 0.82,
      "iplMatches": 20,
      "runs": 5,
      "wickets": 19,
@@ -2804,7 +2804,7 @@
      "seasonEconomy": 8.5,
      "latestSeasonMatches": 14,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "b483905d",
@@ -2814,7 +2814,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 44.9,
-     "valueCr": 12,
+     "valueCr": 0.75,
      "iplMatches": 12,
      "runs": 0,
      "wickets": 13,
@@ -2837,7 +2837,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 36.9,
-     "valueCr": 11,
+     "valueCr": 0.55,
      "iplMatches": 111,
      "runs": 210,
      "wickets": 102,
@@ -2850,7 +2850,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-sam-curran",
@@ -2860,7 +2860,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 76,
-     "valueCr": 6,
+     "valueCr": 5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -2873,7 +2873,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "lsg",
-     "basePriceCr": 1.5
+     "basePriceCr": 1
     },
     {
      "id": "d8d67045",
@@ -2883,7 +2883,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50.4,
-     "valueCr": 12.5,
+     "valueCr": 0.94,
      "iplMatches": 3,
      "runs": 29,
      "wickets": 0,
@@ -2906,7 +2906,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 45.9,
-     "valueCr": 12,
+     "valueCr": 0.78,
      "iplMatches": 10,
      "runs": 5,
      "wickets": 9,
@@ -2919,7 +2919,7 @@
      "seasonEconomy": 10.87,
      "latestSeasonMatches": 4,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f9e6e7ef",
@@ -2929,7 +2929,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 46,
-     "valueCr": 12.5,
+     "valueCr": 0.79,
      "iplMatches": 63,
      "runs": 603,
      "wickets": 27,
@@ -2942,7 +2942,7 @@
      "seasonEconomy": 11.14,
      "latestSeasonMatches": 5,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "44aac2f0",
@@ -2952,7 +2952,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.1,
-     "valueCr": 13,
+     "valueCr": 0.97,
      "iplMatches": 6,
      "runs": 18,
      "wickets": 4,
@@ -2975,7 +2975,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 64.5,
-     "valueCr": 15.5,
+     "valueCr": 9,
      "iplMatches": 48,
      "runs": 1630,
      "wickets": 17,
@@ -2988,7 +2988,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 13,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "2d140b79",
@@ -2998,7 +2998,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.2,
-     "valueCr": 12.5,
+     "valueCr": 0.9,
      "iplMatches": 4,
      "runs": 26,
      "wickets": 0,
@@ -3021,7 +3021,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 62.8,
-     "valueCr": 15,
+     "valueCr": 1,
      "iplMatches": 31,
      "runs": 25,
      "wickets": 38,
@@ -3044,7 +3044,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 85.5,
-     "valueCr": 18.5,
+     "valueCr": 1,
      "iplMatches": 66,
      "runs": 1178,
      "wickets": 4,
@@ -3067,7 +3067,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 59.3,
-     "valueCr": 14,
+     "valueCr": 1,
      "iplMatches": 10,
      "runs": 170,
      "wickets": 0,
@@ -3092,7 +3092,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 52,
-     "valueCr": 13,
+     "valueCr": 3,
      "iplMatches": 76,
      "runs": 68,
      "wickets": 88,
@@ -3105,7 +3105,7 @@
      "seasonEconomy": 10.69,
      "latestSeasonMatches": 7,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "acdc62f5",
@@ -3115,7 +3115,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.8,
-     "valueCr": 14.5,
+     "valueCr": 7,
      "iplMatches": 49,
      "runs": 49,
      "wickets": 61,
@@ -3128,7 +3128,7 @@
      "seasonEconomy": 8.67,
      "latestSeasonMatches": 1,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "x-wanindu-hasaranga",
@@ -3138,7 +3138,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 76,
-     "valueCr": 4,
+     "valueCr": 4.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3161,7 +3161,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 58,
-     "valueCr": 1,
+     "valueCr": 1.28,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3184,7 +3184,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 56.3,
-     "valueCr": 14,
+     "valueCr": 1.5,
      "iplMatches": 3,
      "runs": 31,
      "wickets": 1,
@@ -3197,7 +3197,7 @@
      "seasonEconomy": 8.92,
      "latestSeasonMatches": 3,
      "formerTeam": "lsg",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-naman-tiwari",
@@ -3207,7 +3207,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.2,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3230,7 +3230,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 54.5,
-     "valueCr": 13.5,
+     "valueCr": 1,
      "iplMatches": 9,
      "runs": 92,
      "wickets": 0,
@@ -3271,7 +3271,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 56.8,
-     "valueCr": 14,
+     "valueCr": 1.22,
      "iplMatches": 97,
      "runs": 32,
      "wickets": 111,
@@ -3284,7 +3284,7 @@
      "seasonEconomy": 9.37,
      "latestSeasonMatches": 14,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "d45c29b1",
@@ -3294,7 +3294,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.8,
-     "valueCr": 13,
+     "valueCr": 0.99,
      "iplMatches": 10,
      "runs": 1,
      "wickets": 17,
@@ -3317,7 +3317,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 54,
-     "valueCr": 14,
+     "valueCr": 1.09,
      "iplMatches": 9,
      "runs": 97,
      "wickets": 13,
@@ -3330,7 +3330,7 @@
      "seasonEconomy": 9.38,
      "latestSeasonMatches": 6,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "462411b3",
@@ -3340,7 +3340,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 64.3,
-     "valueCr": 15.5,
+     "valueCr": 1.63,
      "iplMatches": 158,
      "runs": 75,
      "wickets": 170,
@@ -3353,7 +3353,7 @@
      "seasonEconomy": 7.92,
      "latestSeasonMatches": 13,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "e4a0deae",
@@ -3363,7 +3363,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 65.8,
-     "valueCr": 16,
+     "valueCr": 1.72,
      "iplMatches": 35,
      "runs": 136,
      "wickets": 30,
@@ -3376,7 +3376,7 @@
      "seasonEconomy": 8.69,
      "latestSeasonMatches": 4,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "fffa744b",
@@ -3386,7 +3386,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 92.7,
-     "valueCr": 20,
+     "valueCr": 4.28,
      "iplMatches": 37,
      "runs": 710,
      "wickets": 0,
@@ -3399,7 +3399,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "372455c4",
@@ -3409,7 +3409,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 86.4,
-     "valueCr": 19.5,
+     "valueCr": 3.52,
      "iplMatches": 95,
      "runs": 2724,
      "wickets": 0,
@@ -3422,7 +3422,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 3,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "5b615e7c",
@@ -3432,7 +3432,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 46.8,
-     "valueCr": 12.5,
+     "valueCr": 0.81,
      "iplMatches": 6,
      "runs": 0,
      "wickets": 1,
@@ -3455,7 +3455,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.6,
-     "valueCr": 13,
+     "valueCr": 0.99,
      "iplMatches": 8,
      "runs": 35,
      "wickets": 2,
@@ -3478,7 +3478,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 88.6,
-     "valueCr": 19,
+     "valueCr": 3.78,
      "iplMatches": 236,
      "runs": 6161,
      "wickets": 0,
@@ -3491,7 +3491,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 9,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "e66732f8",
@@ -3501,7 +3501,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 82.9,
-     "valueCr": 19,
+     "valueCr": 3.15,
      "iplMatches": 26,
      "runs": 836,
      "wickets": 0,
@@ -3514,7 +3514,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 12,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "1abb78f8",
@@ -3524,7 +3524,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 47.4,
-     "valueCr": 12.5,
+     "valueCr": 0.83,
      "iplMatches": 102,
      "runs": 349,
      "wickets": 106,
@@ -3537,7 +3537,7 @@
      "seasonEconomy": 10.8,
      "latestSeasonMatches": 9,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "d014d5ac",
@@ -3547,7 +3547,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 88.1,
-     "valueCr": 19,
+     "valueCr": 3.72,
      "iplMatches": 31,
      "runs": 520,
      "wickets": 1,
@@ -3560,7 +3560,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 8,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "271f83cd",
@@ -3570,7 +3570,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 94.9,
-     "valueCr": 20,
+     "valueCr": 4.57,
      "iplMatches": 179,
      "runs": 4581,
      "wickets": 0,
@@ -3583,7 +3583,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 13,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "b0482a1d",
@@ -3593,7 +3593,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 94.5,
-     "valueCr": 20,
+     "valueCr": 4.52,
      "iplMatches": 68,
      "runs": 1858,
      "wickets": 0,
@@ -3606,7 +3606,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "9caf69a1",
@@ -3616,7 +3616,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 72.6,
-     "valueCr": 17,
+     "valueCr": 2.21,
      "iplMatches": 28,
      "runs": 602,
      "wickets": 10,
@@ -3629,7 +3629,7 @@
      "seasonEconomy": 9.72,
      "latestSeasonMatches": 7,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     }
    ],
    "released": [
@@ -3641,7 +3641,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 54.1,
-     "valueCr": 13.5,
+     "valueCr": 1,
      "iplMatches": 11,
      "runs": 2,
      "wickets": 15,
@@ -3664,7 +3664,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38,
-     "valueCr": 0.3,
+     "valueCr": 0.57,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3687,7 +3687,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.7,
-     "valueCr": 12.5,
+     "valueCr": 0.91,
      "iplMatches": 2,
      "runs": 2,
      "wickets": 0,
@@ -3710,7 +3710,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 54.5,
-     "valueCr": 13.5,
+     "valueCr": 1.11,
      "iplMatches": 98,
      "runs": 128,
      "wickets": 94,
@@ -3723,7 +3723,7 @@
      "seasonEconomy": 9.96,
      "latestSeasonMatches": 8,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-keshav-maharaj",
@@ -3733,7 +3733,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 72,
-     "valueCr": 3,
+     "valueCr": 2.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3746,7 +3746,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "mi",
-     "basePriceCr": 1
+     "basePriceCr": 0.75
     },
     {
      "id": "e48a4814",
@@ -3756,7 +3756,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 47.8,
-     "valueCr": 12.5,
+     "valueCr": 0.85,
      "iplMatches": 3,
      "runs": 10,
      "wickets": 0,
@@ -3779,7 +3779,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50,
-     "valueCr": 0.7,
+     "valueCr": 0.93,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3802,7 +3802,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 49.5,
-     "valueCr": 13,
+     "valueCr": 1.5,
      "iplMatches": 40,
      "runs": 48,
      "wickets": 36,
@@ -3815,7 +3815,7 @@
      "seasonEconomy": 14.71,
      "latestSeasonMatches": 3,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "2b801189",
@@ -3825,7 +3825,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50,
-     "valueCr": 12.5,
+     "valueCr": 0.93,
      "iplMatches": 1,
      "runs": 0,
      "wickets": 0,
@@ -3848,7 +3848,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3871,7 +3871,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.2,
-     "valueCr": 12.5,
+     "valueCr": 0.9,
      "iplMatches": 4,
      "runs": 12,
      "wickets": 0,
@@ -3894,7 +3894,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -3917,7 +3917,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 51.3,
-     "valueCr": 13.5,
+     "valueCr": 8,
      "iplMatches": 110,
      "runs": 93,
      "wickets": 125,
@@ -3930,7 +3930,7 @@
      "seasonEconomy": 10.54,
      "latestSeasonMatches": 5,
      "formerTeam": "mi",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     }
    ]
   },
@@ -3958,7 +3958,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 90.1,
-     "valueCr": 19.5,
+     "valueCr": 3.96,
      "iplMatches": 101,
      "runs": 3015,
      "wickets": 0,
@@ -3971,7 +3971,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "81c36ee9",
@@ -3981,7 +3981,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60,
-     "valueCr": 15,
+     "valueCr": 1.38,
      "iplMatches": 49,
      "runs": 192,
      "wickets": 45,
@@ -3994,7 +3994,7 @@
      "seasonEconomy": 10.04,
      "latestSeasonMatches": 13,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "d9273ee7",
@@ -4004,7 +4004,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.7,
-     "valueCr": 15,
+     "valueCr": 8,
      "iplMatches": 123,
      "runs": 2242,
      "wickets": 41,
@@ -4017,7 +4017,7 @@
      "seasonEconomy": 11.09,
      "latestSeasonMatches": 13,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "dbe50b21",
@@ -4027,7 +4027,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 63.8,
-     "valueCr": 15.5,
+     "valueCr": 1.6,
      "iplMatches": 162,
      "runs": 2964,
      "wickets": 78,
@@ -4040,7 +4040,7 @@
      "seasonEconomy": 10.37,
      "latestSeasonMatches": 10,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "26989d80",
@@ -4050,7 +4050,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 57.1,
-     "valueCr": 14.5,
+     "valueCr": 1,
      "iplMatches": 54,
      "runs": 905,
      "wickets": 5,
@@ -4073,7 +4073,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 75.7,
-     "valueCr": 18,
+     "valueCr": 1,
      "iplMatches": 66,
      "runs": 1865,
      "wickets": 0,
@@ -4096,7 +4096,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 55.5,
-     "valueCr": 14,
+     "valueCr": 1,
      "iplMatches": 51,
      "runs": 249,
      "wickets": 37,
@@ -4119,7 +4119,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 91.3,
-     "valueCr": 19.5,
+     "valueCr": 1,
      "iplMatches": 31,
      "runs": 909,
      "wickets": 0,
@@ -4142,7 +4142,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 54.3,
-     "valueCr": 13.5,
+     "valueCr": 1.1,
      "iplMatches": 189,
      "runs": 37,
      "wickets": 212,
@@ -4155,7 +4155,7 @@
      "seasonEconomy": 8.91,
      "latestSeasonMatches": 14,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-harnoor-singh",
@@ -4165,7 +4165,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.2,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4188,7 +4188,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 58.5,
-     "valueCr": 14.5,
+     "valueCr": 1.3,
      "iplMatches": 20,
      "runs": 151,
      "wickets": 15,
@@ -4201,7 +4201,7 @@
      "seasonEconomy": 8.96,
      "latestSeasonMatches": 3,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "4b31f3a3",
@@ -4211,7 +4211,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 63.2,
-     "valueCr": 15,
+     "valueCr": 1.56,
      "iplMatches": 22,
      "runs": 0,
      "wickets": 27,
@@ -4224,7 +4224,7 @@
      "seasonEconomy": 12.69,
      "latestSeasonMatches": 1,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "54e52590",
@@ -4234,7 +4234,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 42.9,
-     "valueCr": 11.5,
+     "valueCr": 0.69,
      "iplMatches": 26,
      "runs": 16,
      "wickets": 26,
@@ -4257,7 +4257,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 52.9,
-     "valueCr": 14,
+     "valueCr": 1,
      "iplMatches": 7,
      "runs": 71,
      "wickets": 0,
@@ -4280,7 +4280,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 61.8,
-     "valueCr": 15,
+     "valueCr": 1.48,
      "iplMatches": 1,
      "runs": 0,
      "wickets": 1,
@@ -4293,7 +4293,7 @@
      "seasonEconomy": 11.77,
      "latestSeasonMatches": 1,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "fe366f34",
@@ -4303,7 +4303,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 70,
-     "valueCr": 16.5,
+     "valueCr": 2.01,
      "iplMatches": 14,
      "runs": 491,
      "wickets": 0,
@@ -4316,7 +4316,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 14,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-musheer-khan",
@@ -4326,7 +4326,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 42,
-     "valueCr": 0.3,
+     "valueCr": 0.67,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4349,7 +4349,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 58.3,
-     "valueCr": 14.5,
+     "valueCr": 1.29,
      "iplMatches": 13,
      "runs": 40,
      "wickets": 7,
@@ -4362,7 +4362,7 @@
      "seasonEconomy": 11.2,
      "latestSeasonMatches": 9,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "970ddd24",
@@ -4372,7 +4372,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 60.3,
-     "valueCr": 14.5,
+     "valueCr": 1.4,
      "iplMatches": 12,
      "runs": 165,
      "wickets": 0,
@@ -4385,7 +4385,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 7,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     }
    ],
    "released": [
@@ -4397,7 +4397,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 86,
-     "valueCr": 18.5,
+     "valueCr": 3.5,
      "iplMatches": 45,
      "runs": 784,
      "wickets": 0,
@@ -4420,7 +4420,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60,
-     "valueCr": 1.2,
+     "valueCr": 1.38,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4443,7 +4443,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 63.9,
-     "valueCr": 15.5,
+     "valueCr": 6,
      "iplMatches": 48,
      "runs": 71,
      "wickets": 51,
@@ -4456,7 +4456,7 @@
      "seasonEconomy": 12.09,
      "latestSeasonMatches": 3,
      "formerTeam": "pbks",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "x-pyla-avinash",
@@ -4466,7 +4466,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4489,7 +4489,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38,
-     "valueCr": 0.3,
+     "valueCr": 0.57,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4512,7 +4512,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4554,7 +4554,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 61.7,
-     "valueCr": 15,
+     "valueCr": 1.47,
      "iplMatches": 97,
      "runs": 1879,
      "wickets": 9,
@@ -4567,7 +4567,7 @@
      "seasonEconomy": 9.12,
      "latestSeasonMatches": 14,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "6c19c6e5",
@@ -4577,7 +4577,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 92,
-     "valueCr": 19.5,
+     "valueCr": 4.19,
      "iplMatches": 82,
      "runs": 2593,
      "wickets": 0,
@@ -4590,7 +4590,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "470f446b",
@@ -4600,7 +4600,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 90.8,
-     "valueCr": 19.5,
+     "valueCr": 4.04,
      "iplMatches": 23,
      "runs": 1028,
      "wickets": 0,
@@ -4613,7 +4613,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "fe93fd9d",
@@ -4623,7 +4623,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 56,
-     "valueCr": 14,
+     "valueCr": 1.18,
      "iplMatches": 226,
      "runs": 2894,
      "wickets": 143,
@@ -4636,7 +4636,7 @@
      "seasonEconomy": 8.41,
      "latestSeasonMatches": 14,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "bcf325d2",
@@ -4646,7 +4646,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 82.6,
-     "valueCr": 19,
+     "valueCr": 3.12,
      "iplMatches": 57,
      "runs": 1195,
      "wickets": 0,
@@ -4659,7 +4659,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "5574750c",
@@ -4669,7 +4669,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.6,
-     "valueCr": 15,
+     "valueCr": 1.41,
      "iplMatches": 68,
      "runs": 326,
      "wickets": 83,
@@ -4682,7 +4682,7 @@
      "seasonEconomy": 8.96,
      "latestSeasonMatches": 16,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-aman-rao-perala",
@@ -4692,7 +4692,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -4715,7 +4715,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 44.4,
-     "valueCr": 12,
+     "valueCr": 0.74,
      "iplMatches": 13,
      "runs": 2,
      "wickets": 14,
@@ -4738,7 +4738,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 51.3,
-     "valueCr": 13,
+     "valueCr": 0.98,
      "iplMatches": 18,
      "runs": 14,
      "wickets": 21,
@@ -4751,7 +4751,7 @@
      "seasonEconomy": 10.04,
      "latestSeasonMatches": 13,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "3ff033bb",
@@ -4761,7 +4761,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.5,
-     "valueCr": 15,
+     "valueCr": 1.41,
      "iplMatches": 10,
      "runs": 89,
      "wickets": 1,
@@ -4774,7 +4774,7 @@
      "seasonEconomy": 9.79,
      "latestSeasonMatches": 7,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f0af99a7",
@@ -4784,7 +4784,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 85,
-     "valueCr": 19.5,
+     "valueCr": 3.37,
      "iplMatches": 18,
      "runs": 326,
      "wickets": 1,
@@ -4797,7 +4797,7 @@
      "seasonEconomy": 13.67,
      "latestSeasonMatches": 15,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "60aa2db3",
@@ -4807,7 +4807,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 90.9,
-     "valueCr": 19.5,
+     "valueCr": 4.06,
      "iplMatches": 2,
      "runs": 7,
      "wickets": 0,
@@ -4820,7 +4820,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 2,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "df064e1a",
@@ -4830,7 +4830,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 61.2,
-     "valueCr": 15,
+     "valueCr": 1.45,
      "iplMatches": 86,
      "runs": 45,
      "wickets": 83,
@@ -4843,7 +4843,7 @@
      "seasonEconomy": 9.48,
      "latestSeasonMatches": 9,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "ce820073",
@@ -4853,7 +4853,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 50.3,
-     "valueCr": 13,
+     "valueCr": 0.94,
      "iplMatches": 142,
      "runs": 60,
      "wickets": 126,
@@ -4866,7 +4866,7 @@
      "seasonEconomy": 10.63,
      "latestSeasonMatches": 6,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "6b2ff18f",
@@ -4876,7 +4876,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 59.8,
-     "valueCr": 14,
+     "valueCr": 1,
      "iplMatches": 20,
      "runs": 220,
      "wickets": 0,
@@ -4899,7 +4899,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.1,
-     "valueCr": 12.5,
+     "valueCr": 0.89,
      "iplMatches": 2,
      "runs": 1,
      "wickets": 2,
@@ -4922,7 +4922,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 42.2,
-     "valueCr": 11.5,
+     "valueCr": 0.68,
      "iplMatches": 8,
      "runs": 0,
      "wickets": 9,
@@ -4945,7 +4945,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 49.5,
-     "valueCr": 13,
+     "valueCr": 0.91,
      "iplMatches": 100,
      "runs": 67,
      "wickets": 125,
@@ -4958,7 +4958,7 @@
      "seasonEconomy": 8.59,
      "latestSeasonMatches": 13,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "cf0ccafa",
@@ -4968,7 +4968,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 58.8,
-     "valueCr": 14.5,
+     "valueCr": 1,
      "iplMatches": 9,
      "runs": 0,
      "wickets": 9,
@@ -4993,7 +4993,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 53.9,
-     "valueCr": 13.5,
+     "valueCr": 2.5,
      "iplMatches": 53,
      "runs": 54,
      "wickets": 55,
@@ -5006,7 +5006,7 @@
      "seasonEconomy": 11.21,
      "latestSeasonMatches": 7,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "350bb1b1",
@@ -5016,7 +5016,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 44.4,
-     "valueCr": 12,
+     "valueCr": 1.5,
      "iplMatches": 11,
      "runs": 25,
      "wickets": 4,
@@ -5029,7 +5029,7 @@
      "seasonEconomy": 12,
      "latestSeasonMatches": 1,
      "formerTeam": "rr",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-kuldeep-sen",
@@ -5062,7 +5062,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 45,
-     "valueCr": 0.5,
+     "valueCr": 0.76,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5085,7 +5085,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60,
-     "valueCr": 1.2,
+     "valueCr": 1.38,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5108,7 +5108,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.2,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5131,7 +5131,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 89.5,
-     "valueCr": 19,
+     "valueCr": 10,
      "iplMatches": 94,
      "runs": 1566,
      "wickets": 0,
@@ -5154,7 +5154,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50.1,
-     "valueCr": 12.5,
+     "valueCr": 0.93,
      "iplMatches": 1,
      "runs": 4,
      "wickets": 0,
@@ -5177,7 +5177,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5216,7 +5216,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 48.1,
-     "valueCr": 12.5,
+     "valueCr": 0.86,
      "iplMatches": 3,
      "runs": 0,
      "wickets": 3,
@@ -5239,7 +5239,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 35,
-     "valueCr": 0.2,
+     "valueCr": 0.51,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5262,7 +5262,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30.6,
-     "valueCr": 9.5,
+     "valueCr": 0.44,
      "iplMatches": 39,
      "runs": 0,
      "wickets": 27,
@@ -5285,7 +5285,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 34.9,
-     "valueCr": 10.5,
+     "valueCr": 0.51,
      "iplMatches": 175,
      "runs": 261,
      "wickets": 182,
@@ -5298,7 +5298,7 @@
      "seasonEconomy": 7.73,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "5b8c830e",
@@ -5308,7 +5308,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 53.3,
-     "valueCr": 13.5,
+     "valueCr": 1.06,
      "iplMatches": 158,
      "runs": 1982,
      "wickets": 98,
@@ -5321,7 +5321,7 @@
      "seasonEconomy": 8.19,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f1f99156",
@@ -5331,7 +5331,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 93.8,
-     "valueCr": 20,
+     "valueCr": 4.43,
      "iplMatches": 66,
      "runs": 1151,
      "wickets": 0,
@@ -5344,7 +5344,7 @@
      "seasonEconomy": 18,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "2c25d4f5",
@@ -5354,7 +5354,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 86.8,
-     "valueCr": 19,
+     "valueCr": 3.57,
      "iplMatches": 90,
      "runs": 2270,
      "wickets": 0,
@@ -5367,7 +5367,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "ee1b6c27",
@@ -5377,7 +5377,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 54.3,
-     "valueCr": 13.5,
+     "valueCr": 1.1,
      "iplMatches": 8,
      "runs": 0,
      "wickets": 9,
@@ -5390,7 +5390,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "a24be938",
@@ -5400,7 +5400,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 66.3,
-     "valueCr": 16,
+     "valueCr": 1.76,
      "iplMatches": 68,
      "runs": 1677,
      "wickets": 3,
@@ -5413,7 +5413,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 7,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "dadbdb68",
@@ -5423,7 +5423,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 56.9,
-     "valueCr": 14,
+     "valueCr": 1.22,
      "iplMatches": 6,
      "runs": 0,
      "wickets": 9,
@@ -5436,7 +5436,7 @@
      "seasonEconomy": 10.23,
      "latestSeasonMatches": 6,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "3d284ca3",
@@ -5446,7 +5446,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 78.4,
-     "valueCr": 18.5,
+     "valueCr": 2.71,
      "iplMatches": 40,
      "runs": 1258,
      "wickets": 0,
@@ -5459,7 +5459,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 6,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-vicky-ostwal",
@@ -5469,7 +5469,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 40,
-     "valueCr": 0.3,
+     "valueCr": 0.62,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5492,7 +5492,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 84.4,
-     "valueCr": 19.5,
+     "valueCr": 3.31,
      "iplMatches": 71,
      "runs": 1107,
      "wickets": 0,
@@ -5505,7 +5505,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "c740ea83",
@@ -5515,7 +5515,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 91.7,
-     "valueCr": 19.5,
+     "valueCr": 4.16,
      "iplMatches": 57,
      "runs": 1612,
      "wickets": 0,
@@ -5528,7 +5528,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 15,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "ba607b88",
@@ -5538,7 +5538,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 89.6,
-     "valueCr": 19,
+     "valueCr": 3.9,
      "iplMatches": 282,
      "runs": 9346,
      "wickets": 1,
@@ -5551,7 +5551,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 16,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "x-jordan-cox",
@@ -5561,7 +5561,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 62,
-     "valueCr": 2,
+     "valueCr": 1.49,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5574,7 +5574,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "rcb",
-     "basePriceCr": 0.75
+     "basePriceCr": 0.5
     },
     {
      "id": "b8527c3d",
@@ -5584,7 +5584,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 48.2,
-     "valueCr": 12.5,
+     "valueCr": 0.86,
      "iplMatches": 25,
      "runs": 43,
      "wickets": 29,
@@ -5607,7 +5607,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 55,
-     "valueCr": 0.9,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5630,7 +5630,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 60.2,
-     "valueCr": 14.5,
+     "valueCr": 1.39,
      "iplMatches": 52,
      "runs": 19,
      "wickets": 72,
@@ -5643,7 +5643,7 @@
      "seasonEconomy": 9.43,
      "latestSeasonMatches": 13,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "c5aef772",
@@ -5653,7 +5653,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 61.1,
-     "valueCr": 15,
+     "valueCr": 1.44,
      "iplMatches": 33,
      "runs": 268,
      "wickets": 17,
@@ -5666,7 +5666,7 @@
      "seasonEconomy": 11.51,
      "latestSeasonMatches": 15,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     }
    ],
    "released": [
@@ -5678,7 +5678,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 38,
-     "valueCr": 0.3,
+     "valueCr": 0.57,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5701,7 +5701,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 89.1,
-     "valueCr": 19,
+     "valueCr": 9,
      "iplMatches": 9,
      "runs": 163,
      "wickets": 0,
@@ -5714,7 +5714,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 7,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1.5
     },
     {
      "id": "x-swapnil-singh",
@@ -5724,7 +5724,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 42,
-     "valueCr": 0.4,
+     "valueCr": 0.67,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5747,7 +5747,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5770,7 +5770,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 30,
-     "valueCr": 0.2,
+     "valueCr": 0.43,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5793,7 +5793,7 @@
      "overseas": true,
      "uncapped": true,
      "impact": 52,
-     "valueCr": 0.7,
+     "valueCr": 0.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5816,7 +5816,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 83.2,
-     "valueCr": 18,
+     "valueCr": 3,
      "iplMatches": 106,
      "runs": 2383,
      "wickets": 0,
@@ -5829,7 +5829,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "rcb",
-     "basePriceCr": 2
+     "basePriceCr": 1
     }
    ]
   },
@@ -5863,7 +5863,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 55.9,
-     "valueCr": 14,
+     "valueCr": 1.17,
      "iplMatches": 68,
      "runs": 565,
      "wickets": 72,
@@ -5876,7 +5876,7 @@
      "seasonEconomy": 9.25,
      "latestSeasonMatches": 8,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "f29185a1",
@@ -5886,7 +5886,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 60.3,
-     "valueCr": 15,
+     "valueCr": 1.4,
      "iplMatches": 89,
      "runs": 2316,
      "wickets": 11,
@@ -5899,7 +5899,7 @@
      "seasonEconomy": 10.14,
      "latestSeasonMatches": 15,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "752f7486",
@@ -5909,7 +5909,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 80,
-     "valueCr": 18.5,
+     "valueCr": 2.86,
      "iplMatches": 118,
      "runs": 3281,
      "wickets": 0,
@@ -5922,7 +5922,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 15,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "235c2bb6",
@@ -5932,7 +5932,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 84.6,
-     "valueCr": 19.5,
+     "valueCr": 3.33,
      "iplMatches": 64,
      "runs": 2104,
      "wickets": 0,
@@ -5945,7 +5945,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 15,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 1
     },
     {
      "id": "aad0c365",
@@ -5955,7 +5955,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 56,
-     "valueCr": 14,
+     "valueCr": 1.18,
      "iplMatches": 42,
      "runs": 787,
      "wickets": 13,
@@ -5968,7 +5968,7 @@
      "seasonEconomy": 9.93,
      "latestSeasonMatches": 14,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-brydon-carse",
@@ -5978,7 +5978,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 68,
-     "valueCr": 2.5,
+     "valueCr": 3,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -5991,7 +5991,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "srh",
-     "basePriceCr": 0.75
+     "basePriceCr": 1
     },
     {
      "id": "d7423da1",
@@ -6001,7 +6001,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 57.2,
-     "valueCr": 13.5,
+     "valueCr": 1,
      "iplMatches": 14,
      "runs": 156,
      "wickets": 0,
@@ -6024,7 +6024,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 66.1,
-     "valueCr": 15,
+     "valueCr": 1,
      "iplMatches": 24,
      "runs": 315,
      "wickets": 0,
@@ -6047,7 +6047,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 50.9,
-     "valueCr": 13,
+     "valueCr": 0.96,
      "iplMatches": 11,
      "runs": 13,
      "wickets": 13,
@@ -6070,7 +6070,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 49.9,
-     "valueCr": 12.5,
+     "valueCr": 0.92,
      "iplMatches": 6,
      "runs": 19,
      "wickets": 0,
@@ -6093,7 +6093,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 51.5,
-     "valueCr": 13,
+     "valueCr": 0.98,
      "iplMatches": 7,
      "runs": 3,
      "wickets": 14,
@@ -6116,7 +6116,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 52.8,
-     "valueCr": 13.5,
+     "valueCr": 1,
      "iplMatches": 11,
      "runs": 5,
      "wickets": 15,
@@ -6139,7 +6139,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 40.7,
-     "valueCr": 11.5,
+     "valueCr": 0.64,
      "iplMatches": 13,
      "runs": 53,
      "wickets": 9,
@@ -6162,7 +6162,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6185,7 +6185,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 58.1,
-     "valueCr": 14.5,
+     "valueCr": 1.28,
      "iplMatches": 22,
      "runs": 7,
      "wickets": 33,
@@ -6198,7 +6198,7 @@
      "seasonEconomy": 8.72,
      "latestSeasonMatches": 15,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "a2f46292",
@@ -6208,7 +6208,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 50.2,
-     "valueCr": 13,
+     "valueCr": 0.93,
      "iplMatches": 76,
      "runs": 2,
      "wickets": 91,
@@ -6221,7 +6221,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     },
     {
      "id": "x-nathan-ellis",
@@ -6231,7 +6231,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 68,
-     "valueCr": 2,
+     "valueCr": 1.87,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6254,7 +6254,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 45.6,
-     "valueCr": 12,
+     "valueCr": 0.77,
      "iplMatches": 74,
      "runs": 4,
      "wickets": 71,
@@ -6267,7 +6267,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.5
     }
    ],
    "released": [
@@ -6279,7 +6279,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 89.7,
-     "valueCr": 19,
+     "valueCr": 14,
      "iplMatches": 53,
      "runs": 1556,
      "wickets": 1,
@@ -6302,7 +6302,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 68,
-     "valueCr": 2.5,
+     "valueCr": 3,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6315,7 +6315,7 @@
      "seasonEconomy": null,
      "latestSeasonMatches": 0,
      "formerTeam": "srh",
-     "basePriceCr": 0.75
+     "basePriceCr": 1
     },
     {
      "id": "6c79c098",
@@ -6325,7 +6325,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 61,
-     "valueCr": 15,
+     "valueCr": 1.5,
      "iplMatches": 2,
      "runs": 6,
      "wickets": 2,
@@ -6338,7 +6338,7 @@
      "seasonEconomy": 13.55,
      "latestSeasonMatches": 2,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "1e66c162",
@@ -6348,7 +6348,7 @@
      "overseas": false,
      "uncapped": false,
      "impact": 57.8,
-     "valueCr": 14.5,
+     "valueCr": 2,
      "iplMatches": 94,
      "runs": 198,
      "wickets": 63,
@@ -6361,7 +6361,7 @@
      "seasonEconomy": 11.15,
      "latestSeasonMatches": 4,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-shivam-mavi",
@@ -6371,7 +6371,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 55,
-     "valueCr": 0.9,
+     "valueCr": 1,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6394,7 +6394,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 66,
-     "valueCr": 2,
+     "valueCr": 1.74,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6417,7 +6417,7 @@
      "overseas": true,
      "uncapped": false,
      "impact": 46.2,
-     "valueCr": 12.5,
+     "valueCr": 2.5,
      "iplMatches": 1,
      "runs": 0,
      "wickets": 1,
@@ -6430,7 +6430,7 @@
      "seasonEconomy": 7.71,
      "latestSeasonMatches": 1,
      "formerTeam": "srh",
-     "basePriceCr": 2
+     "basePriceCr": 0.75
     },
     {
      "id": "x-onkar-tarmale",
@@ -6440,7 +6440,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6463,7 +6463,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 32,
-     "valueCr": 0.2,
+     "valueCr": 0.46,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6486,7 +6486,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 34,
-     "valueCr": 0.3,
+     "valueCr": 0.5,
      "iplMatches": 0,
      "runs": 0,
      "wickets": 0,
@@ -6509,7 +6509,7 @@
      "overseas": false,
      "uncapped": true,
      "impact": 68.8,
-     "valueCr": 15.5,
+     "valueCr": 1,
      "iplMatches": 27,
      "runs": 292,
      "wickets": 0,

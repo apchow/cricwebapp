@@ -82,7 +82,7 @@ export type SetName = (typeof SET_ORDER)[number];
 
 export function setFor(p: AuctionPlayer): SetName {
   if (p.uncapped) return "Uncapped";
-  if (p.valueCr >= 5) return "Marquee";
+  if (p.valueCr >= 6) return "Marquee";
   if (p.role === "BAT" || p.role === "WK") return "Batters & Keepers";
   if (p.role === "AR") return "All-rounders";
   return "Bowlers";
