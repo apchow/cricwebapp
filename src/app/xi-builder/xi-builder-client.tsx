@@ -21,16 +21,16 @@ import TeamBadge from "@/components/team-badge";
 import { crores, PLAYERS, playerById } from "@/data/player-db";
 import { TEAMS, isOverseas } from "@/data/teams";
 import {
-  ODI_RULES,
   SERIES,
   otherSide,
+  rulesFor,
   seriesById,
   sideName,
   squadFor,
   windowFor,
   type CountryCode,
 } from "@/data/fixtures";
-import { autoPickXI } from "@/lib/autopick";
+import { TEST_ROLE_PLAN, autoPickXI } from "@/lib/autopick";
 import { flagOf } from "@/lib/flags";
 import { readLocal, useToast, writeLocal } from "@/lib/client";
 import type { PublicXI } from "@/lib/dto";
@@ -62,6 +62,21 @@ const SLOT_LABELS: string[] = [
   "Spinner",
   "Pacer",
   "Pacer",
+];
+
+/** Test hints: a longer top order and a four-man attack. */
+const TEST_SLOT_LABELS: string[] = [
+  "Opener",
+  "Opener",
+  "No.3",
+  "No.4",
+  "No.5",
+  "Wicket-Keeper",
+  "All-Rounder",
+  "Bowler",
+  "Bowler",
+  "Bowler",
+  "Bowler",
 ];
 
 /** Absolute positions (% of the pitch) for the eleven drop slots. */
@@ -100,12 +115,14 @@ export default function XiBuilderClient() {
   const [team, setTeam] = useState<IplTeam | "ALL">("ALL");
   const [role, setRole] = useState<PlayerRole | "ALL">("ALL");
 
-  /* Series context: the board is laid out for an India vs New Zealand ODI. */
+  /* Series context: the board defaults to the India vs New Zealand Test leg. */
   const [mode, setMode] = useState<"series" | "franchise">("series");
   const [seriesId, setSeriesId] = useState<string>(SERIES[0].id);
   const [fixtureNo, setFixtureNo] = useState<number>(1);
   const [side, setSide] = useState<CountryCode>(SERIES[0].teamA);
   const series = seriesById(seriesId);
+  const rules = rulesFor(series.format);
+  const slotLabels = series.format === "Test" ? TEST_SLOT_LABELS : SLOT_LABELS;
   const opponent = otherSide(series, side);
   const fixture = series.fixtures.find((item) => item.no === fixtureNo) ?? series.fixtures[0];
   const storageKey = `${STORE_KEY}:${mode}:${seriesId}:${fixtureNo}:${side}`;
@@ -216,12 +233,12 @@ export default function XiBuilderClient() {
 
   const overseasBlocked = mode === "franchise" && overseasCount >= 4;
   const bowlingTooDeep =
-    mode === "series" && bowlingOptions > ODI_RULES.maxBowlingOptions;
+    mode === "series" && bowlingOptions > rules.maxBowlingOptions;
   const ready =
     selectedCount === MAX_XI &&
     (mode === "series" || overseasCount <= 4) &&
-    wkCount >= ODI_RULES.minKeeper &&
-    bowlingOptions >= ODI_RULES.minBowlingOptions &&
+    wkCount >= rules.minKeeper &&
+    bowlingOptions >= rules.minBowlingOptions &&
     !bowlingTooDeep;
 
   const captain = captainId !== null ? playerById(captainId) ?? null : null;
@@ -233,14 +250,18 @@ export default function XiBuilderClient() {
   if (mode === "franchise" && overseasCount > 4) {
     unmet.push("Overseas limit exceeded — max 4");
   }
-  if (wkCount < ODI_RULES.minKeeper) {
+  if (wkCount < rules.minKeeper) {
     unmet.push("Need at least 1 Wicket-Keeper");
   }
-  if (bowlingOptions < ODI_RULES.minBowlingOptions) {
+  if (bowlingOptions < rules.minBowlingOptions) {
     unmet.push("Need at least 5 bowling options");
   }
   if (bowlingTooDeep) {
-    unmet.push(`More than ${ODI_RULES.maxBowlingOptions} bowling options for an ODI`);
+    unmet.push(
+      `More than ${rules.maxBowlingOptions} bowling options for ${
+        series.format === "Test" ? "a Test" : "an ODI"
+      }`
+    );
   }
   if (mode === "series" && selectedCount > squadOnFile) {
     unmet.push(
@@ -309,7 +330,7 @@ export default function XiBuilderClient() {
       return;
     }
     placeInSlot(free, player.id);
-    notify(`${player.name} in at ${SLOT_LABELS[free].toLowerCase()}`);
+    notify(`${player.name} in at ${slotLabels[free].toLowerCase()}`);
   }
 
   function returnToPool(playerId: number) {
@@ -351,6 +372,10 @@ export default function XiBuilderClient() {
      */
     const result = autoPickXI(seriesPool, {
       maxOverseas: mode === "series" ? MAX_XI : 4,
+      plan:
+        mode === "series" && series.format === "Test"
+          ? TEST_ROLE_PLAN
+          : undefined,
     });
     if (result.players.length === 0) {
       notify("No active players available");
@@ -490,7 +515,7 @@ export default function XiBuilderClient() {
     setSaving(true);
     try {
       const name = `${sideName(series, side)} XI · ${
-        mode === "series" ? `ODI ${fixtureNo}` : "franchise"
+        mode === "series" ? `${series.format} ${fixtureNo}` : "franchise"
       }`.slice(0, 40);
       const response = await fetch("/api/xis", {
         method: "POST",
@@ -617,6 +642,25 @@ export default function XiBuilderClient() {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {SERIES.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setSeriesId(item.id);
+                  setFixtureNo(1);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  item.id === seriesId
+                    ? "bg-amber-500/20 border-amber-500/40 text-amber-200"
+                    : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                {item.format === "Test" ? "Tests" : "ODIs"}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1.5">
             {series.fixtures.map((item) => (
               <button
                 key={item.no}
@@ -627,7 +671,7 @@ export default function XiBuilderClient() {
                     : "bg-slate-900/50 border-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
-                ODI {item.no}
+                {series.format} {item.no}
               </button>
             ))}
           </div>
@@ -843,7 +887,7 @@ export default function XiBuilderClient() {
                         #{index + 1}
                       </span>
                       <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-300/80">
-                        {SLOT_LABELS[index]}
+                        {slotLabels[index]}
                       </span>
                     </div>
                   </div>
@@ -889,8 +933,8 @@ export default function XiBuilderClient() {
             <span
               className={`font-mono font-bold ${
                 mode === "series"
-                  ? bowlingOptions < ODI_RULES.minBowlingOptions ||
-                    bowlingOptions > ODI_RULES.maxBowlingOptions
+                  ? bowlingOptions < rules.minBowlingOptions ||
+                    bowlingOptions > rules.maxBowlingOptions
                     ? "text-amber-300"
                     : "text-slate-200"
                   : overseasCount > 4
@@ -899,7 +943,9 @@ export default function XiBuilderClient() {
               }`}
             >
               {mode === "series"
-                ? `${bowlingOptions}/${ODI_RULES.minBowlingOptions}–${ODI_RULES.maxBowlingOptions}`
+                ? series.format === "Test"
+                  ? `${bowlingOptions} (min ${rules.minBowlingOptions})`
+                  : `${bowlingOptions}/${rules.minBowlingOptions}–${rules.maxBowlingOptions}`
                 : `Overseas ${overseasCount}/4`}
             </span>
           </div>
@@ -1105,7 +1151,9 @@ export default function XiBuilderClient() {
           onClick={autoPick}
           title={
             mode === "series"
-              ? `Pick a balanced ${sideName(series, side)} ODI XI — keeper and 5–7 bowling options`
+              ? series.format === "Test"
+                ? `Pick a balanced ${sideName(series, side)} Test XI — keeper and at least 5 bowling options`
+                : `Pick a balanced ${sideName(series, side)} ODI XI — keeper and 5–7 bowling options`
               : "Pick a balanced XI — max 4 overseas, keeper and five bowling options"
           }
           className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-black bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:scale-[1.01] active:scale-[0.99] transition-all"

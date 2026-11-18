@@ -1,10 +1,18 @@
 import dataset from "../../public/data/players.json";
 import type { IplTeam, Player, PlayerDataset } from "@/types/player";
+import { TEST_EXTRA_PLAYERS } from "./test-extras";
 
 const data = dataset as unknown as PlayerDataset;
 
+const syncedNames = new Set(data.players.map((player) => player.name.toLowerCase()));
+
 /** The full scouting database, active squad members plus the legends pool. */
-export const PLAYERS: Player[] = data.players;
+export const PLAYERS: Player[] = [
+  ...data.players,
+  ...TEST_EXTRA_PLAYERS.filter(
+    (player) => !syncedNames.has(player.name.toLowerCase())
+  ),
+];
 
 export const PLAYER_VERSION = data.version;
 export const PLAYER_UPDATED = data.updated;

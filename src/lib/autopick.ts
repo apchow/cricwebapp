@@ -31,6 +31,14 @@ const ROLE_PLAN: { role: PlayerRole; count: number }[] = [
   { role: "Batter", count: 4 },
 ];
 
+/** Target composition for a Test XI: five specialists, keeper, AR, four bowlers. */
+export const TEST_ROLE_PLAN: { role: PlayerRole; count: number }[] = [
+  { role: "Wicket-Keeper", count: 1 },
+  { role: "Bowler", count: 4 },
+  { role: "All-Rounder", count: 1 },
+  { role: "Batter", count: 5 },
+];
+
 export interface AutoPickOptions {
   /** Total players to select. Defaults to 11. */
   size?: number;
@@ -41,6 +49,8 @@ export interface AutoPickOptions {
    * base prices, so it can be assembled at auction. Omit for an unlimited buy.
    */
   budget?: number;
+  /** Role composition to fill, in priority order. Defaults to the T20 plan. */
+  plan?: { role: PlayerRole; count: number }[];
 }
 
 export interface AutoPickResult {
@@ -84,6 +94,7 @@ export function autoPickXI(
   const size = Math.max(0, options.size ?? 11);
   const maxOverseas = Math.max(0, options.maxOverseas ?? 4);
   const budget = options.budget ?? null;
+  const plan = options.plan ?? ROLE_PLAN;
 
   const seen = new Set<number>();
   const candidates = pool
@@ -149,12 +160,12 @@ export function autoPickXI(
 
   // First pass reserves purse for every remaining slot, so two big names cannot
   // strand the XI; the second pass spends what is left to fill any short role.
-  for (const { role, count } of ROLE_PLAN) takeRole(role, count, true);
+  for (const { role, count } of plan) takeRole(role, count, true);
   for (const player of candidates) {
     if (chosen.length >= size) break;
     if (canTake(player, true)) take(player);
   }
-  for (const { role, count } of ROLE_PLAN) takeRole(role, count, false);
+  for (const { role, count } of plan) takeRole(role, count, false);
   for (const player of candidates) {
     if (chosen.length >= size) break;
     if (canTake(player, false)) take(player);

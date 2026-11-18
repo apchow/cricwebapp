@@ -103,32 +103,6 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-
-        {/* Footer */}
-        <footer className="mt-32 text-center space-y-4">
-          <div className="inline-block px-4 py-1.5 rounded-full border border-slate-800/50 text-slate-600 text-xs font-medium uppercase tracking-widest">
-            Pundit Arena
-          </div>
-          <p className="text-[11px] text-slate-600 max-w-xl mx-auto leading-relaxed">
-            A fan-made cricket playground. Not affiliated with, endorsed by, or
-            connected to the BCCI, the IPL, or any franchise. Player names and
-            team marks belong to their respective owners.
-          </p>
-          <nav className="flex items-center justify-center gap-4 text-[11px] text-slate-500">
-            <Link href="/privacy" className="hover:text-slate-300 transition-colors">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-slate-300 transition-colors">
-              Terms
-            </Link>
-            <Link
-              href="/support"
-              className="text-amber-400/80 hover:text-amber-300 transition-colors font-semibold"
-            >
-              Support ♥
-            </Link>
-          </nav>
-        </footer>
       </div>
     </div>
   );

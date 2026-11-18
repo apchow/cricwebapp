@@ -4,7 +4,7 @@ import ToolHeader from "@/components/tool-header";
 export const metadata = {
   title: "XI Builder — Pundit Arena",
   description:
-    "Name your eleven for the India vs New Zealand ODI series on a top-down pitch, or switch to franchise rules with the four-overseas cap and purse-aware auto-pick.",
+    "Name your eleven for the India vs New Zealand Test series on a top-down pitch, switch to the ODI leg, or use franchise rules with the four-overseas cap and purse-aware auto-pick.",
 };
 
 // The builder ships the whole player drawer and drag-and-drop wiring, so it is
@@ -35,7 +35,7 @@ export default function XiBuilderPage() {
         <ToolHeader
           eyebrow="Selection Room"
           title="XI Builder"
-          blurb="Pick your eleven for an India vs New Zealand ODI, one captain, one vice-captain. Franchise mode keeps the four-overseas cap."
+          blurb="Pick your eleven for an India vs New Zealand Test, one captain, one vice-captain. The ODI leg and franchise mode (four-overseas cap) are one tap away."
           gradient="from-emerald-200 via-white to-indigo-200"
         />
         <XiBuilderClient />

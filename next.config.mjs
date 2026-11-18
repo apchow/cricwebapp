@@ -18,6 +18,8 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+  // The launch banner embeds the tribute reel; only Instagram may be framed.
+  "frame-src https://www.instagram.com",
 ].join("; ");
 
 const securityHeaders = [

@@ -1,17 +1,21 @@
 /**
- * India's tour of New Zealand, 2026-27 — five ODIs, all played in New Zealand.
+ * India's tour of New Zealand, 2026-27 — two Tests followed by five ODIs, all
+ * played in New Zealand. The Test series is the builder's default board.
  *
- * Fixtures, dates, venues and squads follow the published tour schedule. Both
- * boards named a split squad: one for ODIs 1-3 and another for ODIs 4-5, so the
- * XI builder's pool changes with the match you pick.
+ * Fixtures, dates, venues and squads follow the published tour schedule. The
+ * ODI leg uses split squads (ODIs 1-3 and ODIs 4-5), so the XI builder's pool
+ * changes with the match you pick; both Tests share one squad window.
  *
  * Squad lists are names; roles, form and prices come from
- * `public/data/players.json`. A name with no database row is reported in the
- * builder rather than silently dropped.
+ * `public/data/players.json` plus the additive Test extras in `test-extras.ts`.
+ * A name with no database row is reported in the builder rather than silently
+ * dropped.
  */
 export type CountryCode = "IND" | "NZ";
 
-export interface OdiFixture {
+export type MatchFormat = "ODI" | "Test";
+
+export interface MatchFixture {
   no: number;
   day: string;
   venue: string;
@@ -35,13 +39,13 @@ export interface SquadWindow {
 export interface InternationalSeries {
   id: string;
   name: string;
-  format: "ODI";
+  format: MatchFormat;
   host: CountryCode;
   teamA: CountryCode;
   teamB: CountryCode;
   teamAName: string;
   teamBName: string;
-  fixtures: OdiFixture[];
+  fixtures: MatchFixture[];
   windows: SquadWindow[];
 }
 
@@ -141,7 +145,76 @@ const NZ_4_5: Squad = {
   ],
 };
 
+/**
+ * Test squads as named for the two-match WTC leg. Kuldeep Yadav was released
+ * from the India squad on 14 Nov (Gurnoor Brar added); Mitchell Santner ruled
+ * himself out on 17 Nov with a fractured hand (Dean Foxcroft covers), so
+ * neither appears in a pickable pool.
+ */
+const IND_TEST: Squad = {
+  captain: "Shubman Gill",
+  viceCaptain: "KL Rahul",
+  keepers: ["Dhruv Jurel", "Rishabh Pant"],
+  players: [
+    "Shubman Gill",
+    "KL Rahul",
+    "Yashasvi Jaiswal",
+    "Sai Sudharsan",
+    "Devdutt Padikkal",
+    "Dhruv Jurel",
+    "Rishabh Pant",
+    "Nitish Kumar Reddy",
+    "Ravindra Jadeja",
+    "Washington Sundar",
+    "Jasprit Bumrah",
+    "Mohammed Siraj",
+    "Akash Deep",
+    "Prasidh Krishna",
+    "Anshul Kamboj",
+    "Gurnoor Brar",
+  ],
+};
+
+const NZ_TEST: Squad = {
+  captain: "Tom Latham",
+  viceCaptain: null,
+  keepers: ["Tom Latham", "Tom Blundell", "Devon Conway"],
+  players: [
+    "Tom Latham",
+    "Tom Blundell",
+    "Devon Conway",
+    "Will Young",
+    "Henry Nicholls",
+    "Daryl Mitchell",
+    "Glenn Phillips",
+    "Rachin Ravindra",
+    "Dean Foxcroft",
+    "Nathan Smith",
+    "Matt Henry",
+    "Kyle Jamieson",
+    "Jacob Duffy",
+    "Blair Tickner",
+  ],
+};
+
 export const SERIES: InternationalSeries[] = [
+  {
+    id: "nz-ind-test-2026",
+    name: "India tour of New Zealand 2026-27 · Tests",
+    format: "Test",
+    host: "NZ",
+    teamA: "IND",
+    teamB: "NZ",
+    teamAName: "India",
+    teamBName: "New Zealand",
+    fixtures: [
+      { no: 1, day: "19–23 Nov 2026", venue: "Basin Reserve", city: "Wellington" },
+      { no: 2, day: "27 Nov–1 Dec 2026", venue: "Hagley Oval", city: "Christchurch" },
+    ],
+    windows: [
+      { label: "Both Tests", fixtures: [1, 2], IND: IND_TEST, NZ: NZ_TEST },
+    ],
+  },
   {
     id: "nz-ind-odi-2026",
     name: "India tour of New Zealand 2026-27",
@@ -201,3 +274,15 @@ export const ODI_RULES = {
   minBowlingOptions: 5,
   maxBowlingOptions: 7,
 } as const;
+
+/** Test selection rules: eleven, a keeper, five bowling options, no upper cap. */
+export const TEST_RULES = {
+  size: 11,
+  minKeeper: 1,
+  minBowlingOptions: 5,
+  maxBowlingOptions: 11,
+} as const;
+
+export function rulesFor(format: MatchFormat) {
+  return format === "Test" ? TEST_RULES : ODI_RULES;
+}

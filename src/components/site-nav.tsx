@@ -12,8 +12,6 @@ import {
   MessageCircle,
   Trophy,
   Users,
-  Volume2,
-  VolumeX,
   X,
   Zap,
   type LucideIcon,
@@ -23,7 +21,6 @@ import AccountMenu from "@/components/account-menu";
 import AuthModal from "@/components/auth-modal";
 import SupportCard from "@/components/support-card";
 import { TOOLS } from "@/data/tools";
-import { isMuted, onMuteChange, setMuted } from "@/lib/game-sound";
 
 const ICONS: Record<string, LucideIcon> = {
   auction: Gavel,
@@ -38,13 +35,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 export default function SiteNav({ email }: { email: string | null }) {
   const pathname = usePathname();
-  const [muted, setMutedState] = useState(false);
   const [donateOpen, setDonateOpen] = useState(false);
-
-  useEffect(() => {
-    setMutedState(isMuted());
-    return onMuteChange(setMutedState);
-  }, []);
 
   useEffect(() => {
     if (!donateOpen) return;
@@ -92,24 +83,12 @@ export default function SiteNav({ email }: { email: string | null }) {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setDonateOpen(true)}
-              aria-label="Donate via UPI"
+              aria-label="Support via UPI"
               title="Support Pundit Arena — UPI QR & ID"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition"
+              className="inline-flex h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition"
             >
               <Heart className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setMuted(!isMuted())}
-              aria-label={muted ? "Unmute all sounds" : "Mute all sounds"}
-              aria-pressed={muted}
-              title={muted ? "Sound is off — tap to enable" : "Sound is on — tap to kill all sound"}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
-                muted
-                  ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-              }`}
-            >
-              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              <span className="text-xs font-bold">Support</span>
             </button>
             <AccountMenu email={email} />
           </div>
@@ -155,13 +134,13 @@ export default function SiteNav({ email }: { email: string | null }) {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Donate via UPI"
+            aria-label="Support via UPI"
             className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setDonateOpen(false)}
-              aria-label="Close donation panel"
+              aria-label="Close support panel"
               className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white transition"
             >
               <X className="h-4 w-4" />

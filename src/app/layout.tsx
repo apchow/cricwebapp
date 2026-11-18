@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SiteNav from "@/components/site-nav";
+import SiteFooter from "@/components/site-footer";
+import ReelBanner from "@/components/reel-banner";
 import ServiceWorker from "@/components/service-worker";
 import { currentSession } from "@/lib/auth";
 import { appUrl } from "@/lib/app-url";
@@ -64,7 +66,11 @@ export default async function RootLayout({
     >
       <body className="font-sans antialiased min-h-screen">
         <SiteNav email={session?.email ?? null} />
-        <main className="pt-14 pb-20 md:pb-0">{children}</main>
+        <main className="pt-14 pb-20 md:pb-0">
+          <ReelBanner />
+          {children}
+          <SiteFooter />
+        </main>
         <ServiceWorker />
       </body>
     </html>
