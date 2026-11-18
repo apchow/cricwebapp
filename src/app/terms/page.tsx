@@ -7,7 +7,7 @@ export const metadata = {
     "The rules for using Pundit Arena: a fan-made cricket game with no real money, public Banter posts, and no affiliation with the BCCI or IPL.",
 };
 
-const UPDATED = "13 November 2026";
+const UPDATED = "18 November 2026";
 
 function Section({
   title,
@@ -56,10 +56,10 @@ export default function TermsPage() {
 
         <Section title="What Pundit Arena is">
           <p>
-            Pundit Arena is a free, fan-made cricket playground: a retention
-            planner, an XI builder, a ball-by-ball scorer, a stats hub, a timing
-            mini-game, and a public Banter Wall. It is provided for entertainment
-            and personal use.
+            Pundit Arena is a free, fan-made cricket playground: an IPL auction
+            simulator, an XI builder, a ball-by-ball scorer, a stats hub, a
+            timing mini-game, and a public Banter Wall. It is provided for
+            entertainment and personal use.
           </p>
           <p>
             <strong className="text-slate-200">No real money.</strong> Any
@@ -67,6 +67,18 @@ export default function TermsPage() {
             for play only. There is no betting, no wagering, no odds, no cash
             prizes, and no cryptocurrency. Nothing here is financial advice or an
             invitation to gamble.
+          </p>
+        </Section>
+
+        <Section title="Voluntary donations">
+          <p>
+            The <Link href="/support" className="text-emerald-300 underline hover:text-emerald-200">Support page</Link>{" "}
+            lets you send a voluntary tip over UPI to help cover running costs.
+            A donation is a gift, not a purchase: it unlocks no features, no
+            in-game currency and no advantage, and it is separate from the
+            fictional prices in the auction sim. Payments are made inside your
+            own UPI app; we never see your bank or card details. Tips are not
+            refundable and buy no entitlement.
           </p>
         </Section>
 

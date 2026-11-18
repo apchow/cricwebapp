@@ -121,6 +121,12 @@ export default function HomePage() {
             <Link href="/terms" className="hover:text-slate-300 transition-colors">
               Terms
             </Link>
+            <Link
+              href="/support"
+              className="text-amber-400/80 hover:text-amber-300 transition-colors font-semibold"
+            >
+              Support ♥
+            </Link>
           </nav>
         </footer>
       </div>

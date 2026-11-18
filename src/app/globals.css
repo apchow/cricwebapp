@@ -62,3 +62,36 @@ body {
 .wicket-shake {
   animation: wicketShake 0.5s ease-in-out;
 }
+
+/* Auction room: rival paddle flash when they lead a bid */
+@keyframes paddleFlash {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.paddle-flash {
+  animation: paddleFlash 0.9s ease-out forwards;
+}
+
+/* Auction room: gold particle burst when the user wins a lot */
+@keyframes auctionParticle {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+.auction-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  animation: auctionParticle 0.9s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+/* Auction room: soft glow around the lot card when the user wins */
+@keyframes auctionGlowUser {
+  0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  100% { box-shadow: 0 0 44px 4px rgba(52, 211, 153, 0); }
+}
+.auction-glow-user {
+  animation: auctionGlowUser 1.4s ease-out;
+}

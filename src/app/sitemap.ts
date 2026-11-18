@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { PLAYERS, PLAYER_UPDATED } from "@/data/player-db";
 import { TOOLS } from "@/data/tools";
-import { getIplSquads } from "@/lib/retention/squads";
+import { getAuctionData } from "@/lib/auction/official";
 import { appUrl } from "@/lib/app-url";
 
 const BASE_URL = appUrl();
@@ -29,10 +29,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     })),
     {
-      url: `${BASE_URL}/retention/rules`,
+      url: `${BASE_URL}/auction/rules`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/support`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.4,
     },
     {
       url: `${BASE_URL}/privacy`,
@@ -48,8 +54,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const squads: MetadataRoute.Sitemap = getIplSquads().teams.map((team) => ({
-    url: `${BASE_URL}/retention/${team.id}`,
+  const squads: MetadataRoute.Sitemap = getAuctionData().teams.map((team) => ({
+    url: `${BASE_URL}/auction/${team.id}`,
     lastModified: now,
     changeFrequency: "monthly",
     priority: 0.6,

@@ -7,7 +7,7 @@ export const metadata = {
     "What Pundit Arena stores, why, and how to remove it. Your email and name from Google sign-in, your saved cricket content, and an essential session cookie — no ads or tracking.",
 };
 
-const UPDATED = "13 November 2026";
+const UPDATED = "18 November 2026";
 
 function Section({
   title,
@@ -137,9 +137,11 @@ export default function PrivacyPage() {
             will remove it.
           </p>
           <p>
-            Pundit Arena is a reputation-coin game: there is no real money,
-            betting, odds, or cryptocurrency involved, and we do not collect any
-            payment information.
+            Pundit Arena is a reputation-coin game: there is no betting, odds,
+            or cryptocurrency involved. If you choose to send a voluntary tip
+            from the <Link href="/support" className="text-indigo-300 underline hover:text-indigo-200">Support page</Link>,
+            the payment happens entirely inside your own UPI app — we never
+            collect or see your bank, card or payment details.
           </p>
         </Section>
 

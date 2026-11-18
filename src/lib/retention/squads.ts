@@ -1,5 +1,31 @@
 import raw from "@/data/ipl-squads.json";
-import type { RetentionPlayer } from "./rules";
+
+export type RetentionPlayer = {
+  id: string;
+  name: string;
+  shortName?: string;
+  role: string;
+  country: string;
+  overseas: boolean;
+  uncapped: boolean;
+  impact: number;
+  retentionValue: number;
+  iplMatches: number;
+  seasonMatches: number;
+  latestSeasonMatches: number;
+  lastSeason: string;
+  runs: number;
+  balls: number;
+  strikeRate: number | null;
+  wickets: number;
+  economy: number | null;
+  seasonRuns: number;
+  seasonBalls: number;
+  seasonWickets: number;
+  seasonStrikeRate: number | null;
+  seasonEconomy: number | null;
+  lastPlayed: string | null;
+};
 
 export interface RetentionTeam {
   id: string;

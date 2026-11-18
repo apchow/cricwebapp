@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   ClipboardList,
+  Gavel,
   History,
   ListOrdered,
-  Lock,
   MessageCircle,
   Trophy,
   Users,
+  Volume2,
+  VolumeX,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -17,9 +20,10 @@ import {
 import AccountMenu from "@/components/account-menu";
 import AuthModal from "@/components/auth-modal";
 import { TOOLS } from "@/data/tools";
+import { isMuted, onMuteChange, setMuted } from "@/lib/game-sound";
 
 const ICONS: Record<string, LucideIcon> = {
-  retention: Lock,
+  auction: Gavel,
   "xi-builder": Users,
   scorer: ClipboardList,
   history: History,
@@ -31,6 +35,12 @@ const ICONS: Record<string, LucideIcon> = {
 
 export default function SiteNav({ email }: { email: string | null }) {
   const pathname = usePathname();
+  const [muted, setMutedState] = useState(false);
+
+  useEffect(() => {
+    setMutedState(isMuted());
+    return onMuteChange(setMutedState);
+  }, []);
 
   function isActive(href: string): boolean {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -66,7 +76,22 @@ export default function SiteNav({ email }: { email: string | null }) {
             ))}
           </div>
 
-          <AccountMenu email={email} />
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setMuted(!isMuted())}
+              aria-label={muted ? "Unmute all sounds" : "Mute all sounds"}
+              aria-pressed={muted}
+              title={muted ? "Sound is off — tap to enable" : "Sound is on — tap to kill all sound"}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                muted
+                  ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+              }`}
+            >
+              {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
+            <AccountMenu email={email} />
+          </div>
         </div>
       </nav>
 

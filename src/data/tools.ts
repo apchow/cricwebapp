@@ -1,5 +1,5 @@
 import dataset from "../../public/data/players.json";
-import squads from "./ipl-squads.json";
+import auction from "./ipl-2027-retentions.json";
 
 export interface Tool {
   id: string;
@@ -22,11 +22,10 @@ export interface Tool {
  * Counts the hub cards advertise, derived from the data itself so a player
  * addition cannot leave a stale number on the home page.
  */
-const RETENTION_POOL_SIZE = new Set(
-  Object.values(squads.teams).flatMap((team) =>
-    (team.squad ?? []).map((player) => player.name)
-  )
-).size;
+const AUCTION_POOL_SIZE = auction.teams.reduce(
+  (sum, team) => sum + team.released.length,
+  0
+);
 
 const DATABASE_SIZE = dataset.players.length;
 
@@ -36,17 +35,17 @@ const DATABASE_SIZE = dataset.players.length;
  */
 export const TOOLS: Tool[] = [
   {
-    id: "retention",
-    href: "/retention",
-    emoji: "🔒",
-    navLabel: "Retention",
-    title: "Retention 2027",
-    subtitle: "Auction Room",
+    id: "auction",
+    href: "/auction",
+    emoji: "🔨",
+    navLabel: "IPL Auction",
+    title: "IPL Auction 2027",
+    subtitle: "Mini Auction Room",
     description:
-      "Pick the six you refuse to lose. Four capped, two uncapped. Lock the squad and share it with your group chat.",
-    features: [`${RETENTION_POOL_SIZE} players`, "Strict rules", "Shareable squad"],
-    cardGradient: "from-emerald-500 to-teal-900",
-    glow: "bg-emerald-500/20",
+      "The real 17 Nov retentions — or your own. Take a paddle, bid against nine rival franchises and face the verdict on your squad.",
+    features: [`${AUCTION_POOL_SIZE} players on the block`, "Official purses & slots", "Live bidding sim"],
+    cardGradient: "from-amber-500 to-yellow-900",
+    glow: "bg-amber-500/20",
   },
   {
     id: "xi-builder",
