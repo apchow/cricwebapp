@@ -76,9 +76,10 @@ export default function AuctionRulesPage() {
             <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-2">
               <p className="font-bold text-white">Rival paddles</p>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Nine AI franchises bid to role needs, an editorial market value and their purse —
-                richer teams push harder, and everyone keeps a base-price reserve for remaining
-                slots. No rival can overspend or break the overseas cap.
+                Nine stingy AI franchises hoard cash on ordinary names and fight only for
+                headliners — a few marquee bids cross ₹12cr, and if you raise a paddle on a
+                marquee lot they escalate the war past ₹15cr. Everyone keeps a base-price
+                reserve for remaining slots; no rival can overspend or break the overseas cap.
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-2">

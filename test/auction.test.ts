@@ -289,30 +289,48 @@ test("formValueCr rewards recent form and IPL trends, discounts rust", () => {
   assert.ok(formValueCr(hype) > 2, "uncapped frenzy premiums above anchor");
 });
 
-test("stingy rivals spend less than free-spending on the same seed", () => {
+test("stingy rivals hoard: ordinary names stay cheap and many go unsold", () => {
   const plan = officialPlan(team("csk"));
   const pool = poolFor("csk", new Set(plan.retained.map((p) => p.id)));
-  const spendFor = (mindset: "free" | "realistic" | "stingy") => {
-    const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool, seed: 42, mindset });
-    runToEnd(e);
-    assertInvariants(e);
-    return e.teams.filter((t) => !t.isUser).reduce((s, t) => s + t.spentCr, 0);
-  };
-  const free = spendFor("free");
-  const realistic = spendFor("realistic");
-  const stingy = spendFor("stingy");
-  assert.ok(stingy < realistic, `stingy ${stingy} < realistic ${realistic}`);
-  assert.ok(realistic < free, `realistic ${realistic} < free ${free}`);
-});
-
-test("mindset is live-adjustable and preserves invariants", () => {
-  const plan = officialPlan(team("rr"));
-  const e = new AuctionEngine({ userTeamId: "rr", plan, teams, pool: poolFor("rr", new Set(plan.retained.map((p) => p.id))), seed: 7, mindset: "free" });
-  for (let i = 0; i < 40; i += 1) e.tick(250);
-  e.mindset = "stingy";
+  const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool, seed: 42 });
   runToEnd(e);
   assertInvariants(e);
-  assert.equal(e.mindset, "stingy");
+  const buys = e.teams.flatMap((t) => t.buys);
+  const ordinary = buys.filter((b) => b.player.valueCr < 6);
+  assert.ok(ordinary.every((b) => b.priceCr <= 6 + 1e-9), "non-marquee never crosses 6cr");
+  assert.ok(e.unsoldCount >= 10, `stingy paddles leave lots unsold (${e.unsoldCount})`);
+});
+
+test("a few marquee bids cross 12cr even without user interest, capped under 15", () => {
+  let saw12 = false;
+  for (const seed of [42, 7]) {
+    const plan = officialPlan(team("csk"));
+    const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool: poolFor("csk", new Set(plan.retained.map((p) => p.id))), seed });
+    runToEnd(e);
+    assertInvariants(e);
+    const buys = e.teams.flatMap((t) => t.buys);
+    if (buys.some((b) => b.priceCr >= 12)) saw12 = true;
+    assert.ok(buys.every((b) => b.priceCr <= 14 + 1e-9), `uncontested lots stay under 15cr (seed ${seed})`);
+    const nortje = buys.find((b) => b.player.name === "Anrich Nortje");
+    if (nortje) assert.ok(nortje.priceCr <= 10 + 1e-9, `Nortje capped at 10cr without user interest (seed ${seed}: ${nortje.priceCr})`);
+  }
+  assert.ok(saw12, "some headliner sells for 12cr+");
+});
+
+test("user interest in a marquee lot escalates the war past 15cr", () => {
+  for (const seed of [42, 4]) {
+    const plan = officialPlan(team("csk"));
+    const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool: poolFor("csk", new Set(plan.retained.map((p) => p.id))), seed });
+    assert.equal(e.lot.set, "Marquee");
+    const contested = e.lot.player;
+    assert.ok(e.userBid(), "user can open the bidding on the first marquee lot");
+    e.userPass();
+    runToEnd(e);
+    assertInvariants(e);
+    const sale = e.teams.flatMap((t) => t.buys).find((b) => b.player.id === contested.id);
+    assert.ok(sale, `${contested.name} sells after the user showed interest`);
+    assert.ok(sale!.priceCr >= 15, `seed ${seed}: ${contested.name} war closed at ${sale!.priceCr}, expected 15+`);
+  }
 });
 
 test("auction opens with the marquee set and announces set changes", () => {
@@ -330,7 +348,7 @@ test("auction opens with the marquee set and announces set changes", () => {
 
 test("tiered valuation: flexible per-bot caps, cheap backups, marquee inflation", () => {
   const plan = officialPlan(team("csk"));
-  const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool: poolFor("csk", new Set(plan.retained.map((p) => p.id))), seed: 42, mindset: "realistic" });
+  const e = new AuctionEngine({ userTeamId: "csk", plan, teams, pool: poolFor("csk", new Set(plan.retained.map((p) => p.id))), seed: 42 });
   runToEnd(e);
   assertInvariants(e);
   const buys = e.teams.flatMap((t) => t.buys);

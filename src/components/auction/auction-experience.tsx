@@ -33,7 +33,7 @@ import {
   suggestCustom,
   type RetentionPlan,
 } from "@/lib/auction/plan.ts";
-import { AuctionEngine, nextBidCr, RIVAL_MINDSETS, type RivalMindset } from "@/lib/auction/engine.ts";
+import { AuctionEngine, nextBidCr } from "@/lib/auction/engine.ts";
 import { isMuted, later, onMuteChange, setMuted, sfx, stopAllSounds, unlockAudio } from "@/lib/game-sound";
 
 type Stage = "retention" | "live" | "results";
@@ -99,7 +99,6 @@ export default function AuctionExperience({
   );
   const [picksReady, setPicksReady] = useState(false);
   const [muted, setMutedState] = useState(false);
-  const [mindset, setMindset] = useState<RivalMindset>("realistic");
   const [copied, setCopied] = useState(false);
   const [, force] = useReducer((x: number) => x + 1, 0);
 
@@ -156,37 +155,6 @@ export default function AuctionExperience({
     if (!next) sfx.ui();
   }
 
-  function changeMindset(m: RivalMindset) {
-    setMindset(m);
-    if (engineRef.current) engineRef.current.mindset = m;
-    sfx.ui();
-    force();
-  }
-
-  function mindsetControl(compact = false) {
-    return (
-      <div className={compact ? "flex items-center gap-1" : "flex flex-wrap items-center gap-2"}>
-        {RIVAL_MINDSETS.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => changeMindset(m.id)}
-            aria-pressed={mindset === m.id}
-            title={m.blurb}
-            className={`rounded-lg font-bold transition-all ${
-              compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-xs"
-            } ${
-              mindset === m.id
-                ? "bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 shadow-[0_0_16px_-4px_rgba(245,158,11,0.7)]"
-                : "border border-slate-700 bg-slate-800/70 text-slate-300 hover:border-amber-500/40 hover:text-amber-200"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
   function startAuction() {
     unlockAudio();
     sfx.start();
@@ -197,7 +165,6 @@ export default function AuctionExperience({
       teams,
       pool,
       seed: Date.now() % 2147483647,
-      mindset,
     });
     lastTickSec.current = -1;
     setStage("live");
@@ -464,27 +431,10 @@ export default function AuctionExperience({
           </div>
         )}
 
-        <div className="glass rounded-2xl p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-300">
-                Rival mindset
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                How the other nine franchises bid — form, past auction prices and IPL trends.
-              </p>
-            </div>
-            {mindsetControl()}
-          </div>
-          <p className="text-xs text-amber-200/80 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-            {RIVAL_MINDSETS.find((m) => m.id === mindset)?.blurb}
-          </p>
-        </div>
-
         <div className="glass rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-slate-400">
             <span className="font-black text-white tabular-nums">{poolSize}</span> players will be on the block ·
-            marquee set first · nine rival paddles against you
+            marquee set first · nine stingy rival paddles — but show interest and they'll fight you past ₹15cr
           </p>
           <button
             onClick={startAuction}
@@ -724,7 +674,6 @@ export default function AuctionExperience({
         >
           <FastForward className="h-3.5 w-3.5" /> {engine.speed}x
         </button>
-        <div className="hidden sm:block">{mindsetControl(true)}</div>
         <button onClick={skipToEnd} className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 transition">
           <Trophy className="h-3.5 w-3.5" /> Skip to verdict
         </button>
@@ -735,12 +684,6 @@ export default function AuctionExperience({
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </button>
-      </div>
-
-      {/* Mobile rival mindset row */}
-      <div className="sm:hidden glass rounded-xl px-3 py-2 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rivals</span>
-        {mindsetControl(true)}
       </div>
 
       {/* Mobile rival strip */}
@@ -829,7 +772,7 @@ export default function AuctionExperience({
                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500" style={{ width: `${lot.player.impact}%` }} />
               </div>
               <p className="mt-1 text-[10px] text-slate-500">
-                Editorial market value ~{formatCr(lot.player.valueCr)} — rivals bid around it, not above it forever.
+                Editorial market value ~{formatCr(lot.player.valueCr)} — stingy paddles hoard cash, but headliners and bidding wars break the anchor.
               </p>
 
               {/* Bid state */}

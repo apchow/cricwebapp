@@ -13,20 +13,12 @@ const RESERVE_PER_SLOT_CR = 0.3;
 /** Impact scales differ by role — a 64-rated bowler is elite, a 64 bat is not. */
 const STARTER_IMPACT: Record<string, number> = { BAT: 75, WK: 75, AR: 62, BOWL: 55 };
 
-/** How freely rival franchises open their purses. */
-export type RivalMindset = "free" | "realistic" | "stingy";
-
-export const RIVAL_MINDSETS: { id: RivalMindset; label: string; blurb: string }[] = [
-  { id: "free", label: "Free-spending", blurb: "Purses burn hot — rivals chase stars past market value." },
-  { id: "realistic", label: "Realistic", blurb: "Bids track recent form, past auction prices and IPL trends." },
-  { id: "stingy", label: "Stingy", blurb: "Franchises hoard cash, wait for scarcity and refuse to overpay." },
-];
-
-const MINDSET_TUNING: Record<RivalMindset, { value: number; prob: number; cool: number }> = {
-  free: { value: 1.2, prob: 1.15, cool: 0.8 },
-  realistic: { value: 1.0, prob: 1.0, cool: 1.0 },
-  stingy: { value: 0.72, prob: 0.55, cool: 1.6 },
-};
+/** Rivals are stingy: hoard cash on ordinary names, fight only for headliners. */
+const STINGY = { value: 0.72, prob: 0.55, cool: 1.6 };
+/** When the user shows interest in a marquee lot, rivals escalate into a war. */
+const USER_INTEREST_BOOST = 1.35;
+/** Editorial ceilings while the user sits out — these names never draw a frenzy alone. */
+const NO_INTEREST_CAP_CR: Record<string, number> = { acdc62f5: 10 };
 
 export interface EngineConfig {
   userTeamId: string;
@@ -34,7 +26,6 @@ export interface EngineConfig {
   teams: OfficialTeam[];
   pool: AuctionPlayer[];
   seed?: number;
-  mindset?: RivalMindset;
 }
 
 export interface SquadBuy {
@@ -146,19 +137,19 @@ export interface Archetype {
 export function archetypeFor(p: AuctionPlayer): Archetype {
   if (p.uncapped) return { name: "Uncapped breakout", lo: 0.5, hi: 1.5, mRole: 1.2, ceiling: 6 };
   if (p.role === "BOWL") {
-    if (p.valueCr >= 4) return { name: "Marquee pace / death", lo: 4, hi: 6.5, mRole: 1.45, ceiling: null };
+    if (p.valueCr >= 4) return { name: "Marquee pace / death", lo: 4, hi: 9, mRole: 1.45, ceiling: null };
     if (p.valueCr >= 2) return { name: "Wrist / mystery spin", lo: 2, hi: 4, mRole: 1.15, ceiling: null };
     return { name: "Squad backup", lo: 0.3, hi: 1, mRole: 0.85, ceiling: 1.5 };
   }
   if (p.role === "AR") {
-    if (p.valueCr >= 3.5) return { name: "Pace all-rounder", lo: 3.5, hi: 6, mRole: 1.4, ceiling: null };
-    if (p.valueCr >= 2) return { name: "Power finisher", lo: 2.5, hi: 4.5, mRole: 1.3, ceiling: null };
+    if (p.valueCr >= 3.5) return { name: "Pace all-rounder", lo: 3.5, hi: 7, mRole: 1.4, ceiling: null };
+    if (p.valueCr >= 2) return { name: "Power finisher", lo: 2.5, hi: 5.5, mRole: 1.3, ceiling: null };
     return { name: "Squad backup", lo: 0.3, hi: 1, mRole: 0.85, ceiling: 1.5 };
   }
   if (p.valueCr >= 3) {
     const sr = p.seasonStrikeRate ?? p.strikeRate ?? 120;
-    if (sr >= 140) return { name: "Power finisher", lo: 2.5, hi: 4.5, mRole: 1.3, ceiling: null };
-    return { name: "Explosive top-order / WK", lo: 3, hi: 5.5, mRole: 1.25, ceiling: null };
+    if (sr >= 140) return { name: "Power finisher", lo: 2.5, hi: 5.5, mRole: 1.3, ceiling: null };
+    return { name: "Explosive top-order / WK", lo: 3, hi: 6.5, mRole: 1.25, ceiling: null };
   }
   if (p.valueCr >= 1.5) return { name: "Rotation batter", lo: 1.5, hi: 2.5, mRole: 1, ceiling: 3 };
   return { name: "Squad backup", lo: 0.3, hi: 1, mRole: 0.85, ceiling: 1.5 };
@@ -173,7 +164,6 @@ export class AuctionEngine {
   lot: Lot;
   userPassed = false;
   speed: 1 | 4 = 1;
-  mindset: RivalMindset;
   log: LogEntry[] = [];
   soldCount = 0;
   unsoldCount = 0;
@@ -189,10 +179,11 @@ export class AuctionEngine {
   private lastBidders: string[] = [];
   /** Teams that already placed a spoiling tax bid on this lot. */
   private spoiled = new Set<string>();
+  /** User raised a paddle on this lot — rivals smell a war and escalate. */
+  private userLotInterest = false;
 
   constructor(config: EngineConfig) {
     this.userTeamId = config.userTeamId;
-    this.mindset = config.mindset ?? "realistic";
     this.rng = mulberry32(config.seed ?? Date.now() % 2147483647);
 
     this.teams = config.teams.map((t) => {
@@ -309,6 +300,7 @@ export class AuctionEngine {
     this.lot.idleMs = 0;
     this.lot.countdownMs = 0;
     const t = this.team(teamId);
+    if (teamId === this.userTeamId) this.userLotInterest = true;
     this.events.push({ type: teamId === this.userTeamId ? "user-bid" : "bid", teamId, priceCr: amount, player: this.lot.player });
     this.pushLog("bid", `${t.short} bid ₹${amount.toFixed(2)}cr for ${this.lot.player.name}`, teamId);
     this.cooldowns.set(teamId, 700 + this.rng() * 1500);
@@ -340,9 +332,12 @@ export class AuctionEngine {
 
     const starters = this.startersInRole(t, p.role);
     const critical = starters === 0;
+    const marquee = p.valueCr >= 6;
     let mNeed = critical ? 1.4 : starters === 1 ? 1 : 0.45;
     // Marquee headliners draw upgrade wars even from saturated squads.
-    if (p.valueCr >= 6) mNeed = Math.max(mNeed, 0.9);
+    if (marquee) mNeed = Math.max(mNeed, 1);
+    // User raised a paddle on a headliner: rivals smell blood and fight past 15cr.
+    if (marquee && this.userLotInterest) mNeed = Math.max(mNeed, 1.4);
     const arch = archetypeFor(p);
     const formFactor = formValueCr(p) / Math.max(0.01, p.valueCr);
     const vBase = Math.min(arch.hi, Math.max(arch.lo, p.valueCr)) * formFactor;
@@ -351,14 +346,21 @@ export class AuctionEngine {
     ).length;
     const mScarcity = Math.min(1.45, 1 + 0.15 * (needing / Math.max(1, remainingInRole)));
     const eps = this.noise.get(p.id)?.get(t.id) ?? 1;
-    const tune = MINDSET_TUNING[this.mindset];
-    let value = vBase * arch.mRole * mNeed * mScarcity * eps * tune.value;
+    let value = vBase * arch.mRole * mNeed * mScarcity * eps * (marquee ? 1 : STINGY.value);
+    if (marquee && this.userLotInterest) {
+      value = Math.max(value * USER_INTEREST_BOOST, 13 + p.valueCr * 0.5);
+    } else if (marquee) {
+      // 15cr+ wars are reserved for lots the user actually contested.
+      value = Math.min(value, 14, NO_INTEREST_CAP_CR[p.id] ?? 14);
+    }
     if (arch.ceiling != null) value = Math.min(value, arch.ceiling);
     // Only marquee headliners may cross 6cr — nobodies never out-earn stars.
-    if (p.valueCr < 6) value = Math.min(value, 6);
+    if (!marquee) value = Math.min(value, 6);
     // Hoarding reserve: rich teams with room won't blow half the purse on one name
-    // unless it plugs a critical starting-XI gap.
-    if (t.slots >= 4 && t.purseCr > 25 && !critical) value = Math.min(value, 0.55 * t.purseCr);
+    // unless it plugs a critical starting-XI gap or the user started a war.
+    if (t.slots >= 4 && t.purseCr > 25 && !critical && !(marquee && this.userLotInterest)) {
+      value = Math.min(value, 0.55 * t.purseCr);
+    }
     return Math.min(value, spendable);
   }
 
@@ -398,6 +400,7 @@ export class AuctionEngine {
     }
     this.lotIndex += 1;
     this.userPassed = false;
+    this.userLotInterest = false;
     this.lastBidders = [];
     this.spoiled.clear();
     const prevSet = this.lot.set;
@@ -428,7 +431,6 @@ export class AuctionEngine {
 
     // Rival paddles: active duelists counter first, challengers enter by headroom.
     const next = lot.leaderId ? nextBidCr(lot.bidCr) : lot.bidCr;
-    const tune = MINDSET_TUNING[this.mindset];
     for (const t of this.teams) {
       const cd = (this.cooldowns.get(t.id) ?? 0) - dt;
       this.cooldowns.set(t.id, cd > 0 ? cd : 0);
@@ -457,9 +459,9 @@ export class AuctionEngine {
         const base = ratio < 0.5 ? 0.9 : ratio < 0.8 ? 0.6 : 0.35;
         // Low-impact names draw few paddles — many go unsold at base, like real auctions.
         const interest = lot.player.impact >= 50 ? 1 : lot.player.impact >= 40 ? 0.55 : 0.3;
-        const p = Math.min(0.95, base * tune.prob * (lot.leaderId ? 1 : interest));
+        const p = Math.min(0.95, base * STINGY.prob * (lot.leaderId ? 1 : interest));
         if (this.rng() < p) { bidder = t; break; }
-        this.cooldowns.set(t.id, (400 + this.rng() * 800) * tune.cool);
+        this.cooldowns.set(t.id, (400 + this.rng() * 800) * STINGY.cool);
       }
     }
     // Strategic spoiling: a rich, saturated rival may tax-bid a purse-strapped leader once per lot.
