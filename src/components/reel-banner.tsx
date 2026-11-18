@@ -6,6 +6,7 @@ import { InstagramIcon } from "@/components/brand-icons";
 
 const REEL_URL = "https://www.instagram.com/p/Df1ojJwMOSN/";
 const DISMISS_KEY = "pundit-arena:reel-banner-dismissed";
+const PLAY_KEY = "pundit-arena:reel-banner-playing";
 
 export default function ReelBanner() {
   const [visible, setVisible] = useState(true);
@@ -13,11 +14,19 @@ export default function ReelBanner() {
 
   useEffect(() => {
     if (sessionStorage.getItem(DISMISS_KEY) === "1") setVisible(false);
+    // A reload mid-watch resumes the embed instead of dropping back to the facade.
+    if (sessionStorage.getItem(PLAY_KEY) === "1") setPlaying(true);
   }, []);
 
   function dismiss() {
     sessionStorage.setItem(DISMISS_KEY, "1");
+    sessionStorage.removeItem(PLAY_KEY);
     setVisible(false);
+  }
+
+  function play() {
+    sessionStorage.setItem(PLAY_KEY, "1");
+    setPlaying(true);
   }
 
   if (!visible) return null;
@@ -71,7 +80,7 @@ export default function ReelBanner() {
               <p className="text-[11px] text-slate-400">Loads only when you press play, so the app stays fast.</p>
             </div>
             <button
-              onClick={() => setPlaying(true)}
+              onClick={play}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-sm font-black hover:brightness-110 active:scale-[0.98] transition"
             >
               <Play className="h-4 w-4" />
