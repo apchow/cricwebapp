@@ -48,7 +48,7 @@ export default function SupportCard() {
               payee fills itself in.
             </p>
           </div>
-          <div className="flex items-center gap-2 justify-center sm:justify-start">
+          <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
             <code className="px-3 py-2 rounded-xl bg-slate-900/80 border border-amber-500/20 text-amber-200 font-mono text-sm sm:text-base select-all">
               {UPI_ID}
             </code>

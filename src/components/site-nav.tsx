@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   ClipboardList,
   Gavel,
+  Heart,
   History,
   ListOrdered,
   MessageCircle,
@@ -13,12 +14,14 @@ import {
   Users,
   Volume2,
   VolumeX,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 
 import AccountMenu from "@/components/account-menu";
 import AuthModal from "@/components/auth-modal";
+import SupportCard from "@/components/support-card";
 import { TOOLS } from "@/data/tools";
 import { isMuted, onMuteChange, setMuted } from "@/lib/game-sound";
 
@@ -36,11 +39,21 @@ const ICONS: Record<string, LucideIcon> = {
 export default function SiteNav({ email }: { email: string | null }) {
   const pathname = usePathname();
   const [muted, setMutedState] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   useEffect(() => {
     setMutedState(isMuted());
     return onMuteChange(setMutedState);
   }, []);
+
+  useEffect(() => {
+    if (!donateOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDonateOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [donateOpen]);
 
   function isActive(href: string): boolean {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -77,6 +90,14 @@ export default function SiteNav({ email }: { email: string | null }) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setDonateOpen(true)}
+              aria-label="Donate via UPI"
+              title="Support Pundit Arena — UPI QR & ID"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition"
+            >
+              <Heart className="h-4 w-4" />
+            </button>
             <button
               onClick={() => setMuted(!isMuted())}
               aria-label={muted ? "Unmute all sounds" : "Mute all sounds"}
@@ -125,6 +146,30 @@ export default function SiteNav({ email }: { email: string | null }) {
           })}
         </div>
       </nav>
+
+      {donateOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          onClick={() => setDonateOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Donate via UPI"
+            className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setDonateOpen(false)}
+              aria-label="Close donation panel"
+              className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <SupportCard />
+          </div>
+        </div>
+      )}
 
       <AuthModal />
     </>
